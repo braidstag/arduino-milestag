@@ -35,19 +35,34 @@ byte timingTolerance = 200;
 // IR reading functions
 void signal_recieve() {
   byte pinValue = digitalRead(pin_ir_reciever);
-  if (!oldPinValue && pinValue) {
-    //rising edge
+  if (oldPinValue && !pinValue) {
+    Serial.println("/");
+    //IR rising edge (falling edge on this pin)
     riseTime = micros();
     oldPinValue = pinValue;
   }
-  
-  if (oldPinValue && !pinValue) {
-    //falling edge
+  else if (!oldPinValue && pinValue) {
+    //IR falling edge (rising edge on this pin)
     unsigned long duration = micros() - riseTime;
+    Serial.print("\\");
+    Serial.println(duration);
     
     if (within_tolerance(duration, 2400, timingTolerance)) {
-      //we are within tollerance of 2400 us
+      //we are within tollerance of 2400 us - a restart
+      readBuffer = 0;
+      bitsRead = 0;
     }
+    else if (within_tolerance(duration, 1200, timingTolerance)) {
+      //we are within tollerance of 1200 us - a one
+      readBuffer = (readBuffer << 1) + 1;
+      bitsRead++;
+    }
+    if (within_tolerance(duration, 600, timingTolerance)) {
+      //we are within tollerance of 600 us - a zero
+      readBuffer = readBuffer << 1;
+      bitsRead++;
+    }
+    
     
     oldPinValue = pinValue;
   }
@@ -59,11 +74,11 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
 }
 
 void debug_signal() {
-  if (bitsRead == 0) {
-    Serial.println("====");
-  }
-  
   if (bitsRead != oldBitsRead) {
+    if (bitsRead == 0) {
+      Serial.println("====");
+    }
+    
     oldBitsRead = bitsRead;
     Serial.println(readBuffer, BIN);
   }
