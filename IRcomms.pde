@@ -6,16 +6,71 @@
 //Original Copyright (C) Timo Herva aka 'mettapera', 2009
 // hacked up by Andrew Shirley
 
+////////////////////////
+// IR Writing variables
 byte volume_up = 0x24;//B0100100
 //create an array for the 12-bit signal: 7-bit command + 5-bit address
 byte array_signal[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 //some pretty obvious pins
 byte pin_infrared = 9; //don't chnage this one without changeing the pwm freq setup!
 byte pin_visible = 13;
+byte pin_ir_reciever = 12;
 
 //command decoding variables
 byte value_decode1 = 0;
 byte value_decode2 = 0;
+
+////////////////////////
+// IR reading variables
+byte readBuffer = 0;
+byte bitsRead = 0;
+byte oldBitsRead = 0;
+
+byte oldPinValue = 0;
+unsigned long riseTime;
+
+byte timingTolerance = 200;
+
+////////////////////////
+// IR reading functions
+void signal_recieve() {
+  byte pinValue = digitalRead(pin_ir_reciever);
+  if (!oldPinValue && pinValue) {
+    //rising edge
+    riseTime = micros();
+    oldPinValue = pinValue;
+  }
+  
+  if (oldPinValue && !pinValue) {
+    //falling edge
+    unsigned long duration = micros() - riseTime;
+    
+    if (within_tolerance(duration, 2400, timingTolerance)) {
+      //we are within tollerance of 2400 us
+    }
+    
+    oldPinValue = pinValue;
+  }
+}
+
+boolean within_tolerance(unsigned long value, unsigned long target, byte tolerance) {
+  long remainder = value - target;
+  return remainder < tolerance && remainder > -tolerance;
+}
+
+void debug_signal() {
+  if (bitsRead == 0) {
+    Serial.println("====");
+  }
+  
+  if (bitsRead != oldBitsRead) {
+    oldBitsRead = bitsRead;
+    Serial.println(readBuffer, BIN);
+  }
+}
+
+////////////////////////
+// IR writing functions
 
 //function to decode the command needed to the array (one array and five binarynumbers consume less space than five arrays)
 //TODO use >> inside the sending loop, 6 bytes are even cheaper still!.
@@ -68,11 +123,15 @@ void ir_down() {
   digitalWrite(pin_visible, LOW);
 }
 
+////////////////////////
+// general functions
+
 //setting things ready  
 void setup() {
   //set the pins
   pinMode(pin_infrared, OUTPUT);
   pinMode(pin_visible, OUTPUT);
+  pinMode(pin_ir_reciever, INPUT);
   
   //set the carrier wave frequency. This only sets up pin 9 so don't change the pin_infrared config!
   TCCR1A = _BV(WGM01) | _BV(COM0A0); // | _BV(COM0B0); for another pin (10)
@@ -83,12 +142,17 @@ void setup() {
   
   OCR1A = 13 - 1;
   //OCR1B = 13 - 1; for another pin (10)
+
+  //debug  
+  Serial.begin(9600); 
+  Serial.println("jobbie - debug");
 }
 
 void loop() {
-  command_decode(volume_up);
-  signal_send();
+  //command_decode(volume_up);
+  //signal_send();
+  //delay(10000);
+  
+  signal_recieve();
+  debug_signal();
 }
- 
-
-
