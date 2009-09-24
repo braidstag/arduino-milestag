@@ -6,19 +6,27 @@
 //Original Copyright (C) Timo Herva aka 'mettapera', 2009
 // hacked up by Andrew Shirley
 
-////////////////////////
-// IR Writing variables
-byte volume_up = 0x24;//B0100100
-//create an array for the 12-bit signal: 7-bit command + 5-bit address
-byte array_signal[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
+
 //some pretty obvious pins
 byte pin_infrared = 9; //don't chnage this one without changeing the pwm freq setup!
 byte pin_visible = 13;
 byte pin_ir_reciever = 12;
 
+////////////////////////
+// IR Writing variables
+byte volume_up = 0x24;//B0100100
+//create an array for the 12-bit signal: 7-bit command + 5-bit address
+byte array_signal[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
+
 //command decoding variables
 byte value_decode1 = 0;
 byte value_decode2 = 0;
+
+byte writeBuffer = 0;
+byte writeBits = 0;
+unsigned long writeUpTime = 0;
+unsigned long writeDownTime = 0;
+unsigned long  writeLastChangeTime = 0;
 
 ////////////////////////
 // IR reading variables
@@ -27,7 +35,7 @@ byte bitsRead = 0;
 byte oldBitsRead = 0;
 
 byte oldPinValue = 0;
-unsigned long riseTime;
+unsigned long readRiseTime;
 
 byte timingTolerance = 200;
 
@@ -36,15 +44,18 @@ byte timingTolerance = 200;
 void signal_recieve() {
   byte pinValue = digitalRead(pin_ir_reciever);
   if (oldPinValue && !pinValue) {
-    Serial.println("/");
+    Serial.print("\\ @");
+    Serial.println(micros());
     //IR rising edge (falling edge on this pin)
-    riseTime = micros();
+    readRiseTime = micros();
     oldPinValue = pinValue;
   }
   else if (!oldPinValue && pinValue) {
     //IR falling edge (rising edge on this pin)
-    unsigned long duration = micros() - riseTime;
-    Serial.print("\\");
+    unsigned long duration = micros() - readRiseTime;
+    Serial.print("/ @ ");
+    Serial.print(micros());
+    Serial.print("  ");
     Serial.println(duration);
     
     if (within_tolerance(duration, 2400, timingTolerance)) {
@@ -87,6 +98,7 @@ void debug_signal() {
 ////////////////////////
 // IR writing functions
 
+/*
 //function to decode the command needed to the array (one array and five binarynumbers consume less space than five arrays)
 //TODO use >> inside the sending loop, 6 bytes are even cheaper still!.
 void command_decode(int binary_command) {
@@ -127,15 +139,70 @@ void signal_send() {
   ir_down();
   delay(random(250, 1000));
 }
+*/
+
+void start_command(byte command) {
+  if (writeUpTime || writeDownTime) {
+    //already writing - this is an error
+    return;
+  }
+  
+  writeBuffer = command;
+  writeBits = 8;
+  
+  //write header
+  ir_up();
+  writeDownTime = 2400;
+}
+
+void signal_send() {
+  unsigned long elapsed = micros() - writeLastChangeTime;
+  
+  if (writeDownTime && writeDownTime < elapsed) {
+    Serial.print("  \\");
+    Serial.print(elapsed);
+    Serial.print(" / ");
+    Serial.println(writeDownTime, DEC);
+    ir_down();
+    writeDownTime = 0;
+    
+    if (writeBits) {
+      //not done yet
+      writeUpTime = 600;
+    }
+  }
+  else if (writeUpTime && writeUpTime < elapsed) {
+    Serial.print("  /");
+    Serial.print(elapsed);
+    Serial.print(" / ");
+    Serial.println(writeUpTime, DEC);
+    ir_up();
+    writeUpTime = 0;
+    
+    if (writeBuffer & B1) {
+      //write a one
+      writeDownTime = 1200;
+    }
+    else {
+      //write a zero
+      writeDownTime = 600;
+    }
+    
+    writeBuffer = writeBuffer >> 1;
+    writeBits --;
+  }
+}
 
 void ir_up() {
   analogWrite(pin_infrared, 255);
   digitalWrite(pin_visible, HIGH);
+  writeLastChangeTime = micros();
 }
 
 void ir_down() {
   analogWrite(pin_infrared, 0);
   digitalWrite(pin_visible, LOW);
+  writeLastChangeTime = micros();
 }
 
 ////////////////////////
@@ -163,10 +230,20 @@ void setup() {
   Serial.println("jobbie - debug");
 }
 
+unsigned long time = micros();
+
 void loop() {
   //command_decode(volume_up);
   //signal_send();
-  //delay(10000);
+  
+  
+  if (micros() > time + 1000000) {
+    time = micros();
+    start_command(volume_up);
+    Serial.print("starting ");
+    Serial.println(volume_up, BIN);
+  }
+  signal_send();
   
   signal_recieve();
   debug_signal();
