@@ -34,7 +34,7 @@ byte readBuffer = 0;
 byte bitsRead = 0;
 byte oldBitsRead = 0;
 
-byte oldPinValue = 0;
+byte oldPinValue = 1;
 unsigned long readRiseTime;
 
 byte timingTolerance = 200;
@@ -44,7 +44,7 @@ byte timingTolerance = 200;
 void signal_recieve() {
   byte pinValue = digitalRead(pin_ir_reciever);
   if (oldPinValue && !pinValue) {
-    Serial.print("\\ @");
+    Serial.print("/ @");
     Serial.println(micros());
     //IR rising edge (falling edge on this pin)
     readRiseTime = micros();
@@ -53,7 +53,7 @@ void signal_recieve() {
   else if (!oldPinValue && pinValue) {
     //IR falling edge (rising edge on this pin)
     unsigned long duration = micros() - readRiseTime;
-    Serial.print("/ @ ");
+    Serial.print("\\ @ ");
     Serial.print(micros());
     Serial.print("  ");
     Serial.println(duration);
@@ -152,6 +152,7 @@ void start_command(byte command) {
   
   //write header
   ir_up();
+  Serial.println("  /");
   writeDownTime = 2400;
 }
 
@@ -161,7 +162,7 @@ void signal_send() {
   if (writeDownTime && writeDownTime < elapsed) {
     Serial.print("  \\");
     Serial.print(elapsed);
-    Serial.print(" / ");
+    Serial.print(" \\ ");
     Serial.println(writeDownTime, DEC);
     ir_down();
     writeDownTime = 0;
@@ -239,9 +240,9 @@ void loop() {
   
   if (micros() > time + 1000000) {
     time = micros();
+    //Serial.print("starting ");
+    //Serial.println(volume_up, BIN);
     start_command(volume_up);
-    Serial.print("starting ");
-    Serial.println(volume_up, BIN);
   }
   signal_send();
   
