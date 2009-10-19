@@ -6,7 +6,6 @@
 //Original Copyright (C) Timo Herva aka 'mettapera', 2009
 // hacked up by Andrew Shirley
 
-
 //some pretty obvious pins
 byte pin_infrared = 9; //don't chnage this one without changeing the pwm freq setup!
 byte pin_visible = 13;
@@ -22,7 +21,7 @@ byte array_signal[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 byte value_decode1 = 0;
 byte value_decode2 = 0;
 
-byte writeBuffer = 0;
+unsigned long writeBuffer = 0;
 byte writeBits = 0;
 unsigned long writeUpTime = 0;
 unsigned long writeDownTime = 0;
@@ -30,7 +29,7 @@ unsigned long  writeLastChangeTime = 0;
 
 ////////////////////////
 // IR reading variables
-byte readBuffer = 0;
+unsigned long readBuffer = 0;
 byte bitsRead = 0;
 byte oldBitsRead = 0;
 
@@ -38,6 +37,10 @@ byte oldPinValue = 1;
 unsigned long readRiseTime;
 
 byte timingTolerance = 200;
+
+//miles_tag_gun_logic
+
+#include </home/afaucher/dev/mt/miles_tag_gun_logic.pde>
 
 ////////////////////////
 // IR reading functions
@@ -229,6 +232,8 @@ void setup() {
   //debug  
   Serial.begin(9600); 
   Serial.println("jobbie - debug");
+  
+  mt_setup();
 }
 
 unsigned long time = micros();
@@ -247,5 +252,11 @@ void loop() {
   signal_send();
   
   signal_recieve();
+  if (bitsRead == 17) {
+    mt_parseIRMessage(readBuffer);
+    readBuffer = 0;
+    bitsRead = 0;
+  }
   debug_signal();
 }
+
