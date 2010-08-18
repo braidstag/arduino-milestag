@@ -1,0 +1,23 @@
+== Arduino Milestag
+
+An implementation of the milestag protocol and some game mechanics intended to run on the arduino.
+I possess no skills (or tbh, interest) in hardware andas such, an arduino with a few led's wedged into it seems like a good platform :-P
+
+=== Short term goals
+* --Be able to "shoot" ourselves and understand the data in the "shot"--
+* Create a "library" for the low level IR comms and another on top for milestag comms.
+* Create a basic set of data structures and game mechanics
+
+=== Medium term goals
+* Architect such that we can switch game mechanics in and out easily to test things "in the field"
+* Test compatibility with "real" milestag guns
+* integrate with an LCD display
+
+=== Long term goals
+* Investigate non-IR communication between guns for things like:
+ ** Reporting live scores to a base station over some kind of wireless (zigbee?)
+ ** support whole-team powerups
+ ** integrae with voice comms, perhaps even overlay spoken info from the gun (ammo/hit warnings)
+* Investigate a simple hardware solution to IR sending/receiving if the
+real-time performance constraints are too much for more interesting game
+mechanics. Preferably this would be an optional add-on 
