@@ -13,7 +13,6 @@
 //NB. as these are quite time sensitive enableing this often breaks it :-(
 //#define DEBUG_SEND 1
 //#define DEBUG_RECV 1
-#define DEBUG_DECODE 1
 
 
 // pin numbers (9 is used for a Carrier wave and so isn't available)
@@ -36,7 +35,7 @@ byte timingTolerance = 100;
 //byte volume_up = 0x24;//B0100100
 byte volume_up = B0001100;
 
-byte writeBuffer = 0;
+unsigned long writeBuffer = 0;
 byte writeBits = 0;
 unsigned long writeUpTime = 0;
 unsigned long writeDownTime = 0;
@@ -44,7 +43,7 @@ unsigned long writeLastChangeTime = 0;
 
 ////////////////////////
 // IR reading variables
-byte readBuffer = 0;
+unsigned long readBuffer = 0;
 byte bitsRead = 0;
 
 byte oldPinValue = 0;
@@ -54,7 +53,6 @@ unsigned long readRiseTime = 0;
 
 //the micros for the point at which the IR went low
 unsigned long readFallTime = 0;
-
 
 ////////////////////////
 // IR reading functions
@@ -135,13 +133,6 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
   return remainder < tolerance && remainder > -tolerance;
 }
 
-void decode_signal() {
-#ifdef DEBUG_DECODE
-  Serial.print("==");
-  Serial.println(readBuffer, BIN);
-#endif
-}
-
 ////////////////////////
 // IR writing functions
 
@@ -219,48 +210,4 @@ void ir_down() {
   digitalWrite(pin_infrared, LOW);
   digitalWrite(pin_ir_feedback, LOW);
   writeLastChangeTime = micros();
-}
-
-////////////////////////
-// general functions
-
-//setting things ready  
-void setup() {
-  //set the pins
-  pinMode(pin_infrared, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(pin_ir_feedback, OUTPUT);
-  pinMode(pin_ir_reciever, INPUT);
-  
-  // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
-  //set the carrier wave frequency. This only sets up pin 9.
-  TCCR1A = _BV(COM1A0); // | _BV(COM1B0); for another pin (10)
-  TCCR1B = _BV(WGM12) | _BV(CS10);
-  
-  TIMSK1 = 0; //no interupts
-  TIFR1 = _BV(OCF1A) | _BV(OCF1A); //clear Output Compare Match Flags (by setting them :-P )
-  unsigned long desired_freq = 40000;
-  OCR1A = 10000000/desired_freq - 1; // see page 126 of datasheet for this equation
-  //OCR1B = 10000000/desired_freq - 1; for another pin (10)
-
-  ir_down();
-
-  //debug  
-  Serial.begin(9600); 
-  Serial.println("jobbie - debug");
-}
-
-
-unsigned long time = micros();
-
-void loop() {
-  if (micros() > time + 1000000) {
-    time = micros();
-    start_command(volume_up);
-  }
-  
-  signal_send();
-  if (signal_recieve()) {
-    decode_signal();
-  }
 }
