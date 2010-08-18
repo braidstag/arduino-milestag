@@ -7,28 +7,29 @@
 // http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1240843250 Copyright (C) Timo Herva aka 'mettapera', 2009
 // http://tthheessiiss.wordpress.com/2009/08/05/dirt-cheap-wireless/ 
 
-// TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue OR (1 shifted appropriately)).
+// TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue shifted appropriately AND 1)).
 //      use another CTC timer to tell when to set the ir up or down (not to be confused with the carrier frequency!)
 
-#define DEBUG_SEND 1
+//NB. as these are quite time sensitive enableing this often breaks it :-(
+//#define DEBUG_SEND 1
+//#define DEBUG_RECV 1
+#define DEBUG_DECODE 1
 
-#undef DEBUG_RECV
 
-
-// pin numbers
+// pin numbers (9 is used for a Carrier wave and so isn't available)
 byte pin_infrared = 8;
-byte pin_visible = 13;
+byte pin_ir_feedback = 13;
 byte pin_ir_reciever = 12;
 //byte pin_ir_reciever_port = PORTB;
 byte pin_ir_reciever_bit = 0;
 
 // some timings
-long startTime = 2400;
-long intervalTime = 600;
-long oneTime = 1200;
-long zeroTime = 600;
+long headerDuration = 2400;
+long intervalDuration = 600;
+long oneDuration = 1200;
+long zeroDuration = 600;
 
-byte timingTolerance = 200;
+byte timingTolerance = 100;
 
 ////////////////////////
 // IR Writing variables
@@ -45,44 +46,51 @@ unsigned long writeLastChangeTime = 0;
 // IR reading variables
 byte readBuffer = 0;
 byte bitsRead = 0;
-byte oldBitsRead = 0;
 
-byte oldPinValue = 1;
+byte oldPinValue = 0;
 
-//the micros for the point at which the IR went high (the pin went low)
-unsigned long readRiseTime;
+//the micros for the point at which the IR went high
+unsigned long readRiseTime = 0;
+
+//the micros for the point at which the IR went low
+unsigned long readFallTime = 0;
 
 
 ////////////////////////
 // IR reading functions
-void signal_recieve() {
+
+//read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
+int signal_recieve() {
   byte pinValue = bitRead(PORTB, pin_ir_reciever_bit);
-  if (oldPinValue && !pinValue) {
+  if (!oldPinValue && pinValue) {
+    //IR rising edge
+    //TODO: should we check that we have been low for an appropriate amount of time?
+    readRiseTime = micros();
+    oldPinValue = HIGH;
 #ifdef DEBUG_RECV
     Serial.print("\\ @");
-    Serial.println(micros());
+    Serial.println(readRiseTime);
 #endif
-    //IR rising edge (falling edge on this pin)
-    readRiseTime = micros();
-    oldPinValue = LOW;
+    //there is always more to be read if the IR is high.
+    return 0;
   }
-  else if (!oldPinValue && pinValue) {
-    //IR falling edge (rising edge on this pin)
-    unsigned long microsVal = micros();
-    unsigned long duration = microsVal - readRiseTime;
+  else if (oldPinValue && !pinValue) {
+    //IR falling edge
+    readFallTime = micros();
+    unsigned long duration = readFallTime - readRiseTime;
 
-    if (within_tolerance(duration, startTime, timingTolerance)) {
-      //we are within tollerance of 2400 us - a restart
+    if (within_tolerance(duration, headerDuration, timingTolerance)) {
+      //we are within tolerance of 2400 us - a restart
       readBuffer = 0;
       bitsRead = 0;
     }
-    else if (within_tolerance(duration, oneTime, timingTolerance)) {
-      //we are within tollerance of 1200 us - a one
+    else if (within_tolerance(duration, oneDuration, timingTolerance)) {
+      //we are within tolerance of 1200 us - a one
       readBuffer = (readBuffer << 1) + 1;
       bitsRead++;
     }
-    else if (within_tolerance(duration, zeroTime, timingTolerance)) {
-      //we are within tollerance of 600 us - a zero
+    else if (within_tolerance(duration, zeroDuration, timingTolerance)) {
+      //we are within tolerance of 600 us - a zero
       readBuffer = readBuffer << 1;
       bitsRead++;
     }
@@ -95,7 +103,30 @@ void signal_recieve() {
 #endif
     }
 
-    oldPinValue = HIGH;
+    oldPinValue = LOW;
+    //wait to see if there is more to be read
+    return 0;
+  }
+  else if (oldPinValue) {
+    //IR continues to be high
+    //there is always more to be read if the IR is high.
+    return 0;
+  }
+  else /*if (!oldPinValue)*/ {
+    //IR continues to be low
+    //if we have been low for more than interval + tolerance (twice for extra leniency) we can assume the transmission has finished and try to read it.
+    if (!readFallTime) {
+      //we aren't waiting for an interval, all quiet on the IR front.
+      return 0;
+    }
+    else if (micros() - readFallTime > intervalDuration + timingTolerance * 2) {
+      readFallTime = 0; //cache this result
+      return 1;
+    }
+    else {
+      //still low, waiting for the interval
+      return 0;
+    }
   }
 }
 
@@ -104,16 +135,11 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
   return remainder < tolerance && remainder > -tolerance;
 }
 
-void debug_signal() {
-  if (bitsRead != oldBitsRead) {
-    if (bitsRead == 0) {
-      Serial.println("====");
-    }
-    
-    oldBitsRead = bitsRead;
-    Serial.print("==");
-    Serial.println(readBuffer, BIN);
-  }
+void decode_signal() {
+#ifdef DEBUG_DECODE
+  Serial.print("==");
+  Serial.println(readBuffer, BIN);
+#endif
 }
 
 ////////////////////////
@@ -122,10 +148,14 @@ void debug_signal() {
 void start_command(byte command) {
   if (writeUpTime || writeDownTime) {
     //already writing - this is an error
-    Serial.println("tried to start a command when we are already sending");
+    //Serial.println("tried to start a command when we are already sending");
     return;
   }
-  
+#ifdef DEBUG_SEND
+  Serial.print("sending ");
+  Serial.println(command, BIN);
+#endif
+
   writeBuffer = command;
   writeBits = 8;
   
@@ -134,13 +164,13 @@ void start_command(byte command) {
 #ifdef DEBUG_SEND
   Serial.println("  \\");
 #endif
-  writeDownTime = startTime;
+  writeDownTime = headerDuration;
 }
 
 void signal_send() {
   unsigned long elapsed = micros() - writeLastChangeTime;
   
-  if (writeDownTime && writeDownTime < elapsed) {
+  if (writeDownTime && writeDownTime <= elapsed) {
 #ifdef DEBUG_SEND
     Serial.print("  /");
     Serial.print(elapsed);
@@ -152,10 +182,10 @@ void signal_send() {
     
     if (writeBits) {
       //not done yet
-      writeUpTime = intervalTime;
+      writeUpTime = intervalDuration;
     }
   }
-  else if (writeUpTime && writeUpTime < elapsed) {
+  else if (writeUpTime && writeUpTime <= elapsed) {
 #ifdef DEBUG_SEND
     Serial.print("  \\");
     Serial.print(elapsed);
@@ -167,27 +197,27 @@ void signal_send() {
     
     if (writeBuffer & B1) {
       //write a one
-      writeDownTime = oneTime;
+      writeDownTime = oneDuration;
     }
     else {
       //write a zero
-      writeDownTime = zeroTime;
+      writeDownTime = zeroDuration;
     }
     
     writeBuffer = writeBuffer >> 1;
-    writeBits --;
+    writeBits--;
   }
 }
 
 void ir_up() {
   digitalWrite(pin_infrared, HIGH);
-  digitalWrite(pin_visible, HIGH);
+  digitalWrite(pin_ir_feedback, HIGH);
   writeLastChangeTime = micros();
 }
 
 void ir_down() {
   digitalWrite(pin_infrared, LOW);
-  digitalWrite(pin_visible, LOW);
+  digitalWrite(pin_ir_feedback, LOW);
   writeLastChangeTime = micros();
 }
 
@@ -199,7 +229,7 @@ void setup() {
   //set the pins
   pinMode(pin_infrared, OUTPUT);
   pinMode(9, OUTPUT);
-  pinMode(pin_visible, OUTPUT);
+  pinMode(pin_ir_feedback, OUTPUT);
   pinMode(pin_ir_reciever, INPUT);
   
   // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
@@ -224,17 +254,13 @@ void setup() {
 unsigned long time = micros();
 
 void loop() {
-  //command_decode(volume_up);
-  //signal_send();
-  
   if (micros() > time + 1000000) {
     time = micros();
-    //Serial.print("starting ");
-    //Serial.println(volume_up, BIN);
     start_command(volume_up);
   }
-  signal_send();
   
-  signal_recieve();
-  debug_signal();
+  signal_send();
+  if (signal_recieve()) {
+    decode_signal();
+  }
 }
