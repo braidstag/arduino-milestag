@@ -6,27 +6,32 @@
 //Original Copyright (C) Timo Herva aka 'mettapera', 2009
 // hacked up by Andrew Shirley
 
+//TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue OR (1 shifted appropriately)).
+//      use another CTC timer to tell when to set the ir up or down (not to be confused with the carrier frequency!)
 
 //some pretty obvious pins
-byte pin_infrared = 9; //don't chnage this one without changeing the pwm freq setup!
+byte pin_infrared = 9; //don't chnage this one without changing the pwm freq setup!
 byte pin_visible = 13;
 byte pin_ir_reciever = 12;
 
+//some sony timings
+long startTime = 2400;
+long intervalTime = 600;
+long oneTime = 1200;
+long zeroTime = 600;
+
+byte timingTolerance = 200;
+
 ////////////////////////
 // IR Writing variables
-byte volume_up = 0x24;//B0100100
-//create an array for the 12-bit signal: 7-bit command + 5-bit address
-byte array_signal[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
-
-//command decoding variables
-byte value_decode1 = 0;
-byte value_decode2 = 0;
+//byte volume_up = 0x24;//B0100100
+byte volume_up = B0001100;
 
 byte writeBuffer = 0;
 byte writeBits = 0;
 unsigned long writeUpTime = 0;
 unsigned long writeDownTime = 0;
-unsigned long  writeLastChangeTime = 0;
+unsigned long writeLastChangeTime = 0;
 
 ////////////////////////
 // IR reading variables
@@ -35,47 +40,48 @@ byte bitsRead = 0;
 byte oldBitsRead = 0;
 
 byte oldPinValue = 1;
+
+//the micros for the point at which the IR went high (the pin went low)
 unsigned long readRiseTime;
 
-byte timingTolerance = 200;
 
 ////////////////////////
 // IR reading functions
 void signal_recieve() {
   byte pinValue = digitalRead(pin_ir_reciever);
   if (oldPinValue && !pinValue) {
-    Serial.print("/ @");
+    Serial.print("\\ @");
     Serial.println(micros());
     //IR rising edge (falling edge on this pin)
     readRiseTime = micros();
-    oldPinValue = pinValue;
+    oldPinValue = LOW;
   }
   else if (!oldPinValue && pinValue) {
     //IR falling edge (rising edge on this pin)
-    unsigned long duration = micros() - readRiseTime;
-    Serial.print("\\ @ ");
-    Serial.print(micros());
+    unsigned long microsVal = micros();
+    unsigned long duration = microsVal - readRiseTime;
+    Serial.print("/ @");
+    Serial.print(microsVal);
     Serial.print("  ");
     Serial.println(duration);
-    
-    if (within_tolerance(duration, 2400, timingTolerance)) {
+
+    if (within_tolerance(duration, startTime, timingTolerance)) {
       //we are within tollerance of 2400 us - a restart
       readBuffer = 0;
       bitsRead = 0;
     }
-    else if (within_tolerance(duration, 1200, timingTolerance)) {
+    else if (within_tolerance(duration, oneTime, timingTolerance)) {
       //we are within tollerance of 1200 us - a one
       readBuffer = (readBuffer << 1) + 1;
       bitsRead++;
     }
-    if (within_tolerance(duration, 600, timingTolerance)) {
+    if (within_tolerance(duration, zeroTime, timingTolerance)) {
       //we are within tollerance of 600 us - a zero
       readBuffer = readBuffer << 1;
       bitsRead++;
     }
-    
-    
-    oldPinValue = pinValue;
+
+    oldPinValue = HIGH;
   }
 }
 
@@ -91,6 +97,7 @@ void debug_signal() {
     }
     
     oldBitsRead = bitsRead;
+    Serial.print("==");
     Serial.println(readBuffer, BIN);
   }
 }
@@ -98,52 +105,10 @@ void debug_signal() {
 ////////////////////////
 // IR writing functions
 
-/*
-//function to decode the command needed to the array (one array and five binarynumbers consume less space than five arrays)
-//TODO use >> inside the sending loop, 6 bytes are even cheaper still!.
-void command_decode(int binary_command) {
-  value_decode1 = binary_command;
-  for (int i = 6; i > -1; i--) {
-    value_decode2 = value_decode1 & B1;
-    if (value_decode2 == 1) {
-      array_signal[i] = 1;
-    }
-    else {
-      array_signal[i] = 0;
-    }
-    value_decode1 = value_decode1 >> 1;
-  }
-}
-
-//function which send the command over an IR-led
-void signal_send() {
-  //start the message with a 2.4 ms time up
-  ir_up();
-  delayMicroseconds(2400);
-  
-  for (int a = 0; a < 12; a++) {
-    //time down is always 0.6 ms
-    ir_down();
-    delayMicroseconds(600);
-    if (array_signal[a] == 1) {
-      //"1" is always 1.2 ms high
-      ir_up();
-      delayMicroseconds(1200);
-    }
-    else {
-      //"0" is always 0.6 ms high
-      ir_up();
-      delayMicroseconds(600);
-    }
-  }
-  ir_down();
-  delay(random(250, 1000));
-}
-*/
-
 void start_command(byte command) {
   if (writeUpTime || writeDownTime) {
     //already writing - this is an error
+    Serial.println("tried to start a command when we are already sending");
     return;
   }
   
@@ -152,41 +117,41 @@ void start_command(byte command) {
   
   //write header
   ir_up();
-  Serial.println("  /");
-  writeDownTime = 2400;
+  Serial.println("  \\");
+  writeDownTime = startTime;
 }
 
 void signal_send() {
   unsigned long elapsed = micros() - writeLastChangeTime;
   
   if (writeDownTime && writeDownTime < elapsed) {
-    Serial.print("  \\");
+    Serial.print("  /");
     Serial.print(elapsed);
-    Serial.print(" \\ ");
+    Serial.print(" - ");
     Serial.println(writeDownTime, DEC);
     ir_down();
     writeDownTime = 0;
     
     if (writeBits) {
       //not done yet
-      writeUpTime = 600;
+      writeUpTime = intervalTime;
     }
   }
   else if (writeUpTime && writeUpTime < elapsed) {
-    Serial.print("  /");
+    Serial.print("  \\");
     Serial.print(elapsed);
-    Serial.print(" / ");
+    Serial.print(" - ");
     Serial.println(writeUpTime, DEC);
     ir_up();
     writeUpTime = 0;
     
     if (writeBuffer & B1) {
       //write a one
-      writeDownTime = 1200;
+      writeDownTime = oneTime;
     }
     else {
       //write a zero
-      writeDownTime = 600;
+      writeDownTime = zeroTime;
     }
     
     writeBuffer = writeBuffer >> 1;
@@ -231,14 +196,14 @@ void setup() {
   Serial.println("jobbie - debug");
 }
 
+
 unsigned long time = micros();
 
 void loop() {
   //command_decode(volume_up);
   //signal_send();
   
-  
-  if (micros() > time + 1000000) {
+  if (micros() > time + 10000000) {
     time = micros();
     //Serial.print("starting ");
     //Serial.println(volume_up, BIN);
@@ -246,6 +211,36 @@ void loop() {
   }
   signal_send();
   
-  signal_recieve();
+//  signal_recieve();
   debug_signal();
 }
+/*
+unsigned long cycletime = 4800;
+unsigned long time2 = micros() + cycletime / 2;
+
+void loop() {
+  if (micros() > time + cycletime) {
+    time = micros();
+    ir_up();
+    Serial.println("up");
+  }
+  if (micros() > time2 + cycletime) {
+    time2 = micros();
+    ir_down();
+    Serial.println("down");
+  }
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
