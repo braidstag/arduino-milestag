@@ -1,20 +1,28 @@
-//A remote with an accelerometer for Sony IR protocol
-//The sleep code is adapted from www.arduino.cc/playground/Learning/ArduinoSleepCode, (C) D. Cuartielles
-//Other parts of this code are copyrighted by me. You can use this code freely, just  mention me in the
-//copyright section.
+//The IR communication components.
 //
-//Original Copyright (C) Timo Herva aka 'mettapera', 2009
-// hacked up by Andrew Shirley
+// Hacked together by Andrew Shirley
 
-//TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue OR (1 shifted appropriately)).
+// Code which was either 'copypasta'ed or used as inspiration at some point:
+//
+// http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1240843250 Copyright (C) Timo Herva aka 'mettapera', 2009
+// http://tthheessiiss.wordpress.com/2009/08/05/dirt-cheap-wireless/ 
+
+// TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue OR (1 shifted appropriately)).
 //      use another CTC timer to tell when to set the ir up or down (not to be confused with the carrier frequency!)
 
-//some pretty obvious pins
-byte pin_infrared = 9; //don't chnage this one without changing the pwm freq setup!
+#define DEBUG_SEND 1
+
+#undef DEBUG_RECV
+
+
+// pin numbers
+byte pin_infrared = 8;
 byte pin_visible = 13;
 byte pin_ir_reciever = 12;
+//byte pin_ir_reciever_port = PORTB;
+byte pin_ir_reciever_bit = 0;
 
-//some sony timings
+// some timings
 long startTime = 2400;
 long intervalTime = 600;
 long oneTime = 1200;
@@ -48,10 +56,12 @@ unsigned long readRiseTime;
 ////////////////////////
 // IR reading functions
 void signal_recieve() {
-  byte pinValue = digitalRead(pin_ir_reciever);
+  byte pinValue = bitRead(PORTB, pin_ir_reciever_bit);
   if (oldPinValue && !pinValue) {
+#ifdef DEBUG_RECV
     Serial.print("\\ @");
     Serial.println(micros());
+#endif
     //IR rising edge (falling edge on this pin)
     readRiseTime = micros();
     oldPinValue = LOW;
@@ -60,10 +70,6 @@ void signal_recieve() {
     //IR falling edge (rising edge on this pin)
     unsigned long microsVal = micros();
     unsigned long duration = microsVal - readRiseTime;
-    Serial.print("/ @");
-    Serial.print(microsVal);
-    Serial.print("  ");
-    Serial.println(duration);
 
     if (within_tolerance(duration, startTime, timingTolerance)) {
       //we are within tollerance of 2400 us - a restart
@@ -75,10 +81,18 @@ void signal_recieve() {
       readBuffer = (readBuffer << 1) + 1;
       bitsRead++;
     }
-    if (within_tolerance(duration, zeroTime, timingTolerance)) {
+    else if (within_tolerance(duration, zeroTime, timingTolerance)) {
       //we are within tollerance of 600 us - a zero
       readBuffer = readBuffer << 1;
       bitsRead++;
+    }
+    else {
+#ifdef DEBUG_RECV
+      Serial.print("/ @");
+      Serial.print(microsVal);
+      Serial.print("  ");
+      Serial.println(duration);
+#endif
     }
 
     oldPinValue = HIGH;
@@ -117,7 +131,9 @@ void start_command(byte command) {
   
   //write header
   ir_up();
+#ifdef DEBUG_SEND
   Serial.println("  \\");
+#endif
   writeDownTime = startTime;
 }
 
@@ -125,10 +141,12 @@ void signal_send() {
   unsigned long elapsed = micros() - writeLastChangeTime;
   
   if (writeDownTime && writeDownTime < elapsed) {
+#ifdef DEBUG_SEND
     Serial.print("  /");
     Serial.print(elapsed);
     Serial.print(" - ");
     Serial.println(writeDownTime, DEC);
+#endif
     ir_down();
     writeDownTime = 0;
     
@@ -138,10 +156,12 @@ void signal_send() {
     }
   }
   else if (writeUpTime && writeUpTime < elapsed) {
+#ifdef DEBUG_SEND
     Serial.print("  \\");
     Serial.print(elapsed);
     Serial.print(" - ");
     Serial.println(writeUpTime, DEC);
+#endif
     ir_up();
     writeUpTime = 0;
     
@@ -160,13 +180,13 @@ void signal_send() {
 }
 
 void ir_up() {
-  analogWrite(pin_infrared, 255);
+  digitalWrite(pin_infrared, HIGH);
   digitalWrite(pin_visible, HIGH);
   writeLastChangeTime = micros();
 }
 
 void ir_down() {
-  analogWrite(pin_infrared, 0);
+  digitalWrite(pin_infrared, LOW);
   digitalWrite(pin_visible, LOW);
   writeLastChangeTime = micros();
 }
@@ -178,18 +198,22 @@ void ir_down() {
 void setup() {
   //set the pins
   pinMode(pin_infrared, OUTPUT);
+  pinMode(9, OUTPUT);
   pinMode(pin_visible, OUTPUT);
   pinMode(pin_ir_reciever, INPUT);
   
-  //set the carrier wave frequency. This only sets up pin 9 so don't change the pin_infrared config!
-  TCCR1A = _BV(WGM01) | _BV(COM0A0); // | _BV(COM0B0); for another pin (10)
-  TCCR1B = _BV(CS00);
+  // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
+  //set the carrier wave frequency. This only sets up pin 9.
+  TCCR1A = _BV(COM1A0); // | _BV(COM1B0); for another pin (10)
+  TCCR1B = _BV(WGM12) | _BV(CS10);
   
-  TIMSK1 = 0;
-  TIFR1 = _BV(OCF1A);
-  
-  OCR1A = 13 - 1;
-  //OCR1B = 13 - 1; for another pin (10)
+  TIMSK1 = 0; //no interupts
+  TIFR1 = _BV(OCF1A) | _BV(OCF1A); //clear Output Compare Match Flags (by setting them :-P )
+  unsigned long desired_freq = 40000;
+  OCR1A = 10000000/desired_freq - 1; // see page 126 of datasheet for this equation
+  //OCR1B = 10000000/desired_freq - 1; for another pin (10)
+
+  ir_down();
 
   //debug  
   Serial.begin(9600); 
@@ -203,7 +227,7 @@ void loop() {
   //command_decode(volume_up);
   //signal_send();
   
-  if (micros() > time + 10000000) {
+  if (micros() > time + 1000000) {
     time = micros();
     //Serial.print("starting ");
     //Serial.println(volume_up, BIN);
@@ -211,36 +235,6 @@ void loop() {
   }
   signal_send();
   
-//  signal_recieve();
+  signal_recieve();
   debug_signal();
 }
-/*
-unsigned long cycletime = 4800;
-unsigned long time2 = micros() + cycletime / 2;
-
-void loop() {
-  if (micros() > time + cycletime) {
-    time = micros();
-    ir_up();
-    Serial.println("up");
-  }
-  if (micros() > time2 + cycletime) {
-    time2 = micros();
-    ir_down();
-    Serial.println("down");
-  }
-}
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
