@@ -1,5 +1,9 @@
-#include <util/parity.h>
+//milestag protocol 1 documented at http://www.lasertagparts.com/mtformat.htm
+//milestag protocol 2 documented at http://www.lasertagparts.com/mtformat-2.htm
+// we currently only implement MT1 as MT2 seems incomplete.
 
+#include <util/parity.h>
+#include "miles_tag_structs.h"
 
 byte TeamID;
 byte PlayerID;
@@ -16,6 +20,32 @@ byte Ammo; //[0,ClipSize]
 unsigned int AmmoRemaining;
 
 boolean FriendlyFire;
+
+
+
+void defaultReceiveShot(struct shot *receivedShot) {
+  //TODO do this in a preReceiveShot
+  if (FriendlyFire && (TeamID == receivedShot->teamId)) {
+    return;
+  }
+  
+  if (receivedShot->damage == MT1_DAMAGE_RESURRECT_OPPONENT) {
+    Life = 100;
+  }
+  else {
+    if (Armor) {
+      byte ArmorDeflect = min(Armor, receivedShot->damage);
+      Armor -= ArmorDeflect;
+      Life -= ArmorDeflect / 4;
+      receivedShot->damage -= ArmorDeflect;
+    }
+    Life = max(0, receivedShot->damage);
+  }
+}
+
+logicFunctions gameLogic = {&defaultReceiveShot};
+
+
 
 void
 mt_setup()
@@ -43,9 +73,10 @@ mt_parseIRMessage(unsigned long recvBuffer)
         return;
     }
     
+    //trim the 17th bit (parity) off to make things neater
     recvBuffer >> 1;
-    
-    byte recv_TeamID = (recvBuffer >> TEAM_SHIFT) & TEAM_MASK;
+        
+    byte recv_TeamID = recvBuffer & MT1_TEAM_MASK;
     byte DataByte2 = recvBuffer & 0xff;
     
     if (recv_TeamID == SYSTEM_MESSAGE) {
@@ -103,35 +134,39 @@ mt_parseIRMessage(unsigned long recvBuffer)
                 break;
         }
     } else {
-        byte recv_PlayerID = (recvBuffer >> PLAYER_SHIFT) & PLAYER_MASK;
-        if (FriendlyFire && (TeamID == recv_TeamID)) {
-            return;
-        }
+        byte recv_PlayerID = recvBuffer & MT1_PLAYER_MASK;
+
+        signed char damage;
         
         byte recv_PlayerWeaponHit = DataByte2;
         switch (recv_PlayerWeaponHit) {
             case 0:
-                Life = 100;
+            {
+                damage = MT1_DAMAGE_RESURRECT_OPPONENT;
                 break;
+            }
             case 1 ... 100:
             {
-                if (Armor) {
-                    byte ArmorDeflect = min(Armor,recv_PlayerWeaponHit);
-                    Armor -= ArmorDeflect;
-                    Life -= ArmorDeflect / 4;
-                    recv_PlayerWeaponHit -= ArmorDeflect;
-                }
-                Life = max(0,recv_PlayerWeaponHit);
+                damage = recv_PlayerWeaponHit;
                 break;
             }
             //No 'Base' Mode
             /*case 101 ... 200:
             {
                 recv_PlayerWeaponHit -= 100;
-            }*/
+                baseDamage = recv_PlayerWeaponHit;
+            }
+            case 255:
+                baseDamage = MT1_DAMAGE_RESURRECT_ENEMY_BASE;
+            */
+
             default:
                 Serial.println("Unknown Message");
                 break;
         }
+        
+        shot currShot = {recv_PlayerID, recv_TeamID, damage/*, baseDamage*/};
+        
+        gameLogic.recieveShot(&currShot);
     }
 }

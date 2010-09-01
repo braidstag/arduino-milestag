@@ -1,10 +1,4 @@
 
-#define TEAM_MASK B111
-#define TEAM_SHIFT 13
-
-#define PLAYER_MASK B11111
-#define PLAYER_SHIFT 8
-
 #define SYSTEM_MESSAGE B000
 
 #define SYSTEM_MESSAGE_MASK B11111
@@ -34,3 +28,16 @@
 
 #define UNLIMITED_CLIPS 255
 #define UNLIMITED_AMMO 255
+
+
+
+
+
+
+
+#define MT1_TEAM_MASK   0xe000; // i.e. 3 most significant bits
+#define MT1_PLAYER_MASK 0x1f00; // i.e. 5 least significant bits of the most significant byte
+
+#define MT1_DAMAGE_RESURRECT_OPPONENT -1
+
+
