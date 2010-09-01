@@ -21,14 +21,12 @@ unsigned int AmmoRemaining;
 
 boolean FriendlyFire;
 
-
+//ignore the shot if friendlyfire is off and this is a shot from our team.
+boolean defaultPreReceiveShot(byte teamId, byte playerId) {
+  return !(FriendlyFire && (TeamID == teamId));
+}
 
 void defaultReceiveShot(struct shot *receivedShot) {
-  //TODO do this in a preReceiveShot
-  if (FriendlyFire && (TeamID == receivedShot->teamId)) {
-    return;
-  }
-  
   if (receivedShot->damage == MT1_DAMAGE_RESURRECT_OPPONENT) {
     Life = 100;
   }
@@ -43,7 +41,7 @@ void defaultReceiveShot(struct shot *receivedShot) {
   }
 }
 
-logicFunctions gameLogic = {&defaultReceiveShot};
+logicFunctions gameLogic = {&defaultPreReceiveShot, &defaultReceiveShot};
 
 
 
@@ -135,6 +133,10 @@ mt_parseIRMessage(unsigned long recvBuffer)
         }
     } else {
         byte recv_PlayerID = recvBuffer & MT1_PLAYER_MASK;
+
+        if (!gameLogic.preRecieveShot(recv_TeamID, recv_PlayerID)) {
+          return;
+        }
 
         signed char damage;
         
