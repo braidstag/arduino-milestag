@@ -5,6 +5,7 @@ I possess no skills (or tbh, interest) in hardware andas such, an arduino with a
 
 === Short term goals
 * --Be able to "shoot" ourselves and understand the data in the "shot"--
+** Make sure we are sending the data MSB and adding a parity bit as appropriate.
 * Create a "library" for the low level IR comms and another on top for milestag comms.
 * Create a basic set of data structures and game mechanics
 
