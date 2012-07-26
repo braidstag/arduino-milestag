@@ -19,11 +19,12 @@ byte Gun_Clips; //[2,200], else UNL
 byte Ammo; //[0,ClipSize]
 unsigned int AmmoRemaining;
 
+//does friendly fire hurt.
 boolean FriendlyFire;
 
 //ignore the shot if friendlyfire is off and this is a shot from our team.
 boolean defaultPreReceiveShot(byte teamId, byte playerId) {
-  return !(FriendlyFire && (TeamID == teamId));
+  return FriendlyFire || (TeamID != teamId);
 }
 
 void defaultReceiveShot(struct shot *receivedShot) {
@@ -66,7 +67,9 @@ mt_setup()
 void
 mt_parseIRMessage(unsigned long recvBuffer)
 {
-    if (!parity_even_bit(recvBuffer)) {
+    //Do we have even parity?
+    //NB. this check is backwards to what you might expect as we are generating a parity bit, not checking it. 1 is returned for incorrect parity.
+    if (parity_even_bit(recvBuffer)) {
         Serial.println("Corrupt\n");
         return;
     }
@@ -135,6 +138,7 @@ mt_parseIRMessage(unsigned long recvBuffer)
         byte recv_PlayerID = recvBuffer & MT1_PLAYER_MASK;
 
         if (!gameLogic.preRecieveShot(recv_TeamID, recv_PlayerID)) {
+          Serial.println("ignoring shot");
           return;
         }
 
