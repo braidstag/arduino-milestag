@@ -41,7 +41,7 @@ unsigned long time = micros();
 void loop() {
   if (micros() > time + 1000000) {
     time = micros();
-    start_command(volume_up);
+    start_command(simple_shot);
   }
   
   signal_send();

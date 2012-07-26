@@ -33,7 +33,7 @@ byte timingTolerance = 100;
 ////////////////////////
 // IR Writing variables
 //byte volume_up = 0x24;//B0100100
-byte volume_up = B0001100;
+unsigned long  simple_shot = 0x3101;
 
 unsigned long writeBuffer = 0;
 byte writeBits = 0;
@@ -95,7 +95,7 @@ int signal_recieve() {
     else {
 #ifdef DEBUG_RECV
       Serial.print("/ @");
-      Serial.print(microsVal);
+      Serial.print(readFallTime);
       Serial.print("  ");
       Serial.println(duration);
 #endif
@@ -136,7 +136,7 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
 ////////////////////////
 // IR writing functions
 
-void start_command(byte command) {
+void start_command(unsigned long command) {
   if (writeUpTime || writeDownTime) {
     //already writing - this is an error
     //Serial.println("tried to start a command when we are already sending");
@@ -148,7 +148,7 @@ void start_command(byte command) {
 #endif
 
   writeBuffer = command;
-  writeBits = 8;
+  writeBits = 16;
   
   //write header
   ir_up();
