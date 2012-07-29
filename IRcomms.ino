@@ -147,7 +147,7 @@ void start_command(unsigned long command) {
   Serial.println(command, BIN);
 #endif
 
-  writeBuffer = command;
+  writeBuffer = reverse(command, 16);
   writeBits = 16;
   
   //write header
@@ -210,4 +210,18 @@ void ir_down() {
   digitalWrite(pin_infrared, LOW);
   digitalWrite(pin_ir_feedback, LOW);
   writeLastChangeTime = micros();
+}
+
+/*
+ * Reverse the num least significant bits.
+ */
+unsigned long reverse(unsigned long in, int num) {
+  unsigned long out = 0;
+  for (int i = 0; i < num; i++) {
+    out = out << 1;
+    out = out | (in & 1); //take the lsb from in to out
+    in = in >> 1;
+  }
+  
+  return out;
 }
