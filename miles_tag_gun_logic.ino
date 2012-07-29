@@ -2,7 +2,6 @@
 //milestag protocol 2 documented at http://www.lasertagparts.com/mtformat-2.htm
 // we currently only implement MT1 as MT2 seems incomplete.
 
-#include <util/parity.h>
 #include "miles_tag_structs.h"
 
 byte TeamID;
@@ -67,9 +66,7 @@ mt_setup()
 void
 mt_parseIRMessage(unsigned long recvBuffer)
 {
-    //Do we have even parity?
-    //NB. this check is backwards to what you might expect as we are generating a parity bit, not checking it. 1 is returned for incorrect parity.
-    if (parity_even_bit(recvBuffer)) {
+    if (!isEvenParity(recvBuffer)) {
         Serial.println("Corrupt\n");
         return;
     }
@@ -175,4 +172,15 @@ mt_parseIRMessage(unsigned long recvBuffer)
         
         gameLogic.recieveShot(&currShot);
     }
+}
+
+boolean
+isEvenParity(unsigned long buf)
+{
+  boolean evenParityBit = false;
+  for (int i = 0; i < sizeof(unsigned long); i++) {
+    evenParityBit = evenParityBit ^ (buf & 1);
+    buf = buf >> 1;
+  }
+  return !evenParityBit;
 }
