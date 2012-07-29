@@ -178,7 +178,7 @@ boolean
 isEvenParity(unsigned long buf)
 {
   boolean evenParityBit = false;
-  for (int i = 0; i < sizeof(unsigned long); i++) {
+  for (int i = 0; i < sizeof(unsigned long) * 8; i++) {
     evenParityBit = evenParityBit ^ (buf & 1);
     buf = buf >> 1;
   }
