@@ -4,6 +4,7 @@ void decode_signal() {
 #ifdef DEBUG_DECODE
   Serial.print("==");
   Serial.println(readBuffer, BIN);
+  Serial.println(readBuffer, HEX);
 #endif
 }
 
@@ -29,8 +30,7 @@ void setup() {
   ir_down();
 
   //debug  
-  Serial.begin(9600); 
-  Serial.println("jobbie - debug");
+  Serial.begin(9600);
   
   mt_setup();
 }

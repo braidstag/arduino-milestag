@@ -35,8 +35,9 @@
 
 
 
-#define MT1_TEAM_MASK   0xe000; // i.e. 3 most significant bits
-#define MT1_PLAYER_MASK 0x1f00; // i.e. 5 least significant bits of the most significant byte
+#define MT1_TEAM_MASK   0xe000 // i.e. 3 most significant bits
+#define MT1_TEAM_OFFSET 13 // i.e. 3 most significant bits
+#define MT1_PLAYER_MASK 0x1f00 // i.e. 5 least significant bits of the most significant byte
 
 #define MT1_DAMAGE_RESURRECT_OPPONENT -1
 

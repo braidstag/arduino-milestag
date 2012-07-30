@@ -4,21 +4,25 @@
 
 #include "miles_tag_structs.h"
 
+//Player characteristics
 byte TeamID;
 byte PlayerID;
+unsigned int STARTING_LIFE = 100;
+unsigned int STARTING_ARMOR = 100;
 
+//player stats
 unsigned int Life; //[0,999]
 byte Armor; //[0,200]
 
 //Gun Characteristics
-byte Gun_ClipSize; //[1,250], else UNL
-byte Gun_Clips; //[2,200], else UNL
+byte Gun_ClipSize; //[1,250], else UNLIMITED_AMMO
+byte Gun_Clips; //[2,200], else UNLIMITED_CLIPS
 
-//Actual Status
+//Gun Status
 byte Ammo; //[0,ClipSize]
 unsigned int AmmoRemaining;
 
-//does friendly fire hurt.
+//Does friendly fire hurt.
 boolean FriendlyFire;
 
 //ignore the shot if friendlyfire is off and this is a shot from our team.
@@ -28,7 +32,8 @@ boolean defaultPreReceiveShot(byte teamId, byte playerId) {
 
 void defaultReceiveShot(struct shot *receivedShot) {
   if (receivedShot->damage == MT1_DAMAGE_RESURRECT_OPPONENT) {
-    Life = 100;
+    Life = max(Life, STARTING_LIFE);
+    Armor = max(Armor, STARTING_ARMOR);
   }
   else {
     if (Armor) {
@@ -37,7 +42,11 @@ void defaultReceiveShot(struct shot *receivedShot) {
       Life -= ArmorDeflect / 4;
       receivedShot->damage -= ArmorDeflect;
     }
-    Life = max(0, receivedShot->damage);
+    Life = max(0, Life - receivedShot->damage);
+    
+    if (Life == 0) {
+      Serial.println("DEAD!");
+    }
   }
 }
 
@@ -50,12 +59,11 @@ mt_setup()
 {
     TeamID = 0;
     PlayerID = 0;
-    Life = 100;
-    Armor = 100;
+    Life = STARTING_LIFE;
+    Armor = STARTING_ARMOR;
     
     Gun_ClipSize = 10;
     Gun_Clips = 255;
-    
     
     Ammo = Gun_ClipSize;
     AmmoRemaining = Gun_Clips * Gun_ClipSize;
@@ -72,9 +80,9 @@ mt_parseIRMessage(unsigned long recvBuffer)
     }
     
     //trim the 17th bit (parity) off to make things neater
-    recvBuffer >> 1;
-        
-    byte recv_TeamID = recvBuffer & MT1_TEAM_MASK;
+    recvBuffer = recvBuffer >> 1;
+
+    byte recv_TeamID = (recvBuffer & MT1_TEAM_MASK) >> MT1_TEAM_OFFSET;
     byte DataByte2 = recvBuffer & 0xff;
     
     if (recv_TeamID == SYSTEM_MESSAGE) {
@@ -129,6 +137,7 @@ mt_parseIRMessage(unsigned long recvBuffer)
             case SYSTEM_MESSAGE_SCORE_REQUEST:
             default:
                 Serial.println("Unknown SM");
+                Serial.println(recvBuffer, HEX);
                 break;
         }
     } else {
@@ -174,13 +183,3 @@ mt_parseIRMessage(unsigned long recvBuffer)
     }
 }
 
-boolean
-isEvenParity(unsigned long buf)
-{
-  boolean evenParityBit = false;
-  for (int i = 0; i < sizeof(unsigned long) * 8; i++) {
-    evenParityBit = evenParityBit ^ (buf & 1);
-    buf = buf >> 1;
-  }
-  return !evenParityBit;
-}

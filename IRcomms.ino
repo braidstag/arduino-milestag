@@ -14,7 +14,6 @@
 //#define DEBUG_SEND 1
 //#define DEBUG_RECV 1
 
-
 // pin numbers (9 is used for a Carrier wave and so isn't available)
 byte pin_infrared = 8;
 byte pin_ir_feedback = 13;
@@ -33,7 +32,8 @@ byte timingTolerance = 100;
 ////////////////////////
 // IR Writing variables
 //byte volume_up = 0x24;//B0100100
-unsigned long  simple_shot = 0x3101;
+//0011,0001,0000,0101
+unsigned long  simple_shot = 0x3105;
 
 unsigned long writeBuffer = 0;
 byte writeBits = 0;
@@ -142,14 +142,11 @@ void start_command(unsigned long command) {
     //Serial.println("tried to start a command when we are already sending");
     return;
   }
-#ifdef DEBUG_SEND
-  Serial.print("sending ");
-  Serial.println(command, BIN);
-#endif
 
-  writeBuffer = reverse(command, 16);
-  writeBits = 16;
-  
+  command = reverse(command, 16);
+  writeBuffer = addParityBit(command);
+  writeBits = 17;
+
   //write header
   ir_up();
 #ifdef DEBUG_SEND
