@@ -41,9 +41,9 @@ unsigned long time = micros();
 void loop() {
   if (micros() > time + 1000000) {
     time = micros();
-    start_command(simple_shot);
+    mt_fireShot();
   }
-  
+
   signal_send();
   if (signal_recieve()) {
     decode_signal();

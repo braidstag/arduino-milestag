@@ -31,10 +31,6 @@ byte timingTolerance = 100;
 
 ////////////////////////
 // IR Writing variables
-//byte volume_up = 0x24;//B0100100
-//0011,0001,0000,0101
-unsigned long  simple_shot = 0x3105;
-
 unsigned long writeBuffer = 0;
 byte writeBits = 0;
 unsigned long writeUpTime = 0;

@@ -1,8 +1,8 @@
 
-#define SYSTEM_MESSAGE B000
+#define SYSTEM_MESSAGE                      B000
 
-#define SYSTEM_MESSAGE_MASK B11111
-#define SYSTEM_MESSAGE_SHIFT 9
+#define SYSTEM_MESSAGE_MASK                 0x1f00 // i.e. 5 least significant bits of the most significant byte
+#define SYSTEM_MESSAGE_SHIFT                8
 
 #define SYSTEM_MESSAGE_ADD_HEALTH           B00001
 #define SYSTEM_MESSAGE_ADD_ROUNDS           B00010
@@ -26,19 +26,15 @@
 #define GOD_GUN_FULL_AMMO                   0x06
 #define GOD_GUN_END_PLAYER                  0x07
 
-#define UNLIMITED_CLIPS 255
-#define UNLIMITED_AMMO 255
+#define UNLIMITED_CLIPS                     255
+#define UNLIMITED_AMMO                      255
 
 
+#define MT1_TEAM_MASK                       0xe000 // i.e. 3 most significant bits
+#define MT1_TEAM_OFFSET                     13 // i.e. 3 most significant bits
+#define MT1_PLAYER_MASK                     0x1f00 // i.e. 5 least significant bits of the most significant byte
+#define MT1_PLAYER_OFFSET                   8 // i.e. 5 least significant bits of the most significant byte
 
-
-
-
-
-#define MT1_TEAM_MASK   0xe000 // i.e. 3 most significant bits
-#define MT1_TEAM_OFFSET 13 // i.e. 3 most significant bits
-#define MT1_PLAYER_MASK 0x1f00 // i.e. 5 least significant bits of the most significant byte
-
-#define MT1_DAMAGE_RESURRECT_OPPONENT -1
+#define MT1_DAMAGE_RESURRECT_OPPONENT       -1
 
 

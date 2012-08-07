@@ -17,6 +17,7 @@ byte Armor; //[0,200]
 //Gun Characteristics
 byte Gun_ClipSize; //[1,250], else UNLIMITED_AMMO
 byte Gun_Clips; //[2,200], else UNLIMITED_CLIPS
+byte GunDamage = 0x05;
 
 //Gun Status
 byte Ammo; //[0,ClipSize]
@@ -84,9 +85,9 @@ mt_parseIRMessage(unsigned long recvBuffer)
 
     byte recv_TeamID = (recvBuffer & MT1_TEAM_MASK) >> MT1_TEAM_OFFSET;
     byte DataByte2 = recvBuffer & 0xff;
-    
+
     if (recv_TeamID == SYSTEM_MESSAGE) {
-        byte recv_SystemMessage = (recvBuffer >> SYSTEM_MESSAGE_SHIFT) & SYSTEM_MESSAGE_MASK;
+        byte recv_SystemMessage = (recvBuffer & SYSTEM_MESSAGE_MASK) >> SYSTEM_MESSAGE_SHIFT;
         
         switch (recv_SystemMessage) {
             case SYSTEM_MESSAGE_SET_TEAM_ID:
@@ -141,7 +142,7 @@ mt_parseIRMessage(unsigned long recvBuffer)
                 break;
         }
     } else {
-        byte recv_PlayerID = recvBuffer & MT1_PLAYER_MASK;
+        byte recv_PlayerID = (recvBuffer & MT1_PLAYER_MASK) >> MT1_PLAYER_OFFSET;
 
         if (!gameLogic.preRecieveShot(recv_TeamID, recv_PlayerID)) {
           Serial.println("ignoring shot");
@@ -183,3 +184,9 @@ mt_parseIRMessage(unsigned long recvBuffer)
     }
 }
 
+
+void mt_fireShot() {
+  unsigned long shot = (TeamID << MT1_TEAM_OFFSET) & (PlayerID << MT1_PLAYER_OFFSET) & GunDamage;
+
+  start_command(shot);
+}
