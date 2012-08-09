@@ -31,8 +31,6 @@ void setup() {
 
   //debug  
   Serial.begin(9600);
-  
-  mt_setup();
 }
 
 
