@@ -12,4 +12,7 @@ unsigned long addParityBit(unsigned long in) {
   if (!isEvenParity(in)) {
     return in | 0x00010000;
   }
+  else {
+    return in;
+  }
 }
