@@ -1,24 +1,28 @@
 == Arduino Milestag
 
 An implementation of the milestag protocol and some game mechanics intended to run on the arduino.
-I possess no skills (or tbh, interest) in hardware andas such, an arduino with a few led's wedged into it seems like a good platform :-P
+I possess no skills (or tbh, interest) in hardware and as such, an arduino with a few led's wedged into it seems like a good platform :-P Since starting the project, we  have become more interested in using the arduino as a hardware interface and putting all of the logic onto a raspberry pi.
 
-=== Short term goals
-* --Be able to "shoot" ourselves and understand the data in the "shot"--
-** Make sure we are sending the data MSB and adding a parity bit as appropriate.
-* Create a "library" for the low level IR comms and another on top for milestag comms.
-* Create a basic set of data structures and game mechanics
+== Electronics
+I still have to enhance the electronics so that the IR LED can be driven at a high enough power to be useful. until then I am using the following electronic circuit:
 
-=== Medium term goals
-* Architect such that we can switch game mechanics in and out easily to test things "in the field"
-* Test compatibility with "real" milestag guns
-* integrate with an LCD display
+{{{
+                                Arduino
+5v---------------\
+    |           LED1
+    |            |
+    |            R1
+    |  IRR out---/-------------- 12
+    \--IRR Vcc
+    /--IRR Gnd            /----- 8
+    |                     R2
+    |                     |
+    |                   IRLED
+    |                     \----- 9
+0v--/
+}}}
 
-=== Long term goals
-* Investigate non-IR communication between guns for things like:
- ** Reporting live scores to a base station over some kind of wireless (zigbee?)
- ** support whole-team powerups
- ** integrae with voice comms, perhaps even overlay spoken info from the gun (ammo/hit warnings)
-* Investigate a simple hardware solution to IR sending/receiving if the
-real-time performance constraints are too much for more interesting game
-mechanics. Preferably this would be an optional add-on 
+* LED1 is for monitoring the reciever
+* R1 is massive overkill just needed to protect LED1
+* IRLED is set with the cathode (-ve) to pin 9
+* R2 is an R270 giving about 20mA through the IR LED. It should be able to handle > 1A for real.
