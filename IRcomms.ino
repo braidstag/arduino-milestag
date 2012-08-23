@@ -7,19 +7,16 @@
 // http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1240843250 Copyright (C) Timo Herva aka 'mettapera', 2009
 // http://tthheessiiss.wordpress.com/2009/08/05/dirt-cheap-wireless/ 
 
-// TODO: the protocol says LSB first, i.e. you can't just shift and add (you have to use (oldValue shifted appropriately AND 1)).
-//      use another CTC timer to tell when to set the ir up or down (not to be confused with the carrier frequency!)
-
-//NB. as these are quite time sensitive enableing this often breaks it :-(
+//NB. as these are quite time intensive enabling this often breaks it :-(
 //#define DEBUG_SEND 1
 //#define DEBUG_RECV 1
 
 // pin numbers (9 is used for a Carrier wave and so isn't available)
-byte pin_infrared = 8;
-byte pin_ir_feedback = 13;
-byte pin_ir_reciever = 12;
-//byte pin_ir_reciever_port = PORTB;
-byte pin_ir_reciever_bit = 0;
+#define pin_infrared 8 // ir LED
+#define pin_ir_feedback 13 // normal LED
+#define pin_ir_reciever_port PORTB // These 2 equate to pin 12
+#define pin_ir_reciever_bit 0      // "           "          "
+#define pin_ir_reciever 12         // normal LED
 
 // some timings
 long headerDuration = 2400;
@@ -55,10 +52,9 @@ unsigned long readFallTime = 0;
 
 //read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
 int signal_recieve() {
-  byte pinValue = bitRead(PORTB, pin_ir_reciever_bit);
+  byte pinValue = bitRead(pin_ir_reciever_port, pin_ir_reciever_bit);
   if (!oldPinValue && pinValue) {
     //IR rising edge
-    //TODO: should we check that we have been low for an appropriate amount of time?
     readRiseTime = micros();
     oldPinValue = HIGH;
 #ifdef DEBUG_RECV

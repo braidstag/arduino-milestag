@@ -1,0 +1,12 @@
+Document the electronics side of things
+Doesn't pin_ir_reciever_bit=0 mean pin 8 (i.e. the output pin) instead of pin 12.
+Add serial read code
+Add a fire event handler
+Add a trigger button
+Add a trigger communication over serial
+Add really simple code on the Pi to respond to the trigger being pressed by asking for a shot to be fired.
+Code game logic in python
+
+arduino enhancements:
+* use another CTC timer to tell when to set the ir up or down (not to be confused with the carrier frequency!)
+* In signal_recieve should we check that we have been low for an appropriate amount of time?
