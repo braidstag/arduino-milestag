@@ -14,8 +14,8 @@
 // pin numbers (9 is used for a Carrier wave and so isn't available)
 #define pin_infrared 8 // ir LED
 #define pin_ir_feedback 13 // normal LED
-#define pin_ir_reciever_port PORTB // These 2 equate to pin 12
-#define pin_ir_reciever_bit 0      // "           "          "
+#define pin_ir_reciever_port PINB  // These 2 equate to pin 12
+#define pin_ir_reciever_bit 4      // "           "          "
 #define pin_ir_reciever 12         // normal LED
 
 // some timings
@@ -52,7 +52,8 @@ unsigned long readFallTime = 0;
 
 //read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
 int signal_recieve() {
-  byte pinValue = bitRead(pin_ir_reciever_port, pin_ir_reciever_bit);
+  byte pinValue = ! bitRead(pin_ir_reciever_port, pin_ir_reciever_bit);
+
   if (!oldPinValue && pinValue) {
     //IR rising edge
     readRiseTime = micros();
