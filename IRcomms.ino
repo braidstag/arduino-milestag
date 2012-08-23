@@ -73,16 +73,25 @@ int signal_recieve() {
       //we are within tolerance of 2400 us - a restart
       readBuffer = 0;
       bitsRead = 0;
+#ifdef DEBUG_RECV
+      Serial.println("--");
+#endif
     }
     else if (within_tolerance(duration, oneDuration, timingTolerance)) {
       //we are within tolerance of 1200 us - a one
       readBuffer = (readBuffer << 1) + 1;
       bitsRead++;
+#ifdef DEBUG_RECV
+      Serial.println("-1");
+#endif
     }
     else if (within_tolerance(duration, zeroDuration, timingTolerance)) {
       //we are within tolerance of 600 us - a zero
       readBuffer = readBuffer << 1;
       bitsRead++;
+#ifdef DEBUG_RECV
+      Serial.println("-0");
+#endif
     }
     else {
 #ifdef DEBUG_RECV
@@ -111,6 +120,9 @@ int signal_recieve() {
     }
     else if (micros() - readFallTime > intervalDuration + timingTolerance * 2) {
       readFallTime = 0; //cache this result
+#ifdef DEBUG_RECV
+      Serial.println("xx");
+#endif
       return 1;
     }
     else {
@@ -213,4 +225,16 @@ unsigned long reverse(unsigned long in, int num) {
   }
   
   return out;
+}
+
+unsigned long timeCache = 0;
+
+void timeDebug() {
+  if (timeCache == 0) {
+    timeCache = micros();
+  }
+  else {
+    Serial.println(micros() - timeCache);
+    timeCache = 0;
+  }
 }
