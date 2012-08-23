@@ -1,5 +1,4 @@
 Document the electronics side of things
-Doesn't pin_ir_reciever_bit=0 mean pin 8 (i.e. the output pin) instead of pin 12.
 Add serial read code
 Add a fire event handler
 Add a trigger button
