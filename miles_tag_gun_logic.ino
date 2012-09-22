@@ -109,7 +109,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
                 break;
         }
         
-        serialPrint(23, "Shot(Hit(%u,%u,%u))", recv_PlayerID, recv_TeamID, damage/*, baseDamage*/);
+        serialPrint(23, "Shot(Hit(%u,%u,%u))", recv_TeamID, recv_PlayerID, damage/*, baseDamage*/);
     }
 }
 
