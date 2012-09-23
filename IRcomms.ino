@@ -11,12 +11,17 @@
 //#define DEBUG_SEND 1
 //#define DEBUG_RECV 1
 
-// pin numbers (9 is used for a Carrier wave and so isn't available)
-#define pin_infrared 8 // ir LED
+#define pin_infrared 9 // used for a Carrier wave
 #define pin_ir_feedback 13 // normal LED
+//#define pin_ir_feedback 2
 #define pin_ir_reciever_port PINB  // These 2 equate to pin 12
 #define pin_ir_reciever_bit 4      // "           "          "
-#define pin_ir_reciever 12         // normal LED
+#define pin_ir_reciever 12         //
+
+#define laser_pin 7
+#define power_relay_pin 11
+#define trigger_pin 4
+
 
 // some timings
 long headerDuration = 2400;
@@ -152,6 +157,9 @@ void start_command(unsigned long command) {
   writeBuffer = addParityBit(command);
   writeBits = 17;
 
+
+  digitalWrite(laser_pin, HIGH);
+
   //write header
   ir_up();
 #ifdef DEBUG_SEND
@@ -176,6 +184,9 @@ void signal_send() {
     if (writeBits) {
       //not done yet
       writeUpTime = intervalDuration;
+    }
+    else {
+      digitalWrite(laser_pin, LOW);
     }
   }
   else if (writeUpTime && writeUpTime <= elapsed) {
@@ -203,12 +214,13 @@ void signal_send() {
 }
 
 void ir_up() {
-  digitalWrite(pin_infrared, HIGH);
+  TCCR1A = _BV(COM1A0);
   digitalWrite(pin_ir_feedback, HIGH);
   writeLastChangeTime = micros();
 }
 
 void ir_down() {
+  TCCR1A = 0;
   digitalWrite(pin_infrared, LOW);
   digitalWrite(pin_ir_feedback, LOW);
   writeLastChangeTime = micros();
