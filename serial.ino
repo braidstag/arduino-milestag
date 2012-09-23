@@ -3,11 +3,11 @@ char serialBuffer[64];
 void checkSerial() {
   if (Serial.available() > 0) {
     byte bytesRead = Serial.readBytesUntil('\n', serialBuffer, 64);
-    
-    if (bytesRead < 2) {
+
+    if (bytesRead == 0) {
       //too little to be interesting
     }
-    else if (bytesRead == 2) {
+    else if (bytesRead == 1) {
       //single character, probably a debugging command
       switch (serialBuffer[0]) {
         case 'f':
