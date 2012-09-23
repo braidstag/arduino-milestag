@@ -17,6 +17,7 @@ void setup() {
   pinMode(power_relay_pin, OUTPUT);
   pinMode(laser_pin, OUTPUT);
   pinMode(trigger_pin, INPUT);
+  pinMode(power_monitor_pin, INPUT);
   
   // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
   //set the carrier wave frequency. This only sets up pin 9.
@@ -42,7 +43,7 @@ unsigned long time = micros();
 
 void loop() {
   if (digitalRead(trigger_pin)) {
-    mt_fireShot();
+    Serial.println("Trigger()");
   }
 
   signal_send();
@@ -50,4 +51,31 @@ void loop() {
     decode_signal();
     mt_parseIRMessage(readBuffer);
   }
+  checkSerial();
+}
+
+void checkSerial() {
+  if (Serial.available() > 0) {
+    byte letter = Serial.read(); //TODO send more complicated commands
+    switch (letter) {
+      case 'f':
+        mt_fireShot();
+        break;
+      case 'b':
+        checkBattery();
+        break;
+      case 's':
+        shutdown();
+        break;
+    }
+  }
+}
+
+void checkBattery() {
+  Serial.println(analogRead(power_monitor_pin) * 5 / 1023.0);
+}
+
+void shutdown() {
+  delay(50000);
+  digitalWrite(power_relay_pin, LOW);
 }
