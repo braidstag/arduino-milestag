@@ -248,7 +248,10 @@ void timeDebug() {
     timeCache = micros();
   }
   else {
-    Serial.println(micros() - timeCache);
+    int diff = micros() - timeCache;
+    if (diff > 200) {
+      Serial.println(diff);
+    }
     timeCache = 0;
   }
 }
