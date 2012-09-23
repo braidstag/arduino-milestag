@@ -115,10 +115,10 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
 
 
 void mt_fireShot() {
-//  unsigned long shot = (TeamID << MT1_TEAM_OFFSET) | (PlayerID << MT1_PLAYER_OFFSET) | GunDamage;
-  unsigned long shot = (0x01l << MT1_TEAM_OFFSET) | (0x01l << MT1_PLAYER_OFFSET) | 0x03l;
+  mt_fireShot(1,1,3);
+}
 
-  //serialPrint(20, "shot: %ul", shot);
-
+void mt_fireShot(byte teamId, byte playerId, byte dmg) {
+  unsigned long shot = (teamId << MT1_TEAM_OFFSET) | (playerId << MT1_PLAYER_OFFSET) | dmg;
   start_command(shot);
 }

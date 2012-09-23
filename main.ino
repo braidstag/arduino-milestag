@@ -38,12 +38,18 @@ void setup() {
   digitalWrite(power_relay_pin, HIGH);
 }
 
-
+boolean clientConnected = false;
 unsigned long time = micros();
 
 void loop() {
   if (digitalRead(trigger_pin)) {
-    Serial.println("Trigger()");
+    //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
+    if (clientConnected) {
+      Serial.println("Trigger()");
+    }
+    else {
+      mt_fireShot();
+    }
   }
 
   signal_send();
@@ -52,23 +58,6 @@ void loop() {
     mt_parseIRMessage(readBuffer);
   }
   checkSerial();
-}
-
-void checkSerial() {
-  if (Serial.available() > 0) {
-    byte letter = Serial.read(); //TODO send more complicated commands
-    switch (letter) {
-      case 'f':
-        mt_fireShot();
-        break;
-      case 'b':
-        checkBattery();
-        break;
-      case 's':
-        shutdown();
-        break;
-    }
-  }
 }
 
 void checkBattery() {
