@@ -29,6 +29,7 @@ long headerDuration = 2400;
 long intervalDuration = 600;
 long oneDuration = 1200;
 long zeroDuration = 600;
+long postDataDuration = 20000; //must be at least intervalDuration + timingTolerance * 2
 
 byte timingTolerance = 100;
 
@@ -39,6 +40,7 @@ byte writeBits = 0;
 unsigned long writeUpTime = 0;
 unsigned long writeDownTime = 0;
 unsigned long writeLastChangeTime = 0;
+unsigned long postDataTime = 0;
 
 ////////////////////////
 // IR reading variables
@@ -148,16 +150,14 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
 // IR writing functions
 
 void start_command(unsigned long command) {
-  if (writeUpTime || writeDownTime) {
-    //already writing - this is an error
-    //Serial.println("tried to start a command when we are already sending");
+  if (writeUpTime || writeDownTime || postDataTime) {
+    //already writing ignore this
     return;
   }
 
   command = reverse(command, 16);
   writeBuffer = addParityBit(command);
   writeBits = 17;
-
 
   digitalWrite(laser_pin, HIGH);
 
@@ -171,8 +171,12 @@ void start_command(unsigned long command) {
 
 void signal_send() {
   unsigned long elapsed = micros() - writeLastChangeTime;
-  
-  if (writeDownTime && writeDownTime <= elapsed) {
+
+  if (postDataTime && postDataTime <= elapsed) {
+    digitalWrite(laser_pin, LOW);
+    postDataTime = 0;
+  }
+  else if (writeDownTime && writeDownTime <= elapsed) {
 #ifdef DEBUG_SEND
     Serial.print("  /");
     Serial.print(elapsed);
@@ -187,7 +191,7 @@ void signal_send() {
       writeUpTime = intervalDuration;
     }
     else {
-      digitalWrite(laser_pin, LOW);
+      postDataTime = postDataDuration;
     }
   }
   else if (writeUpTime && writeUpTime <= elapsed) {
