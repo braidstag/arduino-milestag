@@ -42,7 +42,7 @@ boolean clientConnected = false;
 unsigned long time = micros();
 
 void loop() {
-//  timeDebug();
+  timeDebug();
   if (digitalRead(trigger_pin)) {
     //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
     if (clientConnected) {
@@ -60,7 +60,7 @@ void loop() {
   }
 
   checkSerial();
-//  timeDebug();
+  timeDebug();
 }
 
 void checkBattery() {

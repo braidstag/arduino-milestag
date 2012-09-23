@@ -29,7 +29,7 @@ long headerDuration = 2400;
 long intervalDuration = 600;
 long oneDuration = 1200;
 long zeroDuration = 600;
-long postDataDuration = 20000; //must be at least intervalDuration + timingTolerance * 2
+long postDataDuration = 200000; //must be at least intervalDuration + timingTolerance * 2
 
 byte timingTolerance = 100;
 
@@ -253,7 +253,7 @@ void timeDebug() {
   }
   else {
     int diff = micros() - timeCache;
-    if (diff > 200) {
+    if (diff > 800) {
       Serial.println(diff);
     }
     timeCache = 0;
