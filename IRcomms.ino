@@ -22,9 +22,9 @@
 #define power_relay_pin 11
 #define power_monitor_pin A0
 #define trigger_pin 3
-#define muzzlered 4
-#define muzzlegreen 5
-#define muzzleblue 6
+#define muzzlered_pin 4
+#define muzzlegreen_pin 5
+#define muzzleblue_pin 6
 
 //temporary team ID to test muzzle flash code
 int myteam = 1;
@@ -267,7 +267,7 @@ void timeDebug() {
   }
 }
 
-void muzzleflash_up(flashteam) {
+void muzzleflash_up(int flashteam) {
   if (flashteam == 1) {
     digitalWrite(muzzlered_pin, HIGH);
   }
