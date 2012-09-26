@@ -21,8 +21,10 @@
 #define laser_pin 7
 #define power_relay_pin 11
 #define power_monitor_pin A0
-#define trigger_pin 4
-
+#define trigger_pin 3
+#define muzzlered 4
+#define muzzlegreen 5
+#define muzzleblue 6
 
 // some timings
 long headerDuration = 2400;
@@ -160,6 +162,7 @@ void start_command(unsigned long command) {
   writeBits = 17;
 
   digitalWrite(laser_pin, HIGH);
+  muzzleflash_up(myteam);
 
   //write header
   ir_up();
@@ -174,6 +177,7 @@ void signal_send() {
 
   if (postDataTime && postDataTime <= elapsed) {
     digitalWrite(laser_pin, LOW);
+    muzzleflash_down();
     postDataTime = 0;
   }
   else if (writeDownTime && writeDownTime <= elapsed) {
@@ -259,3 +263,22 @@ void timeDebug() {
     timeCache = 0;
   }
 }
+
+void muzzleflash_up(flashteam) {
+  if (flashteam == 1) {
+    digitalWrite(muzzlered_pin, HIGH);
+  }
+  if (flashteam == 2) {
+    digitalWrite(muzzlegreen_pin, HIGH);
+  }
+  if (flashteam == 3) {
+    digitalWrite(muzzleblue_pin, HIGH);
+  }
+}
+
+void muzzleflash_down ( void) {
+  digitalWrite(muzzlered_pin, LOW);
+  digitalWrite(muzzlegreen_pin, LOW);
+  digitalWrite(muzzleblue_pin, LOW);
+}
+    
