@@ -26,6 +26,9 @@
 #define muzzlegreen 5
 #define muzzleblue 6
 
+//temporary team ID to test muzzle flash code
+int myteam = 1;
+
 // some timings
 long headerDuration = 2400;
 long intervalDuration = 600;
@@ -274,6 +277,7 @@ void muzzleflash_up(flashteam) {
   if (flashteam == 3) {
     digitalWrite(muzzleblue_pin, HIGH);
   }
+//add combinations to produce CMY mixes
 }
 
 void muzzleflash_down ( void) {
