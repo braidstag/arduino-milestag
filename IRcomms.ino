@@ -180,7 +180,6 @@ void signal_send() {
 
   if (postDataTime && postDataTime <= elapsed) {
     digitalWrite(laser_pin, LOW);
-    muzzleflash_down();
     postDataTime = 0;
   }
   else if (writeDownTime && writeDownTime <= elapsed) {
@@ -198,6 +197,7 @@ void signal_send() {
       writeUpTime = intervalDuration;
     }
     else {
+      muzzleflash_down();
       postDataTime = postDataDuration;
     }
   }
@@ -277,7 +277,27 @@ void muzzleflash_up(int flashteam) {
   if (flashteam == 3) {
     digitalWrite(muzzleblue_pin, HIGH);
   }
-//add combinations to produce CMY mixes
+  if (flashteam == 4) {
+    digitalWrite(muzzlered_pin, HIGH);
+    digitalWrite(muzzlegreen_pin, HIGH);
+  }
+  if (flashteam == 5) {
+    digitalWrite(muzzlered_pin, HIGH);
+    digitalWrite(muzzleblue_pin, HIGH);
+  }
+  if (flashteam == 6) {
+    digitalWrite(muzzlegreen_pin, HIGH);
+    digitalWrite(muzzleblue_pin, HIGH);
+  }
+  if (flashteam == 7) {
+    digitalWrite(muzzlered_pin, HIGH);
+    digitalWrite(muzzlegreen_pin, HIGH);
+    digitalWrite(muzzleblue_pin, HIGH);
+  }
+  if (flashteam == 8) {
+    //?? run out of digital combinations so just be red for now.
+    digitalWrite(muzzlered_pin, HIGH);
+  }
 }
 
 void muzzleflash_down ( void) {
@@ -285,4 +305,4 @@ void muzzleflash_down ( void) {
   digitalWrite(muzzlegreen_pin, LOW);
   digitalWrite(muzzleblue_pin, LOW);
 }
-    
+
