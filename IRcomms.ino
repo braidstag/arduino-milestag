@@ -13,10 +13,7 @@
 
 #define pin_infrared 9 // used for a Carrier wave
 #define pin_ir_feedback 13 // normal LED
-//#define pin_ir_feedback 2
-#define pin_ir_reciever_port PINB  // These 2 equate to pin 12
-#define pin_ir_reciever_bit 4      // "           "          "
-#define pin_ir_reciever 12         //
+#define pin_ir_reciever 8
 
 #define laser_pin 7
 #define power_relay_pin 11
@@ -65,7 +62,7 @@ unsigned long readFallTime = 0;
 
 //read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
 int signal_recieve() {
-  byte pinValue = ! bitRead(pin_ir_reciever_port, pin_ir_reciever_bit);
+  boolean pinValue = ! digitalRead(pin_ir_reciever);
 
   if (!oldPinValue && pinValue) {
     //IR rising edge
