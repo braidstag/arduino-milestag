@@ -16,7 +16,7 @@
 #define pin_ir_reciever 8
 
 #define laser_pin 7
-#define power_relay_pin 11
+#define power_relay_pin 10
 #define power_monitor_pin A0
 #define trigger_pin 3
 #define muzzlered_pin 4
