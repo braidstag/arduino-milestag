@@ -36,7 +36,7 @@ void setup() {
   ir_down();
 
   //debug  
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   digitalWrite(power_relay_pin, HIGH);
 }
