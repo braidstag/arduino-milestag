@@ -58,19 +58,31 @@ void loop() {
 }
 
 boolean oldTrigger = false;
+long lastTriggerCheck = 0;
 
 void checkTrigger() {
-  boolean trigger = digitalRead(trigger_pin);
-  if (trigger != oldTrigger) {
-    //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
-    if (clientConnected) {
-      Serial.println("Trigger()");
-    }
-    else {
-      mt_fireShot();
-    }
+  //only check the trigger every millisecond as a crude de-bounce.
+  if (micros() > lastTriggerCheck + 1000) {
+    boolean trigger = digitalRead(trigger_pin);
+    if (trigger && trigger != oldTrigger) {
+      //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
+      if (clientConnected) {
+        Serial.println("Trigger()");
+      }
+      else {
+        mt_fireShot();
+      }
 
-    oldTrigger = trigger;    
+      oldTrigger = trigger;    
+    }
+    if (!trigger && trigger != oldTrigger) {
+      if (clientConnected) {
+        Serial.println("TriggerRelease()");
+      }
+
+      oldTrigger = trigger;    
+    }
+    lastTriggerCheck = micros();
   }
 }
 
