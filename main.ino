@@ -18,6 +18,9 @@ void setup() {
   pinMode(laser_pin, OUTPUT);
   pinMode(trigger_pin, INPUT);
   pinMode(power_monitor_pin, INPUT);
+  pinMode(muzzlered_pin, OUTPUT);
+  pinMode(muzzlegreen_pin, OUTPUT);
+  pinMode(muzzleblue_pin, OUTPUT);
   
   // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
   //set the carrier wave frequency. This only sets up pin 9.
