@@ -32,6 +32,10 @@ void checkSerial() {
         clientConnected = true;
         Serial.println("ClientConnected()");
       }
+      else if (strncmp("ClientDisconnect", serialBuffer, 16) == 0) {
+        clientConnected = false;
+        Serial.println("ClientDisconnected()");
+      }
       else if (strncmp("BatteryCheck", serialBuffer, 12) == 0) {
         checkBattery();
       }
