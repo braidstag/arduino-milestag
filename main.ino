@@ -46,16 +46,7 @@ unsigned long time = micros();
 
 void loop() {
   timeDebug();
-  if (digitalRead(trigger_pin)) {
-    //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
-    if (clientConnected) {
-      Serial.println("Trigger()");
-    }
-    else {
-      mt_fireShot();
-    }
-  }
-
+  checkTrigger();
   signal_send();
   if (signal_recieve()) {
     decode_signal();
@@ -64,6 +55,23 @@ void loop() {
 
   checkSerial();
   timeDebug();
+}
+
+boolean oldTrigger = false;
+
+void checkTrigger() {
+  boolean trigger = digitalRead(trigger_pin);
+  if (trigger != oldTrigger) {
+    //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
+    if (clientConnected) {
+      Serial.println("Trigger()");
+    }
+    else {
+      mt_fireShot();
+    }
+
+    oldTrigger = trigger;    
+  }
 }
 
 void checkBattery() {
