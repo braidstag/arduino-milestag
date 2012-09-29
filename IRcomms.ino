@@ -21,8 +21,13 @@
 #define laser_pin 7
 #define power_relay_pin 11
 #define power_monitor_pin A0
-#define trigger_pin 4
+#define trigger_pin 3
+#define muzzlered_pin 4
+#define muzzlegreen_pin 5
+#define muzzleblue_pin 6
 
+//temporary team ID to test muzzle flash code
+int myteam = 1;
 
 // some timings
 long headerDuration = 2400;
@@ -160,6 +165,7 @@ void start_command(unsigned long command) {
   writeBits = 17;
 
   digitalWrite(laser_pin, HIGH);
+  muzzleflash_up(myteam);
 
   //write header
   ir_up();
@@ -174,6 +180,7 @@ void signal_send() {
 
   if (postDataTime && postDataTime <= elapsed) {
     digitalWrite(laser_pin, LOW);
+    muzzleflash_down();
     postDataTime = 0;
   }
   else if (writeDownTime && writeDownTime <= elapsed) {
@@ -259,3 +266,23 @@ void timeDebug() {
     timeCache = 0;
   }
 }
+
+void muzzleflash_up(int flashteam) {
+  if (flashteam == 1) {
+    digitalWrite(muzzlered_pin, HIGH);
+  }
+  if (flashteam == 2) {
+    digitalWrite(muzzlegreen_pin, HIGH);
+  }
+  if (flashteam == 3) {
+    digitalWrite(muzzleblue_pin, HIGH);
+  }
+//add combinations to produce CMY mixes
+}
+
+void muzzleflash_down ( void) {
+  digitalWrite(muzzlered_pin, LOW);
+  digitalWrite(muzzlegreen_pin, LOW);
+  digitalWrite(muzzleblue_pin, LOW);
+}
+    
