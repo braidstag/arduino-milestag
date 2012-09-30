@@ -36,25 +36,38 @@ class Main():
           self.args.serial.write("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
 
       msg = "Recv(%s,%s,%s)" % (self.player.teamID, self.player.playerID, line)
-      self.sendToServer(msg)
+      self._sendToServer(msg, "Ack()")
       
-  def sendToServer(self, msg):
-      #send this packet to the server
-      #TODO: should we do this asynchronously in a thread?
-      sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      sock.connect((ClientServer.SERVER, ClientServer.PORT))
+  def _sendToServer(self, msg, ack = None):
+    #send this packet to the server
+    #TODO: should we do this asynchronously in a thread?
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ClientServer.SERVER, ClientServer.PORT))
 
-      totalsent=0
-      while totalsent < len(msg):
-        sent = sock.send(msg[totalsent:])
-        if sent == 0:
+    totalsent=0
+    while totalsent < len(msg):
+      sent = sock.send(msg[totalsent:])
+      if sent == 0:
+        #TODO handle this
+        raise RuntimeError("socket connection broken")
+      totalsent = totalsent + sent
+    sock.shutdown(1);
+
+    if ack:
+      recieved = ''
+      while len(recieved) < len(ack):
+        chunk = sock.recv(len(ack)-len(recieved))
+        if chunk == '':
           #TODO handle this
           raise RuntimeError("socket connection broken")
-        totalsent = totalsent + sent
-      sock.shutdown(1);
-      #TODO: wait for the ACK.
-      sock.close();
+        recieved = recieved + chunk
+      if recieved != ack:
+        #TODO handle this
+        raise RuntimeError("incorrect ack")
 
+    #TODO: wait for the ACK.
+    sock.close();
+  
 def stringToPlayerID(inp):
   out = int(inp)
   if out < 1 or out > 32:

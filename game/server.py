@@ -82,8 +82,10 @@ class GameStateModel(QAbstractTableModel):
 
     return None
 
-  def playerUpdated(teamID, playerID):
-    self.dataChanged.emit(self.index(recvPlayer, recvTeam, QModelIndex()), self.index(recvPlayer, recvTeam, QModelIndex()))
+  def playerUpdated(self, teamIDStr, playerIDStr):
+    teamID = int(teamIDStr)
+    playerID = int(playerIDStr)
+    self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
 
 
 class LinearModel(QAbstractListModel):
@@ -104,6 +106,9 @@ class LinearModel(QAbstractListModel):
   def dataChangedDelegate(self, startIndex, endIndex):
     self.dataChanged.emit(self.index(0, startIndex.row() * startIndex.column(), QModelIndex()), self.index(0, endIndex.row() * endIndex.column(), QModelIndex()))
 
+  def playerUpdated(self, teamID, playerID):
+    self.source.playerUpdated(teamID, playerID)
+
 class ClientThread(Thread):
   gameState = GameState()
 
@@ -121,7 +126,15 @@ class ClientThread(Thread):
       if chunk == '':
         break
 
-    self.handleEvent(msg)
+    ackMsg = self.handleEvent(msg)
+
+    totalsent=0
+    while totalsent < len(ackMsg):
+      sent = self.sock.send(ackMsg[totalsent:])
+      if sent == 0:
+        #TODO handle this
+        raise RuntimeError("socket connection broken")
+      totalsent = totalsent + sent
 
   RECV_RE = re.compile(r"Recv\((\d*),(\d*),(.*)\)")
   SENT_RE = re.compile(r"Sent\((\d*),(\d*),(.*)\)")
@@ -156,6 +169,8 @@ class ClientThread(Thread):
           if (self.logic.trigger(player)):
             mainWindow.listModel.playerUpdated(recvTeam, recvPlayer)
 #            self.logic.hit(player, fromTeam, fromPlayer, damage)
+
+    return "Ack()"
 
 def stringToPlayerID(inp):
   out = int(inp)
