@@ -3,6 +3,7 @@
 import argparse
 import re
 import socket
+import serial
 
 from core import Player, StandardGameLogic, ClientServer
 
@@ -10,20 +11,36 @@ class Main():
 
   def __init__(self):
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
-    parser.add_argument('-s', '--serial', type=argparse.FileType('r+'), help='serial device to which the arduino is connected', required=True)
+    parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected', required=True)
     parser.add_argument('-p', '--playerID', type=stringToPlayerID, help='player id', default=1)
     parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
 
     self.args = parser.parse_args()
 
+    try:
+      self.serial = serial.Serial(self.args.serial, 115200)
+      self.properSerial = True
+    except serial.serialutil.SerialException:
+      #Try just opening this as a file
+      self.serial = open(self.args.serial)
+      self.properSerial = False
+
     self.player = Player(self.args.teamID, self.args.playerID)
     self.logic = StandardGameLogic()
+
+    self.connectToArduino()
+
+  def serialWrite(self, line):
+    if (self.properSerial):
+      self.serial.write(line)
+    else:
+      print(line)
 
   HIT_RE = re.compile(r"Shot\(Hit\((\d),(\d),(\d)\)\)")
   TRIGGER_RE = re.compile(r"Trigger\(\)")
 
   def eventLoop(self):
-    for line in self.args.serial:
+    for line in self.serial:
       line = line.rstrip()
 
       m = self.HIT_RE.match(line)
@@ -33,7 +50,7 @@ class Main():
       m = self.TRIGGER_RE.match(line)
       if(m):
         if (self.logic.trigger(self.player)):
-          self.args.serial.write("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
+          self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
 
       msg = "Recv(%s,%s,%s)" % (self.player.teamID, self.player.playerID, line)
       self._sendToServer(msg, "Ack()")
@@ -68,6 +85,13 @@ class Main():
     #TODO: wait for the ACK.
     sock.close();
   
+  def connectToArduino(self):
+    self.serialWrite("ClientConnect()\n")
+    line = self.serial.readline()
+    if (line != "ClientConnected()\n"):
+      raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
+
+
 def stringToPlayerID(inp):
   out = int(inp)
   if out < 1 or out > 32:
@@ -79,4 +103,4 @@ main = Main()
 print main.player
 main.eventLoop()
 print main.player
-main.args.serial.close()
+main.serial.close()
