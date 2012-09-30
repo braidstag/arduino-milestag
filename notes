@@ -1,0 +1,75 @@
+
+Issues and problems
+
+Make the IR comms more selective about what is and isn’t a real packet
+
+Rewire wooden gun for ease of modifying (its a mess)
+
+Connect LEDs to high power sources and mount - IR DONE - Noticable increase in punch. 
+
+Test under frost building conditions to see how much difference this has made (originally, beam was invisible beyond a few metres)
+
+Check performance of battery monitor - Currently once supply voltage dips below 5.5v (under load) the reference voltage starts to drop and the arduino fails to read. Determine exactly when this happens and set it as the 0% point, as wifi failure is minutes away.
+
+Move relay to HV side of regulator to prevent slow drains while off.
+
+Once relay is moved, run 5v power from board side of relay to arduino - this will hopefully reduce the voltage drops associated with the PI’s USB ports.
+
+MOSFET gate is not fully closing. It is plausible that this doesnt matter as long as relay has been moved to prevent long term drain. LEDs will appear to glow, need to determine if this is going to have an adverse effect. - This does not seem to affect the TSAL6100 - there is a drain but it is measured in µA, and is not visible.
+
+Powering the RPi over GPIO may be more efficient than using the USB port - this connection is behind the on board protection circuit, though it has been suspected that this circuit causes a voltage drop. Powering by GPIO may increase our battery life (we must be sure to cut the power before the voltage dips too low to avoid overcurrent) as the voltage drop will not be as significant. It will also be a more secure and lower form factor connection than the microUSB. 
+
+
+
+
+Features
+
+Gunlight (torch)
+Current plan is that this will be a single package RGBLED (using 3 diff LEDs will ruin focus) aligned above the IRLED in the lens tube. This should produce a focused beam in a colour of our choice, aimed below the IR hitbox.
+Possibility of making the switching for this electronic to save using our last arduino pin.
+
+Muzzle Flash
+Current plan - another RGBLED mounted in such a way that it either: Has no way of focusing down the tube to produce a beam OR illuminates some other part of the gun to indicate that it is being fired. 
+This will be in a colour of our choice.
+
+
+
+Single button poweron
+DONE
+
+Self shutdown
+DONE
+Best results achieved when auto-reset is disabled for new serial connections
+On UNO/Duemilanove boards, cut the trace labelled “RESET EN” (There is spare solder to repair this if necessary)
+After trace is cut, programs are uploaded by resetting the board at the moment the programmer attempts to contact the board.
+
+Rechargeable battery pack
+Currently removing AA rechargeables
+Recharging shouldn’t be too complicated. The voltage divider used for battery level monitoring will need to be made more aggressive to ensure the arduino is not overloaded by the higher voltages present during charging.
+Ideally, guns will have one RJ45 connector for simultaneous charging and diagnostics. The power will not be standard POE.
+Do we load each gun with a battery charging circuit or have the charger at the base station end?
+
+
+Momentary sighting laser
+Ensure it cannot be held on for safety reasons
+
+Battery level monitoring / Warning
+DONE! 
+Due to voltage difference in current battery pack, each 1.4v AA cell can drop to approx 50% of its target voltage (not capacity) before any systems are affected. Since the batteries should register about 0.8v when completely flat, this should give us a decent resolution/warning time on the charge level.
+Currently the circuit to achieve this drains a small current to ground over time, even when the gun is off. Moving the relay to the other side of the UBEC should solve this.
+Only on request to avoid wasting time on the arduino?
+Needs voltage divider to drop vdc down to readable level
+
+Wireless control
+DONE! Standard 8 quid dongle works well. 
+Pi requires some fiddling to automatically use it.
+
+Voice comms
+Teamspeak not available for ARM
+Mumble works, but is a bit sketchy and requires X server to be running - any way around this? Pi doesn't seem to enjoy running x...
+Having trouble using XVFB on pi, halp.
+Skype has a headless project, but we have to pay to get access
+
+Live location
+Ultrasonic location
+Live map?
