@@ -7,11 +7,9 @@ import sys
 from threading import Thread, Lock
 
 from core import Player, StandardGameLogic, ClientServer
+from ui import MainWindow
 
-from PySide.QtCore import *
-from PySide.QtGui import *
-from PySide.QtDeclarative import QDeclarativeView
- 
+from PySide.QtGui import QApplication
 
 class ListeningThread(Thread):
 
@@ -36,7 +34,7 @@ class ListeningThread(Thread):
       ct = ClientThread(clientsocket)
       ct.start()
 
-class GameState(QObject):
+class GameState():
   players = {}
   teamCount = 0
   largestTeam = 0
@@ -56,58 +54,8 @@ class GameState(QObject):
       if sentPlayer > self.largestTeam:
         self.largestTeam = sentPlayer
 
-      mainWindow.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
-      #mainWindow.listModel.dataChanged.emit(mainWindow.listModel.index(sentTeam, sentPlayer, QModelIndex()), mainWindow.listModel.index(sentTeam, sentPlayer, QModelIndex()))
+      mainWindow.playerAdded(sentTeam, sentPlayer);
     return self.players[(sentTeam, sentPlayer)]
-
-class GameStateModel(QAbstractTableModel):
-  """
-  A Model which represents the players' gameState. The team is the column and the player is the row.
-  """
-  def rowCount(self, index):
-    return ClientThread.gameState.largestTeam
-
-  def columnCount(self, index):
-    return ClientThread.gameState.teamCount
-
-  def data(self, index, role = Qt.DisplayRole):
-    if not index.isValid():
-      return None
-
-    if role == Qt.DisplayRole:
-      indexTuple = (index.column() + 1, index.row() + 1)
-      if indexTuple not in ClientThread.gameState.players:
-        return None
-      return str(ClientThread.gameState.players[indexTuple])
-
-    return None
-
-  def playerUpdated(self, teamIDStr, playerIDStr):
-    teamID = int(teamIDStr)
-    playerID = int(playerIDStr)
-    self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
-
-
-class LinearModel(QAbstractListModel):
-  def __init__(self, source):
-    super(LinearModel, self).__init__()
-    self.source = source
-    QObject.connect(self.source, SIGNAL('dataChanged()'), self.dataChangedDelegate)
-
-  def rowCount(self, index):
-    return self.source.rowCount(index) * self.source.columnCount(index)
-
-  def columnCount(self, index):
-    return 1
-
-  def data(self, index, role = Qt.DisplayRole):
-    return self.source.data(self.source.index(index.row() % self.source.columnCount(index.parent()), index.row() // self.source.columnCount(index.parent()), index.parent()), role)
-
-  def dataChangedDelegate(self, startIndex, endIndex):
-    self.dataChanged.emit(self.index(0, startIndex.row() * startIndex.column(), QModelIndex()), self.index(0, endIndex.row() * endIndex.column(), QModelIndex()))
-
-  def playerUpdated(self, teamID, playerID):
-    self.source.playerUpdated(teamID, playerID)
 
 class ClientThread(Thread):
   gameState = GameState()
@@ -160,48 +108,29 @@ class ClientThread(Thread):
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           self.logic.hit(player, sentTeam, sentPlayer, damage)
-          mainWindow.listModel.playerUpdated(recvTeam, recvPlayer)
+          mainWindow.playerUpdated(recvTeam, recvPlayer)
 
       m = self.TRIGGER_RE.match(line)
       if(m):
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           if (self.logic.trigger(player)):
-            mainWindow.listModel.playerUpdated(recvTeam, recvPlayer)
+            mainWindow.playerUpdated(recvTeam, recvPlayer)
 #            self.logic.hit(player, fromTeam, fromPlayer, damage)
 
     return "Ack()"
-
-def stringToPlayerID(inp):
-  out = int(inp)
-  if out < 1 or out > 32:
-    raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
-  return out;
-
-class MainWindow(QDialog):
-  def __init__(self, parent=None):
-    super(MainWindow, self).__init__(parent)
-    self.setWindowTitle("BraidsTag Server")
-
-    self.layout = QVBoxLayout()
-    self.listModel = LinearModel(GameStateModel())
-    self.listView = QListView()
-    self.listView.setModel(self.listModel)
-    self.layout.addWidget(self.listView)
-
-    self.setLayout(self.layout)
 
 main = ListeningThread()
 main.start()
 
 # Create Qt application
 app = QApplication(sys.argv)
-mainWindow = MainWindow()
+mainWindow = MainWindow(ClientThread.gameState)
 mainWindow.show()
 
 # Enter Qt main loop
 retval = app.exec_()
+
 for i in ClientThread.gameState.players.values():
   print i
-
 sys.exit(retval)
