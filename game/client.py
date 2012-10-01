@@ -4,6 +4,8 @@ import argparse
 import re
 import socket
 import serial
+from threading import Thread, Lock
+from Queue import Queue
 
 from core import Player, StandardGameLogic, ClientServer
 
@@ -12,10 +14,13 @@ class Main():
   def __init__(self):
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
     parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected', required=True)
-    parser.add_argument('-p', '--playerID', type=stringToPlayerID, help='player id', default=1)
+    parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
     parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
 
     self.args = parser.parse_args()
+
+    self.serverConnection = ServerConnection()
+    self.serverConnection.start()
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)
@@ -54,10 +59,50 @@ class Main():
 
       msg = "Recv(%s,%s,%s)" % (self.player.teamID, self.player.playerID, line)
       self._sendToServer(msg, "Ack()")
-      
+
+  def _stringToPlayerID(self, inp):
+    out = int(inp)
+    if out < 1 or out > 32:
+      raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
+    return out;
+
   def _sendToServer(self, msg, ack = None):
-    #send this packet to the server
-    #TODO: should we do this asynchronously in a thread?
+    "queue this packet to be sent to the server"
+    self.serverConnection.queueMessage(msg, ack)
+  
+  def connectToArduino(self):
+    self.serialWrite("ClientConnect()\n")
+    line = self.serial.readline()
+    if (line != "ClientConnected()\n"):
+      raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
+
+class ServerConnection(Thread):
+  def __init__(self):
+    super(ServerConnection, self).__init__(group=None)
+    self.setDaemon(True)
+    self.name = "Server Communication Thread"
+    self.queue = Queue()
+    self.shouldStop = False
+
+  def run(self):
+    while not (self.queue.empty() and self.shouldStop):
+      (msg, ack) = self.queue.get()
+      try:
+        self.sendToServer(msg, ack)
+      except:
+        print "Unexpected error:", sys.exc_info()[0]
+        raise
+        #TODO retry sending the packet 
+
+  def stop(self):
+    "shut this Thread down nicely. This blocks until this Thread is finished."
+    self.shouldStop = True
+    self.join()
+  
+  def queueMessage(self, msg, ack):
+    self.queue.put((msg, ack))
+
+  def sendToServer(self, msg, ack):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((ClientServer.SERVER, ClientServer.PORT))
 
@@ -84,23 +129,11 @@ class Main():
 
     #TODO: wait for the ACK.
     sock.close();
-  
-  def connectToArduino(self):
-    self.serialWrite("ClientConnect()\n")
-    line = self.serial.readline()
-    if (line != "ClientConnected()\n"):
-      raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
-
-
-def stringToPlayerID(inp):
-  out = int(inp)
-  if out < 1 or out > 32:
-    raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
-  return out;
 
 
 main = Main()
 print main.player
 main.eventLoop()
 print main.player
+main.serverConnection.stop()
 main.serial.close()
