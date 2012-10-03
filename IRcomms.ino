@@ -24,7 +24,7 @@
 #define muzzleblue_pin 6
 
 //temporary team ID to test muzzle flash code
-int myteam = 1;
+int myteam = 7;
 
 // some timings
 long headerDuration = 2400;
