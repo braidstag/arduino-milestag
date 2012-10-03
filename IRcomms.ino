@@ -265,36 +265,42 @@ void timeDebug() {
 }
 
 void muzzleflash_up(int flashteam) {
+//red
   if (flashteam == 1) {
     digitalWrite(muzzlered_pin, HIGH);
   }
+//green
   if (flashteam == 2) {
     digitalWrite(muzzlegreen_pin, HIGH);
   }
+//blue
   if (flashteam == 3) {
     digitalWrite(muzzleblue_pin, HIGH);
   }
+//yellow
   if (flashteam == 4) {
     digitalWrite(muzzlered_pin, HIGH);
     digitalWrite(muzzlegreen_pin, HIGH);
   }
+//purple
   if (flashteam == 5) {
     digitalWrite(muzzlered_pin, HIGH);
     digitalWrite(muzzleblue_pin, HIGH);
   }
+//cyan
   if (flashteam == 6) {
     digitalWrite(muzzlegreen_pin, HIGH);
     digitalWrite(muzzleblue_pin, HIGH);
   }
-  if (flashteam == 7) {
+//white
+  if (flashteam == 7) { 
     digitalWrite(muzzlered_pin, HIGH);
     digitalWrite(muzzlegreen_pin, HIGH);
     digitalWrite(muzzleblue_pin, HIGH);
   }
-  if (flashteam == 8) {
-    //?? run out of digital combinations so just be red for now.
-    digitalWrite(muzzlered_pin, HIGH);
-  }
+
+    //?? run out of digital combinations
+
 }
 
 void muzzleflash_down ( void) {
