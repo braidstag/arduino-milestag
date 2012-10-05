@@ -83,4 +83,4 @@ class MainWindow(QDialog):
     self.listModel.playerUpdated(teamID, playerID)
 
   def  playerAdded(self, sentTeam, sentPlayer):
-      self.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
+    self.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
