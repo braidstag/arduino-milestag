@@ -1,6 +1,12 @@
 
 Issues and problems
 
+Make final decision on PCB layout - current thought is the charging circuit will stay off-gun, as it can then be used to charge other guns. ANy downside to this?
+
+How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. 
+
+FIX RECEIVER BOARD LAYOUT - PINOUT OF DETECTOR IS INCORRECT!
+
 Make the IR comms more selective about what is and isn’t a real packet
 
 Rewire wooden gun for ease of modifying (its a mess)
