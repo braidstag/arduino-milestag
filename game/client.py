@@ -14,8 +14,8 @@ class Main():
   def __init__(self):
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
     parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected', required=True)
-    parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
-    parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
+    #parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
+    #parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
 
     self.args = parser.parse_args()
 
@@ -30,7 +30,8 @@ class Main():
       self.serial = open(self.args.serial)
       self.properSerial = False
 
-    self.player = Player(self.args.teamID, self.args.playerID)
+    (teamID, playerID) = self.serverConnection.sendHello()
+    self.player = Player(teamID, playerID)
     self.logic = StandardGameLogic()
 
     self.connectToArduino()
@@ -41,7 +42,7 @@ class Main():
     else:
       print(line)
 
-  HIT_RE = re.compile(r"Shot\(Hit\((\d),(\d),(\d)\)\)")
+  HIT_RE = re.compile(r"Shot\(Hit\((\d),(\d+),(\d+)\)\)")
   TRIGGER_RE = re.compile(r"Trigger\(\)")
 
   def eventLoop(self):
@@ -125,10 +126,44 @@ class ServerConnection(Thread):
         recieved = recieved + chunk
       if recieved != ack:
         #TODO handle this
-        raise RuntimeError("incorrect ack")
+        raise RuntimeError("incorrect ack: %s" % recieved)
 
-    #TODO: wait for the ACK.
     sock.close();
+
+  TP_RE = re.compile(r"TeamPlayer\((\d),(\d+)\)")
+
+  def sendHello(self):
+    msg = "Hello()"
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ClientServer.SERVER, ClientServer.PORT))
+
+    totalsent=0
+    while totalsent < len(msg):
+      sent = sock.send(msg[totalsent:])
+      if sent == 0:
+        #TODO handle this
+        raise RuntimeError("socket connection broken")
+      totalsent = totalsent + sent
+    sock.shutdown(1);
+
+    recieved = ''
+    while True:
+      chunk = sock.recv(64)
+      if chunk == '':
+        #TODO handle this
+        raise RuntimeError("socket connection broken")
+      recieved = recieved + chunk
+      if recieved[-1] == ')':
+        break
+
+    sock.close();
+
+    m = self.TP_RE.match(recieved)
+    if(m):
+      return m.groups()
+    else:
+        #TODO handle this
+        raise RuntimeError("incorrect response to Hello(): %s" % recieved)
 
 
 main = Main()

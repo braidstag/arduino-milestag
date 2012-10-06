@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import argparse
-import re
 import socket
 import sys
 from threading import Thread, Lock
@@ -34,6 +33,8 @@ class ListeningThread(Thread):
       ct = ClientThread(clientsocket)
       ct.start()
 
+IDEAL_TEAM_COUNT=2
+
 class GameState():
   players = {}
   teamCount = 0
@@ -57,6 +58,14 @@ class GameState():
       mainWindow.playerAdded(sentTeam, sentPlayer);
     return self.players[(sentTeam, sentPlayer)]
 
+  def createNewPlayer(self):
+    for playerID in range(1,32):
+      for teamID in range(1,IDEAL_TEAM_COUNT + 1):
+        if (teamID, playerID) not in self.players:
+          return self.getOrCreatePlayer(teamID, playerID)
+    #TODO handle this
+    raise RuntimeError("too many players")
+    
 class ClientThread(Thread):
   gameState = GameState()
 
@@ -117,6 +126,12 @@ class ClientThread(Thread):
           if (self.logic.trigger(player)):
             mainWindow.playerUpdated(recvTeam, recvPlayer)
 #            self.logic.hit(player, fromTeam, fromPlayer, damage)
+
+    m = self.HELLO_RE.match(fullLine)
+    if(m):
+      with self.eventLock:
+        player = self.gameState.createNewPlayer()
+        return "TeamPlayer(%s,%s)" % (player.teamID, player.playerID)
 
     return "Ack()"
 
