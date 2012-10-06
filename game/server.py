@@ -7,6 +7,7 @@ from threading import Thread, Lock
 
 from core import Player, StandardGameLogic, ClientServer
 from ui import MainWindow
+import proto
 
 from PySide.QtGui import QApplication
 
@@ -93,12 +94,6 @@ class ClientThread(Thread):
         raise RuntimeError("socket connection broken")
       totalsent = totalsent + sent
 
-  RECV_RE = re.compile(r"Recv\((\d*),(\d*),(.*)\)")
-  SENT_RE = re.compile(r"Sent\((\d*),(\d*),(.*)\)")
-
-  HIT_RE = re.compile(r"Shot\(Hit\((\d),(\d),(\d)\)\)")
-  TRIGGER_RE = re.compile(r"Trigger\(\)")
-
   eventLock = Lock()
     
   def handleEvent(self, fullLine):
@@ -106,32 +101,41 @@ class ClientThread(Thread):
       print fullLine
       sys.stdout.flush()
   
-    m = self.RECV_RE.match(fullLine)
-    if(m):
-      (recvTeam, recvPlayer, line) = m.groups()
+    try:
+      (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
 
-      m = self.HIT_RE.match(line)
-      if(m):
-        (sentTeam, sentPlayer, damage) = m.groups()
+      try:
+        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           self.logic.hit(player, sentTeam, sentPlayer, damage)
           mainWindow.playerUpdated(recvTeam, recvPlayer)
+      except proto.MessageParseException:
+        pass
 
-      m = self.TRIGGER_RE.match(line)
-      if(m):
+      try:
+        proto.TRIGGER.parse(line)
+
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           if (self.logic.trigger(player)):
             mainWindow.playerUpdated(recvTeam, recvPlayer)
 #            self.logic.hit(player, fromTeam, fromPlayer, damage)
+      except proto.MessageParseException:
+        pass
 
-    m = self.HELLO_RE.match(fullLine)
-    if(m):
+    except proto.MessageParseException:
+      pass
+
+    try:
+      proto.HELLO.parse(fullLine)
+
       with self.eventLock:
         player = self.gameState.createNewPlayer()
         return "TeamPlayer(%s,%s)" % (player.teamID, player.playerID)
+    except proto.MessageParseException:
+      pass
 
     return "Ack()"
 
