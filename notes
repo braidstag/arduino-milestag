@@ -1,24 +1,19 @@
 
 Issues and problems
 
-Moved charging circuit to its own board. THis allows us to use one charger for more than one gun.
+PCB is now in its final revisions before production.
+
+Moved charging circuit to its own board. This allows us to use one charger for more than one gun.
 
 The PCB has been laid out successfully for the first time! The big 26 pin connector had to be replaced with smaller, modular headers. Thanks to I. Stanley for offering to lay out PCB, but we may not need his help in the end. Still to do:
 
-	Some grounding issues remain - use resistors on arduino pins to protect them?
-	Add test points to board - voltage and current of main input lines and sensetive areas
-	Support supplying arduino directly off the HV supply through VIN pin
-	Tidy up pinouts a bit to make the design more modular, check pinouts match on daughterboards.
+	Some grounding issues remain - use resistors on arduino pins to protect them? - Out of laziness i decided not to bother with protection. Following the traces, both high power devices drain to ground without going through the arduino - we should be ok.
 
-Only RGBLED in the super bright range on farnell is common negative - PCB will need modifying quite heavily unless we can find a common positive RGBLED to use. DO we need superbright?
+RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
-How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. 
+How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. - Decision made, risk taken.
 
 Make the IR comms more selective about what is and isn’t a real packet
-
-Connect LEDs to high power sources and mount - IR DONE - Noticable increase in punch. 
-
-Move relay to HV side of regulator to prevent slow drains while off.
 
 After moving relay - change of plan: Arduino to be powered by VIN pin taking 12 (count em - 12) v in. On board regulator takes this to 5v in a much more efficient way than anything else tried so far, and this option can also be traved on the PCB to save tricky wiring. 
 For peace of mind, we may want to consider stripping the 5v line in the USB cable, but at the moment, there's no downside to leaving it in (yet).
