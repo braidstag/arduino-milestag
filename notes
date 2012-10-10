@@ -8,6 +8,7 @@ Moved charging circuit to its own board. This allows us to use one charger for m
 The PCB has been laid out successfully for the first time! The big 26 pin connector had to be replaced with smaller, modular headers. Thanks to I. Stanley for offering to lay out PCB, but we may not need his help in the end. Still to do:
 
 	Some grounding issues remain - use resistors on arduino pins to protect them? - Out of laziness i decided not to bother with protection. Following the traces, both high power devices drain to ground without going through the arduino - we should be ok.
+	ADD HEADER FOR POWER ON CIRCUIT - DO NOT FORGET THIS!
 
 RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
