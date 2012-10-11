@@ -9,6 +9,7 @@ from threading import Thread, Lock
 from Queue import Queue
 
 from core import Player, StandardGameLogic, ClientServer
+import proto
 
 class ClientCallback():
   def playerDead(self):
@@ -47,21 +48,25 @@ class Main():
     else:
       print(line)
 
-  HIT_RE = re.compile(r"Shot\(Hit\((\d),(\d+),(\d+)\)\)")
-  TRIGGER_RE = re.compile(r"Trigger\(\)")
-
   def eventLoop(self):
     for line in self.serial:
       line = line.rstrip()
 
-      m = self.HIT_RE.match(line)
-      if(m):
-        (fromPlayer, fromTeam, damage) = m.groups()
-        self.logic.hit(self.player, fromTeam, fromPlayer, damage)
-      m = self.TRIGGER_RE.match(line)
-      if(m):
+      try:
+        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
+
+        self.logic.hit(self.player, sentTeam, sentPlayer, damage)
+      except proto.MessageParseException:
+        pass
+
+      try:
+        proto.TRIGGER.parse(line)
+
         if (self.logic.trigger(self.player)):
           self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
+      except proto.MessageParseException:
+        pass
+
 
       msg = "Recv(%s,%s,%s)\n" % (self.player.teamID, self.player.playerID, line)
       self._sendToServer(msg, "Ack()\n")
@@ -136,8 +141,6 @@ class ServerConnection(Thread):
           #TODO handle this
           raise RuntimeError("incorrect ack: %s" % recieved)
 
-  TP_RE = re.compile(r"TeamPlayer\((\d),(\d+)\)")
-
   def sendHello(self):
     msg = "Hello()\n"
     with self.connLock:
@@ -161,12 +164,11 @@ class ServerConnection(Thread):
         if recieved[-1] == '\n':
           break
 
-      m = self.TP_RE.match(recieved)
-      if(m):
-        return m.groups()
-      else:
-          #TODO handle this
-          raise RuntimeError("incorrect response to Hello(): %s" % recieved)
+      try:
+        return proto.TEAMPLAYER.parse(recieved)
+      except proto.MessageParseException:
+        #TODO handle this
+        raise RuntimeError("incorrect response to Hello(): %s" % recieved)
 
   def _checkConnection(self):
     if self.sock == None:

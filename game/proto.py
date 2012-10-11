@@ -28,6 +28,7 @@ HELLO = Message(r"Hello\(\)")
 
 #server -> client only
 TRIGGER = Message(r"Trigger\(\)")
+TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)")
 
 #gun -> client (and inside SENT and REV)
 HIT = Message(r"Shot\(Hit\((\d),(\d),(\d)\)\)")
