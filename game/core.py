@@ -14,16 +14,30 @@ class Player():
   def __str__(self):
     return "Player(team=%d, id=%d, ammo=%d, health=%d)" % (self.teamID, self.playerID, self.ammo, self.health)
 
+class DefaultCallback():
+  def playerDead(self):
+    pass
+
 class StandardGameLogic():
+  def __init__(self, callback = DefaultCallback()):
+    self.callback = callback
+
   def hit(self, toPlayer, fromTeam, fromPlayer, damage):
     if (fromPlayer == toPlayer.playerID and fromTeam == toPlayer.teamID):
       #self shot, ignore this
       pass
     else:
-      toPlayer.health -= int(damage)
+      if (toPlayer.health > int(damage)):
+        toPlayer.health -= int(damage)
+      elif (toPlayer.health > 0):
+        self.callback.playerDead()
+        toPlayer.health = 0
+      else:
+        #already have 0 health
+        pass
 
   def trigger(self, player):
-    if player.ammo > 0:
+    if player.ammo > 0 and player.health > 0:
       player.ammo = player.ammo - 1
       return True
     else:

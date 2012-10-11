@@ -9,6 +9,10 @@ from Queue import Queue
 
 from core import Player, StandardGameLogic, ClientServer
 
+class ClientCallback():
+  def playerDead(self):
+    print "Out of lives!"
+
 class Main():
 
   def __init__(self):
@@ -32,7 +36,7 @@ class Main():
 
     (teamID, playerID) = self.serverConnection.sendHello()
     self.player = Player(teamID, playerID)
-    self.logic = StandardGameLogic()
+    self.logic = StandardGameLogic(ClientCallback())
 
     self.connectToArduino()
 
