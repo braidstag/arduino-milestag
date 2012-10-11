@@ -76,23 +76,31 @@ class ClientThread(Thread):
     self.logic = StandardGameLogic()
 
   def run(self):
-    #keep reading from the socket until we have it all
-    msg = ''
-    while True:
-      chunk = self.sock.recv(1024)
-      msg = msg + chunk
-      if chunk == '':
-        break
+    while True: # read multiple packets
+      msg = ''
+      while True: #keep reading from the socket until we have the whole packet
+        chunk = self.sock.recv(1024)
+        msg = msg + chunk
+        if len(chunk) == 0:
+          #It is OK to close a connection as long as we aren't in the middle of recieving something.
+          if len(msg) == 0:
+            return
+          else:
+            print "empty recv\n"
+            #TODO handle this
+            raise RuntimeError("socket connection broken")
+        if chunk[-1] == '\n':
+          break
 
-    ackMsg = self.handleEvent(msg)
+      ackMsg = self.handleEvent(msg)
 
-    totalsent=0
-    while totalsent < len(ackMsg):
-      sent = self.sock.send(ackMsg[totalsent:])
-      if sent == 0:
-        #TODO handle this
-        raise RuntimeError("socket connection broken")
-      totalsent = totalsent + sent
+      totalsent=0
+      while totalsent < len(ackMsg):
+        sent = self.sock.send(ackMsg[totalsent:])
+        if sent == 0:
+          #TODO handle this
+          raise RuntimeError("socket connection broken")
+        totalsent = totalsent + sent
 
   eventLock = Lock()
     
@@ -133,11 +141,11 @@ class ClientThread(Thread):
 
       with self.eventLock:
         player = self.gameState.createNewPlayer()
-        return "TeamPlayer(%s,%s)" % (player.teamID, player.playerID)
+        return "TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID)
     except proto.MessageParseException:
       pass
 
-    return "Ack()"
+    return "Ack()\n"
 
 main = ListeningThread()
 main.start()

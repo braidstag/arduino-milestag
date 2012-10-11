@@ -4,6 +4,7 @@ import argparse
 import re
 import socket
 import serial
+import sys
 from threading import Thread, Lock
 from Queue import Queue
 
@@ -62,8 +63,8 @@ class Main():
         if (self.logic.trigger(self.player)):
           self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
 
-      msg = "Recv(%s,%s,%s)" % (self.player.teamID, self.player.playerID, line)
-      self._sendToServer(msg, "Ack()")
+      msg = "Recv(%s,%s,%s)\n" % (self.player.teamID, self.player.playerID, line)
+      self._sendToServer(msg, "Ack()\n")
 
   def _stringToPlayerID(self, inp):
     out = int(inp)
@@ -88,6 +89,7 @@ class ServerConnection(Thread):
     self.name = "Server Communication Thread"
     self.queue = Queue()
     self.shouldStop = False
+    self.sock = None
 
   def run(self):
     while not (self.queue.empty() and self.shouldStop):
@@ -98,6 +100,7 @@ class ServerConnection(Thread):
         print "Unexpected error:", sys.exc_info()[0]
         raise
         #TODO retry sending the packet 
+    self._closeConnection()
 
   def stop(self):
     "shut this Thread down nicely. This blocks until this Thread is finished."
@@ -107,68 +110,74 @@ class ServerConnection(Thread):
   def queueMessage(self, msg, ack):
     self.queue.put((msg, ack))
 
+  connLock = Lock()
+
   def sendToServer(self, msg, ack):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((ClientServer.SERVER, ClientServer.PORT))
-
-    totalsent=0
-    while totalsent < len(msg):
-      sent = sock.send(msg[totalsent:])
-      if sent == 0:
-        #TODO handle this
-        raise RuntimeError("socket connection broken")
-      totalsent = totalsent + sent
-    sock.shutdown(1);
-
-    if ack:
-      recieved = ''
-      while len(recieved) < len(ack):
-        chunk = sock.recv(len(ack)-len(recieved))
-        if chunk == '':
+    with self.connLock:
+      self._checkConnection()
+      totalsent=0
+      while totalsent < len(msg):
+        sent = self.sock.send(msg[totalsent:])
+        if sent == 0:
           #TODO handle this
           raise RuntimeError("socket connection broken")
-        recieved = recieved + chunk
-      if recieved != ack:
-        #TODO handle this
-        raise RuntimeError("incorrect ack: %s" % recieved)
+        totalsent = totalsent + sent
 
-    sock.close();
+      if ack:
+        recieved = ''
+        #TODO: This is a rubbish method as if we don't get as much data as we expected, we will block :-(
+        while len(recieved) < len(ack):
+          chunk = self.sock.recv(len(ack)-len(recieved))
+          if chunk == '':
+            #TODO handle this
+            raise RuntimeError("socket connection broken")
+          recieved = recieved + chunk
+        if recieved != ack:
+          #TODO handle this
+          raise RuntimeError("incorrect ack: %s" % recieved)
 
   TP_RE = re.compile(r"TeamPlayer\((\d),(\d+)\)")
 
   def sendHello(self):
-    msg = "Hello()"
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((ClientServer.SERVER, ClientServer.PORT))
+    msg = "Hello()\n"
+    with self.connLock:
+      self._checkConnection()
 
-    totalsent=0
-    while totalsent < len(msg):
-      sent = sock.send(msg[totalsent:])
-      if sent == 0:
-        #TODO handle this
-        raise RuntimeError("socket connection broken")
-      totalsent = totalsent + sent
-    sock.shutdown(1);
+      totalsent=0
+      while totalsent < len(msg):
+        sent = self.sock.send(msg[totalsent:])
+        if sent == 0:
+          #TODO handle this
+          raise RuntimeError("socket connection broken")
+        totalsent = totalsent + sent
 
-    recieved = ''
-    while True:
-      chunk = sock.recv(64)
-      if chunk == '':
-        #TODO handle this
-        raise RuntimeError("socket connection broken")
-      recieved = recieved + chunk
-      if recieved[-1] == ')':
-        break
+      recieved = ''
+      while True:
+        chunk = self.sock.recv(64)
+        if chunk == '':
+          #TODO handle this
+          raise RuntimeError("socket connection broken")
+        recieved = recieved + chunk
+        if recieved[-1] == '\n':
+          break
 
-    sock.close();
+      m = self.TP_RE.match(recieved)
+      if(m):
+        return m.groups()
+      else:
+          #TODO handle this
+          raise RuntimeError("incorrect response to Hello(): %s" % recieved)
 
-    m = self.TP_RE.match(recieved)
-    if(m):
-      return m.groups()
-    else:
-        #TODO handle this
-        raise RuntimeError("incorrect response to Hello(): %s" % recieved)
+  def _checkConnection(self):
+    if self.sock == None:
+      self._openConnection()
 
+  def _openConnection(self):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
+
+  def _closeConnection(self):
+    self.sock.close()
 
 main = Main()
 print main.player
