@@ -1,0 +1,82 @@
+
+
+
+PROCESSING / Completed boards
+
+Arduino Uno			x1
+Raspberry Pi			x1
+Wifi Dongle			x1
+
+
+
+RESISTORS
+
+RGBLED:	100R 			x2 (+1 for each sensor)
+	56R 			x4
+IRLED:	1.8R 			x1
+LOGIC: 	R10K 			x2
+DIV:	R6K			x1
+	R3K			x1
+CHARGE:	10R 			x1
+	1R5K			x1
+
+CAPACITORS
+
+SENSOR:	0.1uF			x1 per sensor
+CHARGE:	470uF			x2
+
+DIODES:	1N4001 			x5
+
+FETS/TRANSISTORS
+
+LEDs:	LOGIC FET 1739424	x7
+CHARGE:	TIP127 DT		x1
+
+SPECIAL COMPONENTS
+
+TSOP 4913073			x1 per sensor
+IRLED TSAL6100			x1
+RGBLED				x2
+
+HIDs
+
+TRIGGERS			x2
+KEYSWITCH			x1
+
+CABLES
+
+USB A-PRINTER (B?)		x1
+SOME ASSORTED WIRE		xSOME
+CAT5 'UMBILICAL CORD'		x1 (2 required for 'interactive charging')
+
+CONNECTORS AND HEADERS (All 2.54mm pitch)
+
+RJ45				x3 (2 per charger, one per gun)
+Screw terminal 2 way		x3
+Screw terminal 4 way		x1
+Header, Board to board pins 8	x3
+Header, Board to board pins 6	x1
+Smaller header pins
+	2 way			x5 (7 including diag jumpers)
+	3 way			x3 (+1 for extra sensor, or +2 for every sensor after that)
+	4 way			x2
+	5 way			x2
+Farnell search 2226A:
+	2 way			x5 (7 including diag jumpers)
+	3 way			x2 (+2 per additional sensor)
+	4 way			x2
+	5 way			x2
+	
+
+
+
+
+
+
+
+
+
+
+
+
+

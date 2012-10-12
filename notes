@@ -8,7 +8,7 @@ Moved charging circuit to its own board. This allows us to use one charger for m
 The PCB has been laid out successfully for the first time! The big 26 pin connector had to be replaced with smaller, modular headers. Thanks to I. Stanley for offering to lay out PCB, but we may not need his help in the end. Still to do:
 
 	Some grounding issues remain - use resistors on arduino pins to protect them? - Out of laziness i decided not to bother with protection. Following the traces, both high power devices drain to ground without going through the arduino - we should be ok.
-	ADD HEADER FOR POWER ON CIRCUIT - DO NOT FORGET THIS!
+	
 
 RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
@@ -29,7 +29,7 @@ Features
 
 Gunlight (torch)
 Current plan is that this will be a single package RGBLED (using 3 diff LEDs will ruin focus) aligned above the IRLED in the lens tube. This should produce a focused beam in a colour of our choice, aimed below the IR hitbox.
-Possibility of making the switching for this electronic to save using our last arduino pin.
+Possibility of making the switching for this electronic to save using our last arduino pin. - We can use Apins instead, leaving this trigger controllable for 'lights out' games.
 
 Muzzle Flash
 Current plan - another RGBLED mounted in such a way that it either: Has no way of focusing down the tube to produce a beam OR illuminates some other part of the gun to indicate that it is being fired. 
