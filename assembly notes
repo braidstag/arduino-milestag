@@ -1,0 +1,10 @@
+This file is for important things to remember while building things
+
+
+
+
+- When fitting relay, check polarity of various things (relay must be the right way around to ensure it is normally OFF. If it is necessary to switch it, the DIODE MUST BE REVERSED ASWELL.
+
+- Check UBEC is wired right way around
+
+- Before power up, always ensure VIN is not shorted to GND. This will cause bigger problems than just lack of startup
