@@ -1,19 +1,32 @@
 #!/usr/bin/python
 
 import argparse
-import re
-import socket
 import serial
 import sys
-from threading import Thread, Lock
-from Queue import Queue
+import time
 
 from core import Player, StandardGameLogic, ClientServer
+from connection import ClientServerConnection
 import proto
 
 class ClientCallback():
   def playerDead(self):
     print "Out of lives!"
+
+class Client(ClientServerConnection):
+  def __init__(self, main):
+    ClientServerConnection.__init__(self)
+    self.main = main
+  def handleMsg(self, msg):
+    try:
+      (teamID, playerID) = proto.TEAMPLAYER.parse(msg)
+      self.main.player = Player(teamID, playerID)
+      return True
+    except proto.MessageParseException:
+      pass
+    
+    return False
+
 
 class Main():
 
@@ -25,8 +38,11 @@ class Main():
 
     self.args = parser.parse_args()
 
-    self.serverConnection = ServerConnection()
-    self.serverConnection.start()
+    self.serverConnection = Client(self)
+    self._sendToServer("Hello()\n")
+
+    # Hack for testing (so that we can get a response to the Hello() before we recieve the Hits)
+    time.sleep(3)
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)
@@ -36,8 +52,6 @@ class Main():
       self.serial = open(self.args.serial)
       self.properSerial = False
 
-    (teamID, playerID) = self.serverConnection.sendHello()
-    self.player = Player(teamID, playerID)
     self.logic = StandardGameLogic(ClientCallback())
 
     self.connectToArduino()
@@ -69,7 +83,7 @@ class Main():
 
 
       msg = "Recv(%s,%s,%s)\n" % (self.player.teamID, self.player.playerID, line)
-      self._sendToServer(msg, "Ack()\n")
+      self._sendToServer(msg)
 
   def _stringToPlayerID(self, inp):
     out = int(inp)
@@ -77,9 +91,9 @@ class Main():
       raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
     return out;
 
-  def _sendToServer(self, msg, ack = None):
+  def _sendToServer(self, msg):
     "queue this packet to be sent to the server"
-    self.serverConnection.queueMessage(msg, ack)
+    self.serverConnection.queueMessage(msg)
   
   def connectToArduino(self):
     self.serialWrite("ClientConnect()\n")
@@ -87,99 +101,6 @@ class Main():
     if (line != "ClientConnected()\n"):
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
 
-class ServerConnection(Thread):
-  def __init__(self):
-    super(ServerConnection, self).__init__(group=None)
-    self.setDaemon(True)
-    self.name = "Server Communication Thread"
-    self.queue = Queue()
-    self.shouldStop = False
-    self.sock = None
-
-  def run(self):
-    while not (self.queue.empty() and self.shouldStop):
-      (msg, ack) = self.queue.get()
-      try:
-        self.sendToServer(msg, ack)
-      except:
-        print "Unexpected error:", sys.exc_info()[0]
-        raise
-        #TODO retry sending the packet 
-    self._closeConnection()
-
-  def stop(self):
-    "shut this Thread down nicely. This blocks until this Thread is finished."
-    self.shouldStop = True
-    self.join()
-  
-  def queueMessage(self, msg, ack):
-    self.queue.put((msg, ack))
-
-  connLock = Lock()
-
-  def sendToServer(self, msg, ack):
-    with self.connLock:
-      self._checkConnection()
-      totalsent=0
-      while totalsent < len(msg):
-        sent = self.sock.send(msg[totalsent:])
-        if sent == 0:
-          #TODO handle this
-          raise RuntimeError("socket connection broken")
-        totalsent = totalsent + sent
-
-      if ack:
-        recieved = ''
-        #TODO: This is a rubbish method as if we don't get as much data as we expected, we will block :-(
-        while len(recieved) < len(ack):
-          chunk = self.sock.recv(len(ack)-len(recieved))
-          if chunk == '':
-            #TODO handle this
-            raise RuntimeError("socket connection broken")
-          recieved = recieved + chunk
-        if recieved != ack:
-          #TODO handle this
-          raise RuntimeError("incorrect ack: %s" % recieved)
-
-  def sendHello(self):
-    msg = "Hello()\n"
-    with self.connLock:
-      self._checkConnection()
-
-      totalsent=0
-      while totalsent < len(msg):
-        sent = self.sock.send(msg[totalsent:])
-        if sent == 0:
-          #TODO handle this
-          raise RuntimeError("socket connection broken")
-        totalsent = totalsent + sent
-
-      recieved = ''
-      while True:
-        chunk = self.sock.recv(64)
-        if chunk == '':
-          #TODO handle this
-          raise RuntimeError("socket connection broken")
-        recieved = recieved + chunk
-        if recieved[-1] == '\n':
-          break
-
-      try:
-        return proto.TEAMPLAYER.parse(recieved)
-      except proto.MessageParseException:
-        #TODO handle this
-        raise RuntimeError("incorrect response to Hello(): %s" % recieved)
-
-  def _checkConnection(self):
-    if self.sock == None:
-      self._openConnection()
-
-  def _openConnection(self):
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
-
-  def _closeConnection(self):
-    self.sock.close()
 
 main = Main()
 print main.player
