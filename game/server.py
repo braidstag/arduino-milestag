@@ -40,6 +40,7 @@ class GameState():
   players = {}
   teamCount = 0
   largestTeam = 0
+  gameStarted = False
   
   def _get_players(self):
     return self.players
@@ -66,6 +67,16 @@ class GameState():
           return self.getOrCreatePlayer(teamID, playerID)
     #TODO handle this
     raise RuntimeError("too many players")
+
+  def startGame(self):
+    #TODO tell the clients
+    self.gameStarted = True
+    pass
+
+  def stopGame(self):
+    #TODO tell the clients
+    self.gameStarted = False
+    pass
     
 class ClientThread(Thread):
   gameState = GameState()
@@ -142,6 +153,7 @@ class ClientThread(Thread):
       with self.eventLock:
         player = self.gameState.createNewPlayer()
         return "TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID)
+        #TODO if the game has started, also tell the client this.
     except proto.MessageParseException:
       pass
 
