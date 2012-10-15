@@ -2,6 +2,7 @@
 
 import argparse
 import serial
+import socket
 import sys
 import time
 
@@ -13,10 +14,14 @@ class ClientCallback():
   def playerDead(self):
     print "Out of lives!"
 
+
 class Client(ClientServerConnection):
   def __init__(self, main):
     ClientServerConnection.__init__(self)
     self.main = main
+    
+    self._openConnection()
+  
   def handleMsg(self, msg):
     try:
       (teamID, playerID) = proto.TEAMPLAYER.parse(msg)
@@ -26,6 +31,12 @@ class Client(ClientServerConnection):
       pass
     
     return False
+
+  def _openConnection(self):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
+
+    self.setSocket(self.sock)
 
 
 class Main():
