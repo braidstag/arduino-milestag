@@ -1,10 +1,6 @@
 #!/bin/bash
 
-cp testFile.orig testFile
+rm testFile > /dev/null
+mkfifo testFile
+(sleep 3; cat testFile.orig > testFile) &
 ./client.py -s testFile
-
-cp testFile.orig testFile
-./client.py -s testFile #-t 1 -p 2
-
-cp testFile.orig testFile
-./client.py -s testFile #-t 2 -p 1

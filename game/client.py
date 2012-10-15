@@ -41,9 +41,6 @@ class Main():
     self.serverConnection = Client(self)
     self._sendToServer("Hello()\n")
 
-    # Hack for testing (so that we can get a response to the Hello() before we recieve the Hits)
-    time.sleep(3)
-
     try:
       self.serial = serial.Serial(self.args.serial, 115200)
       self.properSerial = True
