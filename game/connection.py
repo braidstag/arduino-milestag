@@ -11,8 +11,6 @@ class ClientServerConnection():
     self.writeThread = WriteThread()
     self.writeThread.start()
 
-    self._openConnection()
-
   def queueMessage(self, msg):
     self.writeThread.queueMessage(msg)
 
@@ -63,16 +61,12 @@ class ReadThread(Thread):
           if self.shouldStop:
             #this is expected
             return
-          #TODO handle this
           self.parent.onDisconnect()
-          raise RuntimeError("socket connection broken")
         if chunk == '':
           if self.shouldStop:
             #this is expected
             return
-          #TODO handle this
           self.parent.onDisconnect()
-          raise RuntimeError("socket connection broken")
         recieved = recieved + chunk
 
       #TODO: actually track these
