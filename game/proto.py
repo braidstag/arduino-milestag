@@ -24,7 +24,7 @@ class MessageParseException(Exception):
 #client -> server only
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)")
 SENT = Message(r"Sent\((\d*),(\d*),(.*)\)")
-HELLO = Message(r"Hello\(\)")
+HELLO = Message(r"Hello\((-?\d*),(-?\d*)\)")
 
 #server -> client only
 TRIGGER = Message(r"Trigger\(\)")

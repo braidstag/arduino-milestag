@@ -39,7 +39,7 @@ class Main():
     self.args = parser.parse_args()
 
     self.serverConnection = Client(self)
-    self._sendToServer("Hello()\n")
+    self._sendToServer("Hello(-1,-1)\n")
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)

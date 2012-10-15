@@ -15,8 +15,6 @@ class ListeningThread(Thread):
 
   def __init__(self):
     super(ListeningThread, self).__init__(group=None)
-    parser = argparse.ArgumentParser(description='BraidsTag server.')
-    self.args = parser.parse_args()
     self.setDaemon(True)
 
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -148,16 +146,24 @@ class ClientThread(Thread):
       pass
 
     try:
-      proto.HELLO.parse(fullLine)
+      (teamID, playerID) = proto.HELLO.parse(fullLine)
 
       with self.eventLock:
-        player = self.gameState.createNewPlayer()
-        return "TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID)
+        if int(teamID) == -1:
+          player = self.gameState.createNewPlayer()
+          return "TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID)
+        else:
+          player = self.gameState.getOrCreatePlayer(teamID, playerID)
+          return "Ack()\n"
+          
         #TODO if the game has started, also tell the client this.
     except proto.MessageParseException:
       pass
 
     return "Ack()\n"
+
+parser = argparse.ArgumentParser(description='BraidsTag server.')
+args = parser.parse_args()
 
 main = ListeningThread()
 main.start()
