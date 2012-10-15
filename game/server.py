@@ -3,9 +3,10 @@
 import argparse
 import socket
 import sys
-from threading import Thread, Lock
+import time
+from threading import Thread, Lock, Timer
 
-from core import Player, StandardGameLogic, ClientServer
+from core import Player, StandardGameLogic, ClientServer, GameState
 from ui import MainWindow
 from connection import ClientServerConnection
 import proto
@@ -37,7 +38,7 @@ class Server(ClientServerConnection):
 
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          self.logic.hit(player, sentTeam, sentPlayer, damage)
+          self.logic.hit(self.gameState, player, sentTeam, sentPlayer, damage)
           mainWindow.playerUpdated(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
@@ -47,9 +48,8 @@ class Server(ClientServerConnection):
 
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          if (self.logic.trigger(player)):
+          if (self.logic.trigger(self.gameState, player)):
             mainWindow.playerUpdated(recvTeam, recvPlayer)
-#            self.logic.hit(player, fromTeam, fromPlayer, damage)
       except proto.MessageParseException:
         pass
 
@@ -70,6 +70,8 @@ class Server(ClientServerConnection):
         self.listeningThread.moveConnection(self, player)
           
         #TODO if the game has started, also tell the client this.
+        if self.gameState.isGameStarted():
+          self.queueMessage("StartGame(%d)\n" % (self.gameState.gameTimeRemaining()))
     except proto.MessageParseException:
       pass
 
@@ -86,6 +88,7 @@ class ListeningThread(Thread):
     super(ListeningThread, self).__init__(group=None)
     self.setDaemon(True)
     self.gameState = gameState
+    gameState.setListeningThread(self)
 
     self.connections = {}
     self.unestablishedConnections = set()
@@ -102,25 +105,29 @@ class ListeningThread(Thread):
         (clientsocket, address) = self.serversocket.accept();
       except KeyboardInterrupt:
         break;
-      #ct = ClientThread(clientsocket)
-      #ct.start()
       self.unestablishedConnections.add(Server(self, gameState, clientsocket))
 
   def moveConnection(self, server, player):
-      self.unestablishedConnections.remove(server)
-      self.connections[(player.teamID, player.playerID)] = server
+    self.unestablishedConnections.remove(server)
+    self.connections[(player.teamID, player.playerID)] = server
     
+  def queueMessageToAll(self, msg):
+    for key in self.connections:
+      self.connections[key].queueMessage(msg)
 
 IDEAL_TEAM_COUNT=2
+GAME_TIME=1200 #20 mins
+#GAME_TIME=12
 
-class GameState():
-  players = {}
-  teamCount = 0
-  largestTeam = 0
-  gameStarted = False
+class ServerGameState(GameState):
+  def __init__(self):
+    GameState.__init__(self)
+    self.players = {}
+    self.teamCount = 0
+    self.largestTeam = 0
   
-  def _get_players(self):
-    return self.players
+  def setListeningThread(self, lt):
+    self.listeningThread = lt
 
   def getOrCreatePlayer(self, sentTeamStr, sentPlayerStr):
     sentTeam = int(sentTeamStr)
@@ -146,19 +153,28 @@ class GameState():
     raise RuntimeError("too many players")
 
   def startGame(self):
-    #TODO tell the clients
-    self.gameStarted = True
+    self.gameStartTime = time.time()
+    self.gameEndTime = time.time() + GAME_TIME
+    def timerStop():
+      if self.gameStartTime + GAME_TIME > time.time():
+        #the game must have been stopped and restarted as we aren't ready to stop yet. Why were we not cancelled though?
+        raise RuntimeError("timer seemingly triggered early")
+      self.stopGame()
+    self.stopGameTimer = Timer(GAME_TIME, timerStop)
+    self.stopGameTimer.start()
+    self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (GAME_TIME))
     pass
 
   def stopGame(self):
-    #TODO tell the clients
-    self.gameStarted = False
+    self.gameEndTime = None
+    self.gameStartTime = None
+    self.listeningThread.queueMessageToAll("StopGame()\n")
     pass
 
 parser = argparse.ArgumentParser(description='BraidsTag server.')
 args = parser.parse_args()
 
-gameState = GameState()
+gameState = ServerGameState()
 
 main = ListeningThread(gameState)
 main.start()

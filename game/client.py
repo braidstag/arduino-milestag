@@ -6,7 +6,7 @@ import socket
 import sys
 import time
 
-from core import Player, StandardGameLogic, ClientServer
+from core import Player, StandardGameLogic, ClientServer, GameState
 from connection import ClientServerConnection
 import proto
 
@@ -26,6 +26,20 @@ class Client(ClientServerConnection):
     try:
       (teamID, playerID) = proto.TEAMPLAYER.parse(msg)
       self.main.player = Player(teamID, playerID)
+      return True
+    except proto.MessageParseException:
+      pass
+    
+    try:
+      (duration,) = proto.STARTGAME.parse(msg)
+      self.main.gameState.startGame(int(duration))
+      return True
+    except proto.MessageParseException:
+      pass
+    
+    try:
+      proto.STOPGAME.parse(msg)
+      self.main.gameState.stopGame()
       return True
     except proto.MessageParseException:
       pass
@@ -61,6 +75,7 @@ class Main():
       self.properSerial = False
 
     self.logic = StandardGameLogic(ClientCallback())
+    self.gameState = GameState()
 
     self.connectToArduino()
 
@@ -77,14 +92,14 @@ class Main():
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
-        self.logic.hit(self.player, sentTeam, sentPlayer, damage)
+        self.logic.hit(self.gameState, self.player, sentTeam, sentPlayer, damage)
       except proto.MessageParseException:
         pass
 
       try:
         proto.TRIGGER.parse(line)
 
-        if (self.logic.trigger(self.player)):
+        if (self.logic.trigger(self.gameState, self.player)):
           self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
       except proto.MessageParseException:
         pass
