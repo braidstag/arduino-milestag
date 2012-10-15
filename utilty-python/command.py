@@ -8,4 +8,4 @@ while count < 5:
 
 	ser = serial.Serial('/dev/ttyACM0', 115200)
 	
-	ser.write(value + '\n')
+	ser.write(value + '\n') #Line-Ends the communication, speeds up responses

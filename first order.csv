@@ -1,0 +1,54 @@
+
+"Line No.","Order Code","Qty","Description","Mftr. & Part No.","RoHS","Unit Price","Avail.","Line Price","Line note"
+
+1,"3041359","6","TERMINAL BLOCK, PCB, 2.54MM, 2WAY","PHOENIX CONTACT - 1725656","YES ","0.62","In Stock","3.72","power charging connector"
+2,"3041414","2","TERMINAL BLOCK, 2.54MM, 4WAY, 20AWG","PHOENIX CONTACT - 1725672","YES ","0.93","In Stock","1.86","HV connector"
+
+3,"1716734","10","LED SUPERFLUX LARGE DOME RGB","MULTICOMP - OVA-1089","YES ","1.58","In Stock","15.8","flash shoot"
+4,"1735379","2","KEYSWITCH, SPDT, 2POS, RDM, 1KEYPULL","MULTICOMP - S116-1","YES ","1.33","In Stock","2.66","power on"
+
+5,"1636378","3","CONNECTOR, THT, RJ-45","WURTH ELEKTRONIK - 7499010001","YES ","5.87","In Stock","17.61","charging"
+6,"9733345","10","HEADER, VERTICAL, 1ROW, 8WAY","MOLEX - 90120-0768","YES ","0.66","In Stock","6.6","arduino- board"
+
+7,"8127069","5","CAPACITOR, 470UF, 50V","RUBYCON - 50RX30470M12.5X25","YES ","1.6","In Stock","8.0","charging"
+8,"9804056","3","DARLINGTON TRANSISTOR, TO-220","STMICROELECTRONICS - TIP127","YES ","0.52","In Stock","1.56","charging limiter"
+
+9,"1593529","100","CRIMP TERMINAL, 24-28AWG","MULTICOMP - 2226TG","YES ","0.054","In Stock","5.4","for all plugs"
+10,"1593506","10","CRIMP HOUSING, 1 ROW, 2 WAY","MULTICOMP - 2226A-02","YES ","0.05","In Stock","0.5","laser, pi, triggers etc"
+11,"1593507","10","CRIMP HOUSING, 1 ROW, 3 WAY","MULTICOMP - 2226A-03","YES ","0.042","In Stock","0.42","sensor"
+12,"1593508","10","CRIMP HOUSING, 1 ROW, 4 WAY","MULTICOMP - 2226A-04","YES ","0.055","In Stock","0.55","flash"
+13,"1593509","10","CRIMP HOUSING, 1 ROW, 5 WAY","MULTICOMP - 2226A-05","YES ","0.068","In Stock","0.68","shoot"
+
+14,"9339582","50","RESISTOR, 0.25W 5% 56R","MULTICOMP - MCF 0.25W 56R","YES ","0.019","In Stock","0.95","flash led"
+15,"1903905","10","RESISTOR, WIREWOUND, 1R8, 5%, 5WS","MULTICOMP - MCKNP05SJ018JAA9","YES ","0.169","In Stock","1.69","IRLED"
+
+16,"1903845","10","RESISTOR, WIREWOUND, 3K, 5%, 3W","MULTICOMP - MCKNP03UJ0302B00","YES ","0.194","In Stock","1.94","battery monitoring divider"
+17,"1083337","5","RESISTOR, 0.1% 6K04","TE CONNECTIVITY / NEOHM - YR1B6K04CC","YES ","0.129","In Stock","0.64","battery monitoring divider"
+
+18,"1265104","5","RESISTOR, CARBON COMP, 1/2W 10R","TE CONNECTIVITY / NEOHM - CBT50J10R","YES ","0.32","In Stock","1.6","charger"
+19,"9337741","10","RESISTOR, 1W 5% 1K5","MULTICOMP - MCF 1W 1K5","YES ","0.079","In Stock","0.79","charger"
+
+20,"9565027","10","DIODE, STANDARD, 1A, 400V,4V,DO-41","MULTICOMP - 1N4004","YES ","0.084","In Stock","0.84","charger, EMF"
+21,"1739424","14","MOSFET OMNIFETII 40V 12A TO-2203","STMICROELECTRONICS - VNP14NV04-E","YES ","1.46","In Stock","20.44","flash, shoot"
+
+22,"4913073","1","PHOTODIODE, IR RECEIVER, 38KHZ","VISHAY - TSOP2238","YES ","0.87","In Stock","0.87","sensor"
+23,"2068247","1","MICROSWITCH, SPST-NO, 16A, LONG LEVER","OMRON ELECTRONIC COMPONENTS - D3V-163-3C5","YES ","0.62","In Stock","0.62","triggers"
+24,"9733302","10","HEADER, VERTICAL, 1ROW, 2WAY","MOLEX - 90120-0762","YES ","0.21","In Stock","2.1","pi, laser, triggers etc"
+
+25,"9733329","5","HEADER, VERTICAL, 1ROW, 4WAY","MOLEX - 90120-0764","YES ","0.38","In Stock","1.9","flash"
+26,"1248141","10","HEADER, STRAIGHT, 3WAY","TE CONNECTIVITY / AMP - 826926-3","YES ","0.124","In Stock","1.24","sensor"
+
+27,"1756964","10","HEADER, 2.54MM, 5WAY","MOLEX - 90120-0765","YES ","0.43","In Stock","4.3","shoot"
+28,"1022255","10","HEADER, 1ROW, 6WAY","HARWIN - M20-9990646","YES ","0.24","In Stock","2.4","arduino - board"
+
+29,"1184005","1","WIRE, PTFE, A, PINK, 1/0.4MM, 25M","BRAND REX - SPC00440A012 25M","YES ","8.99","In Stock","8.99","its wire..."
+30,"1094070","2","RELAY, SPCO, 5VDC","IMO PRECISION CONTROLS - EV1N-C-WL-5VDC","YES ","1.7","In Stock","3.4","for power"
+
+31,"1593520","10","CRIMP HOUSING, 2 ROW, 6WAY","MULTICOMP - 2226B-06","YES ","0.139","In Stock","1.39","pi end of power"
+"","","","","","","","",""
+"","","","","","","","Goods Subtotal:","121.46"
+"","","","","","","","Promotion Code Discount:","0.0"
+"","","","","","","","Delivery Charges:","Unknown"
+"","","","","","","","Goods Total:","121.46"
+"","","","","","","","VAT:","24.29"
+"","","","","","","","Total:","145.75"
