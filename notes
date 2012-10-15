@@ -12,6 +12,8 @@ The PCB has been laid out successfully for the first time! The big 26 pin connec
 
 RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
+Add 5v out to PCB
+
 How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. - Decision made, risk taken.
 
 Make the IR comms more selective about what is and isn’t a real packet
@@ -73,6 +75,9 @@ Teamspeak not available for ARM
 Mumble works, but is a bit sketchy and requires X server to be running - any way around this? Pi doesn't seem to enjoy running x...
 Having trouble using XVFB on pi, halp.
 Skype has a headless project, but we have to pay to get access
+
+Powerup ideas:
+Special Weapons that can be triggered - Reveal enemies, jam enemy weapons, AOE?
 
 Live location
 Ultrasonic location
