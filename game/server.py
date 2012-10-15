@@ -66,6 +66,7 @@ class Server(ClientServerConnection):
         else:
           player = self.gameState.getOrCreatePlayer(teamID, playerID)
           self.queueMessage("Ack()\n")
+        #TODO: we need to preserve the sendQueue when we do this
         self.listeningThread.moveConnection(self, player)
           
         #TODO if the game has started, also tell the client this.
