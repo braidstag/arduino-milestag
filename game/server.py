@@ -3,21 +3,95 @@
 import argparse
 import socket
 import sys
-from threading import Thread, Lock
+import time
+from threading import Thread, Lock, Timer
 
-from core import Player, StandardGameLogic, ClientServer
+from core import Player, StandardGameLogic, ClientServer, GameState
 from ui import MainWindow
+from connection import ClientServerConnection
 import proto
 
 from PySide.QtGui import QApplication
 
+class Server(ClientServerConnection):
+  def __init__(self, listeningThread, gameState, sock):
+    ClientServerConnection.__init__(self)
+    self.listeningThread = listeningThread
+    self.logic = StandardGameLogic()
+    self.gameState = gameState
+
+    self.setSocket(sock)
+  
+  #so we don't try to process messages from 2 clients at once.
+  eventLock = Lock()
+    
+  def handleMsg(self, fullLine):
+    with self.eventLock:
+      print fullLine
+      sys.stdout.flush()
+  
+    try:
+      (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
+
+      try:
+        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
+
+        with self.eventLock:
+          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+          self.logic.hit(self.gameState, player, sentTeam, sentPlayer, damage)
+          mainWindow.playerUpdated(recvTeam, recvPlayer)
+      except proto.MessageParseException:
+        pass
+
+      try:
+        proto.TRIGGER.parse(line)
+
+        with self.eventLock:
+          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+          if (self.logic.trigger(self.gameState, player)):
+            mainWindow.playerUpdated(recvTeam, recvPlayer)
+      except proto.MessageParseException:
+        pass
+
+    except proto.MessageParseException:
+      pass
+
+    try:
+      (teamID, playerID) = proto.HELLO.parse(fullLine)
+
+      with self.eventLock:
+        if int(teamID) == -1:
+          player = self.gameState.createNewPlayer()
+          self.queueMessage("TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID))
+        else:
+          player = self.gameState.getOrCreatePlayer(teamID, playerID)
+          self.queueMessage("Ack()\n")
+        #TODO: we need to preserve the sendQueue when we do this
+        self.listeningThread.moveConnection(self, player)
+          
+        #TODO if the game has started, also tell the client this.
+        if self.gameState.isGameStarted():
+          self.queueMessage("StartGame(%d)\n" % (self.gameState.gameTimeRemaining()))
+    except proto.MessageParseException:
+      pass
+
+    return "Ack()\n"
+
+  def onDisconnect(self):
+    #not much we can do until they reconnect
+    pass
+
+
 class ListeningThread(Thread):
 
-  def __init__(self):
+  def __init__(self, gameState):
     super(ListeningThread, self).__init__(group=None)
-    parser = argparse.ArgumentParser(description='BraidsTag server.')
-    self.args = parser.parse_args()
     self.setDaemon(True)
+    self.gameState = gameState
+    gameState.setListeningThread(self)
+
+    self.connections = {}
+    self.unestablishedConnections = set()
 
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #self.serversocket.bind((socket.gethostname(), ClientServer.PORT))
@@ -31,18 +105,29 @@ class ListeningThread(Thread):
         (clientsocket, address) = self.serversocket.accept();
       except KeyboardInterrupt:
         break;
-      ct = ClientThread(clientsocket)
-      ct.start()
+      self.unestablishedConnections.add(Server(self, gameState, clientsocket))
+
+  def moveConnection(self, server, player):
+    self.unestablishedConnections.remove(server)
+    self.connections[(player.teamID, player.playerID)] = server
+    
+  def queueMessageToAll(self, msg):
+    for key in self.connections:
+      self.connections[key].queueMessage(msg)
 
 IDEAL_TEAM_COUNT=2
+GAME_TIME=1200 #20 mins
+#GAME_TIME=12
 
-class GameState():
-  players = {}
-  teamCount = 0
-  largestTeam = 0
+class ServerGameState(GameState):
+  def __init__(self):
+    GameState.__init__(self)
+    self.players = {}
+    self.teamCount = 0
+    self.largestTeam = 0
   
-  def _get_players(self):
-    return self.players
+  def setListeningThread(self, lt):
+    self.listeningThread = lt
 
   def getOrCreatePlayer(self, sentTeamStr, sentPlayerStr):
     sentTeam = int(sentTeamStr)
@@ -66,98 +151,42 @@ class GameState():
           return self.getOrCreatePlayer(teamID, playerID)
     #TODO handle this
     raise RuntimeError("too many players")
-    
-class ClientThread(Thread):
-  gameState = GameState()
 
-  def __init__(self, sock):
-    super(ClientThread, self).__init__(group=None)
-    self.sock = sock
-    self.logic = StandardGameLogic()
+  def startGame(self):
+    self.gameStartTime = time.time()
+    self.gameEndTime = time.time() + GAME_TIME
+    def timerStop():
+      if self.gameStartTime + GAME_TIME > time.time():
+        #the game must have been stopped and restarted as we aren't ready to stop yet. Why were we not cancelled though?
+        raise RuntimeError("timer seemingly triggered early")
+      self.stopGame()
+    self.stopGameTimer = Timer(GAME_TIME, timerStop)
+    self.stopGameTimer.start()
+    self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (GAME_TIME))
+    pass
 
-  def run(self):
-    while True: # read multiple packets
-      msg = ''
-      while True: #keep reading from the socket until we have the whole packet
-        chunk = self.sock.recv(1024)
-        msg = msg + chunk
-        if len(chunk) == 0:
-          #It is OK to close a connection as long as we aren't in the middle of recieving something.
-          if len(msg) == 0:
-            return
-          else:
-            print "empty recv\n"
-            #TODO handle this
-            raise RuntimeError("socket connection broken")
-        if chunk[-1] == '\n':
-          break
+  def stopGame(self):
+    self.gameEndTime = None
+    self.gameStartTime = None
+    self.listeningThread.queueMessageToAll("StopGame()\n")
+    pass
 
-      ackMsg = self.handleEvent(msg)
+parser = argparse.ArgumentParser(description='BraidsTag server.')
+args = parser.parse_args()
 
-      totalsent=0
-      while totalsent < len(ackMsg):
-        sent = self.sock.send(ackMsg[totalsent:])
-        if sent == 0:
-          #TODO handle this
-          raise RuntimeError("socket connection broken")
-        totalsent = totalsent + sent
+gameState = ServerGameState()
 
-  eventLock = Lock()
-    
-  def handleEvent(self, fullLine):
-    with self.eventLock:
-      print fullLine
-      sys.stdout.flush()
-  
-    try:
-      (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
-
-      try:
-        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
-
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          self.logic.hit(player, sentTeam, sentPlayer, damage)
-          mainWindow.playerUpdated(recvTeam, recvPlayer)
-      except proto.MessageParseException:
-        pass
-
-      try:
-        proto.TRIGGER.parse(line)
-
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          if (self.logic.trigger(player)):
-            mainWindow.playerUpdated(recvTeam, recvPlayer)
-#            self.logic.hit(player, fromTeam, fromPlayer, damage)
-      except proto.MessageParseException:
-        pass
-
-    except proto.MessageParseException:
-      pass
-
-    try:
-      proto.HELLO.parse(fullLine)
-
-      with self.eventLock:
-        player = self.gameState.createNewPlayer()
-        return "TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID)
-    except proto.MessageParseException:
-      pass
-
-    return "Ack()\n"
-
-main = ListeningThread()
+main = ListeningThread(gameState)
 main.start()
 
 # Create Qt application
 app = QApplication(sys.argv)
-mainWindow = MainWindow(ClientThread.gameState)
+mainWindow = MainWindow(gameState)
 mainWindow.show()
 
 # Enter Qt main loop
 retval = app.exec_()
 
-for i in ClientThread.gameState.players.values():
+for i in gameState.players.values():
   print i
 sys.exit(retval)

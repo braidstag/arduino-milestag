@@ -1,4 +1,5 @@
 import socket
+import sys
 from threading import Thread, Lock
 import Queue
 
@@ -11,30 +12,35 @@ class ClientServerConnection():
     self.writeThread = WriteThread()
     self.writeThread.start()
 
-    self._openConnection()
-
   def queueMessage(self, msg):
     self.writeThread.queueMessage(msg)
 
-  def _openConnection(self):
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
+  def setSocket(self, sock):
+    self.sock = sock
 
+    #clean up old thread
+    if self.readThread:
+      self.readThread.stop()
+
+    #start new one
     self.readThread = ReadThread(self.sock, self)
     self.readThread.start()
+
     self.writeThread.setSocket(self.sock)
 
   def _closeConnection(self):
-    self.sock.shutdown(2)
-    self.sock.close()
+    if self.sock:
+      self.sock.shutdown(2)
+      self.sock.close()
+      self.sock = None
 
   def onDisconnect(self):
     raise RuntimeError("onDisconnectCalled")
     #TODO: support this
-    #self._openConnection()
     
   def stop(self):
     self.writeThread.stop()
+    self.readThread.stop()
     self._closeConnection()
 
 class ReadThread(Thread):
@@ -44,6 +50,7 @@ class ReadThread(Thread):
     self.name = "Client/Server Read Thread"
     self.sock = sock
     self.parent = parent
+    self.shouldStop = False
 
   def run(self):
     while True:
@@ -52,13 +59,15 @@ class ReadThread(Thread):
         try:
           chunk = self.sock.recv(1024)
         except socket.error:
-          #TODO handle this
+          if self.shouldStop:
+            #this is expected
+            return
           self.parent.onDisconnect()
-          raise RuntimeError("socket connection broken")
         if chunk == '':
-          #TODO handle this
+          if self.shouldStop:
+            #this is expected
+            return
           self.parent.onDisconnect()
-          raise RuntimeError("socket connection broken")
         recieved = recieved + chunk
 
       #TODO: actually track these
@@ -73,6 +82,9 @@ class ReadThread(Thread):
   def _completeResponse(self, recieved):
     #TODO cope with getting multiple lines at once.
     return recieved != None and len(recieved) > 0 and recieved[-1] == '\n'
+
+  def stop(self):
+    self.shouldStop = True
 
 class WriteThread(Thread):
   def __init__(self):

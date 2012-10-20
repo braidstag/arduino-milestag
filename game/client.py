@@ -2,10 +2,11 @@
 
 import argparse
 import serial
+import socket
 import sys
 import time
 
-from core import Player, StandardGameLogic, ClientServer
+from core import Player, StandardGameLogic, ClientServer, GameState
 from connection import ClientServerConnection
 import proto
 
@@ -13,10 +14,14 @@ class ClientCallback():
   def playerDead(self):
     print "Out of lives!"
 
+
 class Client(ClientServerConnection):
   def __init__(self, main):
     ClientServerConnection.__init__(self)
     self.main = main
+    
+    self._openConnection()
+  
   def handleMsg(self, msg):
     try:
       (teamID, playerID) = proto.TEAMPLAYER.parse(msg)
@@ -25,7 +30,27 @@ class Client(ClientServerConnection):
     except proto.MessageParseException:
       pass
     
+    try:
+      (duration,) = proto.STARTGAME.parse(msg)
+      self.main.gameState.startGame(int(duration))
+      return True
+    except proto.MessageParseException:
+      pass
+    
+    try:
+      proto.STOPGAME.parse(msg)
+      self.main.gameState.stopGame()
+      return True
+    except proto.MessageParseException:
+      pass
+    
     return False
+
+  def _openConnection(self):
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
+
+    self.setSocket(self.sock)
 
 
 class Main():
@@ -39,10 +64,7 @@ class Main():
     self.args = parser.parse_args()
 
     self.serverConnection = Client(self)
-    self._sendToServer("Hello()\n")
-
-    # Hack for testing (so that we can get a response to the Hello() before we recieve the Hits)
-    time.sleep(3)
+    self._sendToServer("Hello(-1,-1)\n")
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)
@@ -53,6 +75,7 @@ class Main():
       self.properSerial = False
 
     self.logic = StandardGameLogic(ClientCallback())
+    self.gameState = GameState()
 
     self.connectToArduino()
 
@@ -69,14 +92,14 @@ class Main():
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
-        self.logic.hit(self.player, sentTeam, sentPlayer, damage)
+        self.logic.hit(self.gameState, self.player, sentTeam, sentPlayer, damage)
       except proto.MessageParseException:
         pass
 
       try:
         proto.TRIGGER.parse(line)
 
-        if (self.logic.trigger(self.player)):
+        if (self.logic.trigger(self.gameState, self.player)):
           self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
       except proto.MessageParseException:
         pass

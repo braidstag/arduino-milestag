@@ -66,12 +66,33 @@ class LinearModel(QAbstractListModel):
   def playerUpdated(self, teamID, playerID):
     self.source.playerUpdated(teamID, playerID)
 
+class GameStartToggleButton(QPushButton):
+  def __init__(self, gameState, parent=None):
+    super(GameStartToggleButton, self).__init__("Start Game", parent)
+    self.gameState = gameState
+    self.clicked.connect(self.toggleGameStarted)
+    self.gameStarted = False
+
+  def toggleGameStarted(self):
+    self.gameStarted = not self.gameStarted
+    if self.gameStarted:
+      self.gameState.startGame()
+      self.setText("End Game")
+    else:
+      self.gameState.stopGame()
+      self.setText("Start Game")
+
+
 class MainWindow(QDialog):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
     self.setWindowTitle("BraidsTag Server")
 
     self.layout = QVBoxLayout()
+
+    self.gameStart = GameStartToggleButton(gameState)
+    self.layout.addWidget(self.gameStart)
+
     self.listModel = LinearModel(GameStateModel(gameState))
     self.listView = QListView()
     self.listView.setModel(self.listModel)
@@ -84,3 +105,4 @@ class MainWindow(QDialog):
 
   def  playerAdded(self, sentTeam, sentPlayer):
     self.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
+
