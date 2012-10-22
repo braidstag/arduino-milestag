@@ -75,4 +75,4 @@ class StandardGameLogic():
 class ClientServer():
   PORT=7079
   #SERVER="192.168.1.116"
-  SERVER="localhost"
+  SERVER="192.168.1.151"
