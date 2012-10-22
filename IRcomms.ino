@@ -26,6 +26,9 @@
 //temporary team ID to test muzzle flash code
 int myteam = 7;
 
+//variable to tell the arduino to start constant battery life testing
+int batterytestmode = 0;
+
 // some timings
 long headerDuration = 2400;
 long intervalDuration = 600;

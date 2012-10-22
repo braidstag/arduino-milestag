@@ -64,6 +64,10 @@ void checkSerial() {
       else if (strncmp("white", serialBuffer, 5) == 0) {
         myteam = 7;
       }
+//some more for battery testing
+      else if (strncmp("test", serialBuffer, 4) == 0) {
+	batterytestmode = 1;
+      }
     }
   }
 }

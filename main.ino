@@ -45,6 +45,7 @@ boolean clientConnected = false;
 unsigned long time = micros();
 
 void loop() {
+  lifetest();
   timeDebug();
   checkTrigger();
   signal_send();
@@ -93,4 +94,11 @@ void checkBattery() {
 void shutdown() {
   delay(50000);
   digitalWrite(power_relay_pin, LOW);
+}
+
+void lifetest() {
+	if (batterytestmode == 1) {
+	checkBattery();
+	delay(1000);
+		}
 }
