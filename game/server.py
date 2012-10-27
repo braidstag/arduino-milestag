@@ -105,7 +105,6 @@ class ListeningThread(Thread):
     #start serving
     while True:
       if self.shouldStop:
-        print "main terminating"
         return
 
       try:
@@ -138,6 +137,7 @@ class ServerGameState(GameState):
     self.players = {}
     self.teamCount = 0
     self.largestTeam = 0
+    self.stopGameTimer = None
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
