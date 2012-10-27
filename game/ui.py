@@ -93,10 +93,21 @@ class MainWindow(QDialog):
     self.gameStart = GameStartToggleButton(gameState)
     self.layout.addWidget(self.gameStart)
 
-    self.listModel = LinearModel(GameStateModel(gameState))
-    self.listView = QListView()
+    tabs = QTabWidget(self)
+
+    #self.listModel = LinearModel(GameStateModel(gameState))
+    #self.listView = QListView()
+    #self.listView.setModel(self.listModel)
+    #self.layout.addWidget(self.listView)
+    #tabs.addTab(self.listView, "Players")
+
+    self.listModel = GameStateModel(gameState)
+    self.listView = QTableView()
     self.listView.setModel(self.listModel)
-    self.layout.addWidget(self.listView)
+    #self.layout.addWidget(self.listView)
+    tabs.addTab(self.listView, "Players")
+
+    self.layout.addWidget(tabs)
 
     self.setLayout(self.layout)
 
