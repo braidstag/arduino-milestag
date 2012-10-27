@@ -4,6 +4,7 @@ import argparse
 import socket
 import sys
 import time
+import traceback
 from threading import Thread, Lock, Timer
 
 from core import Player, StandardGameLogic, ClientServer, GameState
@@ -86,7 +87,7 @@ class ListeningThread(Thread):
 
   def __init__(self, gameState):
     super(ListeningThread, self).__init__(group=None)
-    self.setDaemon(True)
+    self.name = "Server Listening Thread"
     self.gameState = gameState
     gameState.setListeningThread(self)
 
@@ -96,16 +97,24 @@ class ListeningThread(Thread):
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #self.serversocket.bind((socket.gethostname(), ClientServer.PORT))
     self.serversocket.bind((ClientServer.SERVER, ClientServer.PORT))
+    self.serversocket.settimeout(1)
     self.serversocket.listen(5)
+    self.shouldStop = False
 
   def run(self):
     #start serving
     while True:
+      if self.shouldStop:
+        print "main terminating"
+        return
+
       try:
         (clientsocket, address) = self.serversocket.accept();
+        self.unestablishedConnections.add(Server(self, gameState, clientsocket))
       except KeyboardInterrupt:
-        break;
-      self.unestablishedConnections.add(Server(self, gameState, clientsocket))
+        break
+      except socket.timeout:
+        pass
 
   def moveConnection(self, server, player):
     self.unestablishedConnections.remove(server)
@@ -114,6 +123,10 @@ class ListeningThread(Thread):
   def queueMessageToAll(self, msg):
     for key in self.connections:
       self.connections[key].queueMessage(msg)
+
+  def stop(self):
+    self.shouldStop = True
+    self.serversocket.close()
 
 IDEAL_TEAM_COUNT=2
 GAME_TIME=1200 #20 mins
@@ -163,13 +176,17 @@ class ServerGameState(GameState):
     self.stopGameTimer = Timer(GAME_TIME, timerStop)
     self.stopGameTimer.start()
     self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (GAME_TIME))
-    pass
 
   def stopGame(self):
     self.gameEndTime = None
     self.gameStartTime = None
     self.listeningThread.queueMessageToAll("StopGame()\n")
-    pass
+    if self.stopGameTimer:
+      self.stopGameTimer.cancel()
+    self.stopGameTimer = None
+
+  def terminate(self):
+    self.stopGame()
 
 parser = argparse.ArgumentParser(description='BraidsTag server.')
 args = parser.parse_args()
@@ -189,4 +206,23 @@ retval = app.exec_()
 
 for i in gameState.players.values():
   print i
+
+main.stop()
+gameState.terminate()
+
+#print >> sys.stderr, "\n*** STACKTRACE - START ***\n"
+#code = []
+#for threadId, stack in sys._current_frames().items():
+#    code.append("\n# ThreadID: %s" % threadId)
+#    for filename, lineno, name, line in traceback.extract_stack(stack):
+#        code.append('File: "%s", line %d, in %s' % (filename,
+#                                                    lineno, name))
+#        if line:
+#            code.append("  %s" % (line.strip()))
+#
+#for line in code:
+#    print >> sys.stderr, line
+#print >> sys.stderr, "\n*** STACKTRACE - END ***\n"
+#
+
 sys.exit(retval)
