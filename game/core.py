@@ -25,7 +25,7 @@ class GameState():
     self.gameStartTime = time.time()
     self.gameEndTime = time.time() + duration
 
-  def stopGame(self, duration):
+  def stopGame(self):
     self.gameStartTime = None
     self.gameEndTime = None
 
