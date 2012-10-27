@@ -88,32 +88,32 @@ class MainWindow(QDialog):
     super(MainWindow, self).__init__(parent)
     self.setWindowTitle("BraidsTag Server")
 
-    self.layout = QVBoxLayout()
+    layout = QVBoxLayout()
 
-    self.gameStart = GameStartToggleButton(gameState)
-    self.layout.addWidget(self.gameStart)
+    gameStart = GameStartToggleButton(gameState)
+    layout.addWidget(gameStart)
 
     tabs = QTabWidget(self)
 
-    #self.listModel = LinearModel(GameStateModel(gameState))
-    #self.listView = QListView()
-    #self.listView.setModel(self.listModel)
-    #self.layout.addWidget(self.listView)
-    #tabs.addTab(self.listView, "Players")
+    #self.model = LinearModel(GameStateModel(gameState))
+    #listView = QListView()
+    #listView.setModel(self.model)
+    #layout.addWidget(listView)
+    #tabs.addTab(listView, "Players")
 
-    self.listModel = GameStateModel(gameState)
-    self.listView = QTableView()
-    self.listView.setModel(self.listModel)
-    #self.layout.addWidget(self.listView)
-    tabs.addTab(self.listView, "Players")
+    self.model = GameStateModel(gameState)
+    listView = QTableView()
+    listView.setModel(self.model)
+    #layout.addWidget(listView)
+    tabs.addTab(listView, "Players")
 
-    self.layout.addWidget(tabs)
+    layout.addWidget(tabs)
 
-    self.setLayout(self.layout)
+    self.setLayout(layout)
 
   def playerUpdated(self, teamID, playerID):
-    self.listModel.playerUpdated(teamID, playerID)
+    self.model.playerUpdated(teamID, playerID)
 
   def  playerAdded(self, sentTeam, sentPlayer):
-    self.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
+    self.model.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
 
