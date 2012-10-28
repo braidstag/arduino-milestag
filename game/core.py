@@ -7,6 +7,7 @@ class Player():
   playerID = 0
   ammo = 100
   health = 5
+  maxHealth = 8
   gunDamage = 1
 
   def __init__(self, teamID, playerID):

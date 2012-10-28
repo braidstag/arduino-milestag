@@ -89,7 +89,16 @@ class PlayerDelegate(QStyledItemDelegate):
       QStyledItemDelegate.paint(painter, options, index)
     else:
       painter.save()
-      painter.drawText(option.rect, str(index.data()))
+      painter.setClipRect(option.rect)
+      ammoStr = str(index.data().ammo)
+      painter.drawText(option.rect, ammoStr)
+
+      ammoWidth = QFontMetrics(option.font).width("000") # allow space for 3 big digits
+      ammoHeight = QFontMetrics(option.font).height()
+      painter.setBrush(Qt.SolidPattern)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * index.data().health / index.data().maxHealth, ammoHeight - 4, 5, 5)
+      painter.setBrush(Qt.NoBrush)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
       painter.restore()
 
 
