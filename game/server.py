@@ -29,6 +29,7 @@ class Server(ClientServerConnection):
   def handleMsg(self, fullLine):
     with self.eventLock:
       print fullLine
+      mainWindow.lineReceived(fullLine)
       sys.stdout.flush()
   
     try:

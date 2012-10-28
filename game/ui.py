@@ -107,6 +107,11 @@ class MainWindow(QDialog):
     #layout.addWidget(listView)
     tabs.addTab(listView, "Players")
 
+    self.log = QTextEdit()
+    #self.log.document().setMaximumBlockCount(10)
+    self.log.setReadOnly(True)
+    tabs.addTab(self.log, "Log")
+
     layout.addWidget(tabs)
 
     self.setLayout(layout)
@@ -117,3 +122,8 @@ class MainWindow(QDialog):
   def  playerAdded(self, sentTeam, sentPlayer):
     self.model.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
 
+  def lineReceived(self, line):
+    self.log.append(line.strip())
+    #TODO: auto-scroll to the bottom
+    #sb = self.log.verticalScrollBar()
+    #sb.setValue(sb.maximum())
