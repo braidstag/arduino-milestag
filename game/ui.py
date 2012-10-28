@@ -35,7 +35,7 @@ class GameStateModel(QAbstractTableModel):
       indexTuple = (index.column() + 1, index.row() + 1)
       if indexTuple not in self.gameState.players:
         return None
-      return str(self.gameState.players[indexTuple])
+      return self.gameState.players[indexTuple]
 
     return None
 
@@ -83,6 +83,16 @@ class GameStartToggleButton(QPushButton):
       self.setText("Start Game")
 
 
+class PlayerDelegate(QStyledItemDelegate):
+  def paint(self, painter, option, index):
+    if index.data() == None:
+      QStyledItemDelegate.paint(painter, options, index)
+    else:
+      painter.save()
+      painter.drawText(option.rect, str(index.data()))
+      painter.restore()
+
+
 class MainWindow(QDialog):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
@@ -104,6 +114,7 @@ class MainWindow(QDialog):
     self.model = GameStateModel(gameState)
     listView = QTableView()
     listView.setModel(self.model)
+    listView.setItemDelegate(PlayerDelegate())
     #layout.addWidget(listView)
     tabs.addTab(listView, "Players")
 
