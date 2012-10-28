@@ -39,6 +39,15 @@ class GameStateModel(QAbstractTableModel):
 
     return None
 
+  def headerData(self, section, orientation, role  = Qt.DisplayRole):
+    if role == Qt.DisplayRole:
+      if orientation == Qt.Horizontal:
+        return "Team %d" % (section + 1)
+      else:
+        return "%d" % (section + 1)
+
+    return None
+
   def playerUpdated(self, teamIDStr, playerIDStr):
     teamID = int(teamIDStr)
     playerID = int(playerIDStr)
