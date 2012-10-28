@@ -93,7 +93,7 @@ class PlayerDelegate(QStyledItemDelegate):
       painter.restore()
 
 
-class MainWindow(QDialog):
+class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
     self.setWindowTitle("BraidsTag Server")
