@@ -35,7 +35,16 @@ class GameStateModel(QAbstractTableModel):
       indexTuple = (index.column() + 1, index.row() + 1)
       if indexTuple not in self.gameState.players:
         return None
-      return str(self.gameState.players[indexTuple])
+      return self.gameState.players[indexTuple]
+
+    return None
+
+  def headerData(self, section, orientation, role  = Qt.DisplayRole):
+    if role == Qt.DisplayRole:
+      if orientation == Qt.Horizontal:
+        return "Team %d" % (section + 1)
+      else:
+        return "%d" % (section + 1)
 
     return None
 
@@ -83,26 +92,67 @@ class GameStartToggleButton(QPushButton):
       self.setText("Start Game")
 
 
-class MainWindow(QDialog):
+class PlayerDelegate(QStyledItemDelegate):
+  def paint(self, painter, option, index):
+    if index.data() == None:
+      QStyledItemDelegate.paint(painter, options, index)
+    else:
+      painter.save()
+      painter.setClipRect(option.rect)
+      ammoStr = str(index.data().ammo)
+      painter.drawText(option.rect, ammoStr)
+
+      ammoWidth = QFontMetrics(option.font).width("000") # allow space for 3 big digits
+      ammoHeight = QFontMetrics(option.font).height()
+      painter.setBrush(Qt.SolidPattern)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * index.data().health / index.data().maxHealth, ammoHeight - 4, 5, 5)
+      painter.setBrush(Qt.NoBrush)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
+      painter.restore()
+
+
+class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
     self.setWindowTitle("BraidsTag Server")
 
-    self.layout = QVBoxLayout()
+    layout = QVBoxLayout()
 
-    self.gameStart = GameStartToggleButton(gameState)
-    self.layout.addWidget(self.gameStart)
+    gameStart = GameStartToggleButton(gameState)
+    layout.addWidget(gameStart)
 
-    self.listModel = LinearModel(GameStateModel(gameState))
-    self.listView = QListView()
-    self.listView.setModel(self.listModel)
-    self.layout.addWidget(self.listView)
+    tabs = QTabWidget(self)
 
-    self.setLayout(self.layout)
+    #self.model = LinearModel(GameStateModel(gameState))
+    #listView = QListView()
+    #listView.setModel(self.model)
+    #layout.addWidget(listView)
+    #tabs.addTab(listView, "Players")
+
+    self.model = GameStateModel(gameState)
+    listView = QTableView()
+    listView.setModel(self.model)
+    listView.setItemDelegate(PlayerDelegate())
+    #layout.addWidget(listView)
+    tabs.addTab(listView, "Players")
+
+    self.log = QTextEdit()
+    #self.log.document().setMaximumBlockCount(10)
+    self.log.setReadOnly(True)
+    tabs.addTab(self.log, "Log")
+
+    layout.addWidget(tabs)
+
+    self.setLayout(layout)
 
   def playerUpdated(self, teamID, playerID):
-    self.listModel.playerUpdated(teamID, playerID)
+    self.model.playerUpdated(teamID, playerID)
 
   def  playerAdded(self, sentTeam, sentPlayer):
-    self.listModel.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
+    self.model.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
 
+  def lineReceived(self, line):
+    self.log.append(line.strip())
+    #TODO: auto-scroll to the bottom
+    #sb = self.log.verticalScrollBar()
+    #sb.setValue(sb.maximum())
