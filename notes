@@ -12,6 +12,8 @@ The PCB has been laid out successfully for the first time! The big 26 pin connec
 
 RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
+Add 5v out to PCB
+
 How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. - Decision made, risk taken.
 
 Make the IR comms more selective about what is and isn’t a real packet
@@ -21,6 +23,21 @@ For peace of mind, we may want to consider stripping the 5v line in the USB cabl
 Above setup makes arduino and RPI independant of each other for power, although arduino will be responsible for keeping the relay closed.
 
 Powering the RPi over GPIO may be more efficient than using the USB port - this connection is behind the on board protection circuit, though it has been suspected that this circuit causes a voltage drop. Powering by GPIO may increase our battery life (we must be sure to cut the power before the voltage dips too low to avoid overcurrent) as the voltage drop will not be as significant. It will also be a more secure and lower form factor connection than the microUSB. 
+
+BATTERY TESTING - SInce most of the electronics are now present, some battery life testing can be done. Starting from an ARBLV (arduino read battery level - vin) of 4.8v. Until a method of timestamping the serial communications is found the time will have to be monitored manually, but the last serial communication received can be taken as a "Battery Failure Level". Tests use the named branch of the repo.
+	24 Minutes into test - 		4.56v
+	34 Minutes into test - 		4.52v
+	40 Minutes into test - 		4.50v
+	50 Minutes into test - 		4.46v
+	1  Hour into test - 		4.42v
+	1 hour 12 mins into test - 	4.38v
+	1 hour 23 mins into test - 	4.34v
+	1 hour 51 mins into test - 	4.21v
+	2 hours into test - 		4.14v
+	2 hours 10 mins into test - 	4.01v
+	2 hours 20 mins into test - 	Wireless Failure - voltage 2.65, actual time of failure not known.
+
+Estimated stable running time 2 hours
 
 
 
@@ -73,6 +90,9 @@ Teamspeak not available for ARM
 Mumble works, but is a bit sketchy and requires X server to be running - any way around this? Pi doesn't seem to enjoy running x...
 Having trouble using XVFB on pi, halp.
 Skype has a headless project, but we have to pay to get access
+
+Powerup ideas:
+Special Weapons that can be triggered - Reveal enemies, jam enemy weapons, AOE?
 
 Live location
 Ultrasonic location
