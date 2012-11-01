@@ -58,7 +58,7 @@ class LinearModel(QAbstractListModel):
   def __init__(self, source):
     super(LinearModel, self).__init__()
     self.source = source
-    QObject.connect(self.source, SIGNAL('dataChanged()'), self.dataChangedDelegate)
+    self.source.dataChanged.connect(self.dataChangedDelegate)
 
   def rowCount(self, index):
     return self.source.rowCount(index) * self.source.columnCount(index)
