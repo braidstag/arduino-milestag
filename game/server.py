@@ -128,7 +128,6 @@ class ListeningThread(Thread):
     self.shouldStop = True
     self.serversocket.close()
 
-IDEAL_TEAM_COUNT=2
 GAME_TIME=1200 #20 mins
 #GAME_TIME=12
 
@@ -139,6 +138,7 @@ class ServerGameState(GameState):
     self.teamCount = 0
     self.largestTeam = 0
     self.stopGameTimer = None
+    self.targetTeamCount = 2
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
@@ -159,8 +159,8 @@ class ServerGameState(GameState):
     return self.players[(sentTeam, sentPlayer)]
 
   def createNewPlayer(self):
-    for playerID in range(1,32):
-      for teamID in range(1,IDEAL_TEAM_COUNT + 1):
+    for playerID in range(1, 32):
+      for teamID in range(1, self.targetTeamCount + 1):
         if (teamID, playerID) not in self.players:
           return self.getOrCreatePlayer(teamID, playerID)
     #TODO handle this
@@ -185,6 +185,9 @@ class ServerGameState(GameState):
     if self.stopGameTimer:
       self.stopGameTimer.cancel()
     self.stopGameTimer = None
+
+  def setTargetTeamCount(self, value):
+    self.targetTeamCount = value
 
   def terminate(self):
     self.stopGame()

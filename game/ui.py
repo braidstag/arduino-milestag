@@ -111,17 +111,40 @@ class PlayerDelegate(QStyledItemDelegate):
       painter.restore()
 
 
-class MainWindow(QWidget):
+class GameControl(QWidget):
   def __init__(self, gameState, parent=None):
-    super(MainWindow, self).__init__(parent)
-    self.setWindowTitle("BraidsTag Server")
+    super(GameControl, self).__init__(parent)
+    self.gameState = gameState
 
     layout = QVBoxLayout()
 
     gameStart = GameStartToggleButton(gameState)
     layout.addWidget(gameStart)
 
+    teamCount = QSlider(Qt.Horizontal)
+    teamCount.setMinimum(1)
+    teamCount.setMaximum(8)
+    teamCount.setSingleStep(1)
+    teamCount.setPageStep(1)
+    teamCount.setTickPosition(QSlider.TicksAbove)
+    teamCount.setTickInterval(1)
+    teamCount.setValue(self.gameState.targetTeamCount)
+    teamCount.valueChanged.connect(self.gameState.setTargetTeamCount)
+
+    layout.addWidget(teamCount)
+
+    self.setLayout(layout)
+
+class MainWindow(QWidget):
+  def __init__(self, gameState, parent=None):
+    super(MainWindow, self).__init__(parent)
+    self.setWindowTitle("BraidsTag Server")
+
+    layout = QVBoxLayout()
     tabs = QTabWidget(self)
+
+    gameControl = GameControl(gameState)
+    tabs.addTab(gameControl, "Control")
 
     #self.model = LinearModel(GameStateModel(gameState))
     #listView = QListView()
