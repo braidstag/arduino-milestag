@@ -95,12 +95,16 @@ class GameStartToggleButton(QPushButton):
 class PlayerDelegate(QStyledItemDelegate):
   def paint(self, painter, option, index):
     if index.data() == None:
-      QStyledItemDelegate.paint(painter, option, index)
+      QStyledItemDelegate.paint(self, painter, option, index)
     else:
       painter.save()
       painter.setClipRect(option.rect)
+
+      #NB. it might be easier to create a widget and call render on it
       ammoStr = str(index.data().ammo)
       painter.drawText(option.rect, ammoStr)
+
+      painter.translate(option.rect.topLeft())
 
       ammoWidth = QFontMetrics(option.font).width("000") # allow space for 3 big digits
       ammoHeight = QFontMetrics(option.font).height()
