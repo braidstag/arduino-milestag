@@ -4,7 +4,8 @@ why doesn't the UI work for more then 2 players /team?
 reset mechanism
 mumble
 drag and drop ui
-team number slider
+team number slider - numbers and a label
 battery checker
 column widths
 exit the Read and Write threads cleanly.
+we always draw the health bar in the same place.

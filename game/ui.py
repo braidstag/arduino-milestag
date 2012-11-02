@@ -95,7 +95,7 @@ class GameStartToggleButton(QPushButton):
 class PlayerDelegate(QStyledItemDelegate):
   def paint(self, painter, option, index):
     if index.data() == None:
-      QStyledItemDelegate.paint(painter, options, index)
+      QStyledItemDelegate.paint(painter, option, index)
     else:
       painter.save()
       painter.setClipRect(option.rect)
