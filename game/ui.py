@@ -93,6 +93,9 @@ class PlayerDelegate(QStyledItemDelegate):
       painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
       painter.restore()
 
+  def sizeHint(self, option, index):
+    return QSize(150, 20)
+
 
 class GameControl(QWidget):
   def __init__(self, gameState, parent=None):
@@ -134,6 +137,7 @@ class MainWindow(QWidget):
     tableView = QTableView()
     tableView.setModel(self.model)
     tableView.setItemDelegate(PlayerDelegate())
+    self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
     tabs.addTab(tableView, "Players")
 
     self.log = QTextEdit()
