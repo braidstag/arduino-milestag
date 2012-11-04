@@ -131,19 +131,19 @@ class MainWindow(QWidget):
     tabs = QTabWidget(self)
 
     gameControl = GameControl(gameState)
-    tabs.addTab(gameControl, "Control")
+    tabs.addTab(gameControl, "&1. Control")
 
     self.model = GameStateModel(gameState)
     tableView = QTableView()
     tableView.setModel(self.model)
     tableView.setItemDelegate(PlayerDelegate())
     self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
-    tabs.addTab(tableView, "Players")
+    tabs.addTab(tableView, "&2. Players")
 
     self.log = QTextEdit()
     #self.log.document().setMaximumBlockCount(10)
     self.log.setReadOnly(True)
-    tabs.addTab(self.log, "Log")
+    tabs.addTab(self.log, "&3. Log")
 
     layout.addWidget(tabs)
 
