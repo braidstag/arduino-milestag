@@ -54,27 +54,6 @@ class GameStateModel(QAbstractTableModel):
     self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
 
 
-class LinearModel(QAbstractListModel):
-  def __init__(self, source):
-    super(LinearModel, self).__init__()
-    self.source = source
-    self.source.dataChanged.connect(self.dataChangedDelegate)
-
-  def rowCount(self, index):
-    return self.source.rowCount(index) * self.source.columnCount(index)
-
-  def columnCount(self, index):
-    return 1
-
-  def data(self, index, role = Qt.DisplayRole):
-    return self.source.data(self.source.index(index.row() % self.source.columnCount(index.parent()), index.row() // self.source.columnCount(index.parent()), index.parent()), role)
-
-  def dataChangedDelegate(self, startIndex, endIndex):
-    self.dataChanged.emit(self.index(0, startIndex.row() * startIndex.column(), QModelIndex()), self.index(0, endIndex.row() * endIndex.column(), QModelIndex()))
-
-  def playerUpdated(self, teamID, playerID):
-    self.source.playerUpdated(teamID, playerID)
-
 class GameStartToggleButton(QPushButton):
   def __init__(self, gameState, parent=None):
     super(GameStartToggleButton, self).__init__("Start Game", parent)
@@ -139,6 +118,7 @@ class GameControl(QWidget):
 
     self.setLayout(layout)
 
+
 class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
@@ -150,18 +130,11 @@ class MainWindow(QWidget):
     gameControl = GameControl(gameState)
     tabs.addTab(gameControl, "Control")
 
-    #self.model = LinearModel(GameStateModel(gameState))
-    #listView = QListView()
-    #listView.setModel(self.model)
-    #layout.addWidget(listView)
-    #tabs.addTab(listView, "Players")
-
     self.model = GameStateModel(gameState)
-    listView = QTableView()
-    listView.setModel(self.model)
-    listView.setItemDelegate(PlayerDelegate())
-    #layout.addWidget(listView)
-    tabs.addTab(listView, "Players")
+    tableView = QTableView()
+    tableView.setModel(self.model)
+    tableView.setItemDelegate(PlayerDelegate())
+    tabs.addTab(tableView, "Players")
 
     self.log = QTextEdit()
     #self.log.document().setMaximumBlockCount(10)
