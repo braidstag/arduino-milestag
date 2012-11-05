@@ -51,8 +51,76 @@ class GameStateModel(QAbstractTableModel):
   def playerUpdated(self, teamIDStr, playerIDStr):
     teamID = int(teamIDStr)
     playerID = int(playerIDStr)
+    #TODO: I think this is called with 1-based numbers, shouldn't it be 0-based when emitted?
     self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
 
+  #DnD support
+  
+  def insertRows(self, row, count, parent):
+    print "insertRows"
+    self.beginInsertRows()
+    #TODO
+    self.endInsertRows()
+  
+  def insertColumns(self, column, count, parent):
+    print "insertColumns"
+    self.beginInsertColumns()
+    #TODO
+    self.endInsertColumns()
+
+  def removeRows(row, count, parent):
+    print "Foo"
+    #TODO
+    pass
+
+  def removeRow(row, parent):
+    print "Foo"
+    #TODO
+    pass
+
+  def removeColumns(column, count, parent):
+    print "Foo"
+    #TODO
+    pass
+
+  def removeColumn(column, parent):
+    print "Foo"
+    #TODO
+    pass
+
+  def setData(self, index, value, role = Qt.EditRole):
+    print "setting data at %s  %s  %s" % (index, value, role)
+    if not index.isValid() or index.column() >= self.gameState.teamCount:
+      print "returning false"
+      return False
+    if value == None:
+      print "None value"
+      return False
+    
+    #move all the other players down
+    lowestBlank = self.gameState.largestTeam
+
+    for playerID in range(index.row(), self.gameState.largestTeam + 1):
+      if (index.column() + 1, playerID + 1) not in self.gameState.players:
+        lowestBlank = playerID
+        break
+
+    for playerID in range(lowestBlank, index.row(), -1):
+      self.gameState.movePlayer(index.column() + 1, playerID, index.column() + 1, playerID + 1)
+
+    oldTeamID = value.teamID
+    oldPlayerID = value.playerID
+    self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
+    self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(self.gameState.largestTeam - 1, index.column(), QModelIndex()))
+    self.dataChanged.emit(self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()), self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()))
+    self.layoutChanged.emit() #TODO
+    return True
+
+  def flags(self, index):
+    return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+
+  def supportedDropActions(self):
+     return Qt.CopyAction | Qt.MoveAction
 
 class GameStartToggleButton(QPushButton):
   def __init__(self, gameState, parent=None):
@@ -137,6 +205,11 @@ class MainWindow(QWidget):
     tableView = QTableView()
     tableView.setModel(self.model)
     tableView.setItemDelegate(PlayerDelegate())
+    tableView.setSelectionMode(QAbstractItemView.SingleSelection);
+    tableView.setDragEnabled(True)
+    tableView.setAcceptDrops(True)
+    tableView.setDropIndicatorShown(True);
+    tableView.setDragDropMode(QAbstractItemView.InternalMove);
     self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
     tabs.addTab(tableView, "&2. Players")
 

@@ -124,6 +124,14 @@ class ListeningThread(Thread):
     for key in self.connections:
       self.connections[key].queueMessage(msg)
 
+  def queueMessage(self, teamID, playerID, msg):
+    self.connections[(teamID, playerID)].queueMessage(msg)
+
+  def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
+    self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
+    del self.connections[(srcTeamID, srcPlayerID)]
+    self.queueMessage(dstTeamID, dstPlayerID, "TeamPlayer(%s,%s)\n" % (dstTeamID, dstPlayerID))
+
   def stop(self):
     self.shouldStop = True
     self.serversocket.close()
@@ -148,7 +156,6 @@ class ServerGameState(GameState):
     sentPlayer = int(sentPlayerStr)
 
     if not (sentTeam, sentPlayer) in self.players:
-      print "found new player %s:%s" % (sentTeam, sentPlayer)
       self.players[(sentTeam, sentPlayer)] = Player(sentTeam, sentPlayer)
       if sentTeam > self.teamCount:
         self.teamCount = sentTeam
@@ -165,6 +172,29 @@ class ServerGameState(GameState):
           return self.getOrCreatePlayer(teamID, playerID)
     #TODO handle this
     raise RuntimeError("too many players")
+
+  def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
+    print "Moving %d:%d =>%d:%d" % (srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
+    if (dstTeamID, dstPlayerID) in self.players:
+      raise RuntimeError("Tried to move a player to a non-empty spot")
+    if (srcTeamID, srcPlayerID) not in self.players:
+      return
+
+    player = self.players[(srcTeamID, srcPlayerID)]
+    self.players[(dstTeamID, dstPlayerID)] = player
+    player.teamID = dstTeamID
+    player.playerID = dstPlayerID
+    #TODO: should we reset their stats.
+    del self.players[(srcTeamID, srcPlayerID)]
+
+    if dstTeamID > self.teamCount:
+      self.teamCount = dstTeamID
+
+    if dstPlayerID > self.largestTeam:
+      self.largestTeam = dstPlayerID
+
+    self.listeningThread.movePlayer(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
+    #TODO: notify people of the change
 
   def startGame(self):
     self.gameStartTime = time.time()
