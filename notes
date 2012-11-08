@@ -7,7 +7,7 @@ Notes from first revision PCB assembly
 5. RJ45 connectors short pins 4+5 together - find out why and can this be fixed safely?
 6. RJ45 connectors are too large - charger PCB needs enlarging slightly to accommodate both ports. 
 7. Do we flip the IR receiver so that it can be mounted on the underside of its PCB? This might increase its range.
-8. We're already seeing some issues with the solid core wire used in this revision. Should use stranded wire in future.
+8. We're already seeing some issues with the solid core wire used in this revision. Should use stranded wire in future. - While this may be the case, there are similar problems with using stranded wire. Crimping process may need to be improved.
 9. Consider ways to ensure the raspi GPIO connector can only be connected correctly.
 10. Consider standoffs for the IR LED - currently it will quickly bend under strain.
 11. RGBLED does not appear to focus as anticipated when put in the lens tube. Investigate!
