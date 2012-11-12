@@ -148,6 +148,7 @@ class ServerGameState(GameState):
     self.stopGameTimer = None
     self.targetTeamCount = 2
     self.listeners = []
+    self.setGameTime(GAME_TIME)
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
@@ -202,20 +203,18 @@ class ServerGameState(GameState):
     #TODO: notify people of the change
 
   def startGame(self):
-    self.gameStartTime = time.time()
-    self.gameEndTime = time.time() + GAME_TIME
+    GameState.startGame(self)
     def timerStop():
-      if self.gameStartTime + GAME_TIME > time.time():
+      if self.gameStartTime + self.gameTime > time.time():
         #the game must have been stopped and restarted as we aren't ready to stop yet. Why were we not cancelled though?
         raise RuntimeError("timer seemingly triggered early")
       self.stopGame()
-    self.stopGameTimer = Timer(GAME_TIME, timerStop)
+    self.stopGameTimer = Timer(self.gameTime, timerStop)
     self.stopGameTimer.start()
-    self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (GAME_TIME))
+    self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (self.gameTime))
 
   def stopGame(self):
-    self.gameEndTime = None
-    self.gameStartTime = None
+    GameState.stopGame(self)
     self.listeningThread.queueMessageToAll("StopGame()\n")
     if self.stopGameTimer:
       self.stopGameTimer.cancel()

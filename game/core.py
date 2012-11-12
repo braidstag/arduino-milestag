@@ -22,10 +22,14 @@ class GameState():
   def __init__(self):
     self.gameStartTime = None
     self.gameEndTime = None
+    self.gameTime = 0
 
-  def startGame(self, duration):
+  def setGameTime(self, duration):
+    self.gameTime = duration
+
+  def startGame(self):
     self.gameStartTime = time.time()
-    self.gameEndTime = time.time() + duration
+    self.gameEndTime = time.time() + self.gameTime
 
   def stopGame(self):
     self.gameStartTime = None

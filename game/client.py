@@ -32,7 +32,8 @@ class Client(ClientServerConnection):
     
     try:
       (duration,) = proto.STARTGAME.parse(msg)
-      self.main.gameState.startGame(int(duration))
+      self.main.gameState.setGameTime(int(duration))
+      self.main.gameState.startGame()
       return True
     except proto.MessageParseException:
       pass
