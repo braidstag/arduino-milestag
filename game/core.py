@@ -3,16 +3,17 @@
 import time
 
 class Player():
-  teamID = 0
-  playerID = 0
-  ammo = 100
-  health = 5
-  maxHealth = 8
-  gunDamage = 1
 
   def __init__(self, teamID, playerID):
     self.teamID = int(teamID)
     self.playerID = int(playerID)
+    self.reset()
+
+  def reset(self):
+    self.ammo = 100
+    self.health = 5
+    self.maxHealth = 8
+    self.gunDamage = 1
 
   def __str__(self):
     return "Player(team=%d, id=%d, ammo=%d, health=%d)" % (self.teamID, self.playerID, self.ammo, self.health)

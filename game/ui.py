@@ -122,6 +122,7 @@ class GameStateModel(QAbstractTableModel):
   def supportedDropActions(self):
      return Qt.CopyAction | Qt.MoveAction
 
+
 class GameStartToggleButton(QPushButton):
   def __init__(self, gameState, parent=None):
     super(GameStartToggleButton, self).__init__("Start Game", parent)
@@ -137,6 +138,19 @@ class GameStartToggleButton(QPushButton):
     else:
       self.gameState.stopGame()
       self.setText("Start Game")
+
+
+class GameResetButton(QPushButton):
+  def __init__(self, gameState, parent=None):
+    super(GameResetButton, self).__init__("Reset", parent)
+    self.gameState = gameState
+    self.clicked.connect(self.reset)
+
+  def reset(self):
+    self.gameState.resetGame()
+
+  def toggleEnabled(self):
+    self.setEnabled(not self.isEnabled())
 
 
 class PlayerDelegate(QStyledItemDelegate):
@@ -175,6 +189,10 @@ class GameControl(QWidget):
     gameStart = GameStartToggleButton(gameState)
     layout.addWidget(gameStart)
 
+    gameReset = GameResetButton(gameState)
+    layout.addWidget(gameReset)
+    gameStart.clicked.connect(gameReset.toggleEnabled)
+
     teamCount = QSlider(Qt.Horizontal)
     teamCount.setMinimum(1)
     teamCount.setMaximum(8)
@@ -193,8 +211,9 @@ class GameControl(QWidget):
 class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
-    self.setWindowTitle("BraidsTag Server")
+    gameState.addPlayerUpdateListener(self)
 
+    self.setWindowTitle("BraidsTag Server")
     layout = QVBoxLayout()
     tabs = QTabWidget(self)
 

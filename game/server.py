@@ -147,9 +147,13 @@ class ServerGameState(GameState):
     self.largestTeam = 0
     self.stopGameTimer = None
     self.targetTeamCount = 2
+    self.listeners = []
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
+
+  def addPlayerUpdateListener(self, listener):
+    self.listeners.append(listener)
 
   def getOrCreatePlayer(self, sentTeamStr, sentPlayerStr):
     sentTeam = int(sentTeamStr)
@@ -162,7 +166,8 @@ class ServerGameState(GameState):
       if sentPlayer > self.largestTeam:
         self.largestTeam = sentPlayer
 
-      mainWindow.playerAdded(sentTeam, sentPlayer);
+      for listener in self.listeners:
+        listener.playerAdded(sentTeam, sentPlayer);
     return self.players[(sentTeam, sentPlayer)]
 
   def createNewPlayer(self):
@@ -215,6 +220,14 @@ class ServerGameState(GameState):
     if self.stopGameTimer:
       self.stopGameTimer.cancel()
     self.stopGameTimer = None
+
+  def resetGame(self):
+    #GameState.resetGame(self)
+    self.listeningThread.queueMessageToAll("ResetGame()\n")
+    for p in gameState.players.values():
+      p.reset()
+      for listener in self.listeners:
+        listener.playerUpdated(p.teamID, p.playerID)
 
   def setTargetTeamCount(self, value):
     self.targetTeamCount = value
