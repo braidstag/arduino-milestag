@@ -179,33 +179,58 @@ class PlayerDelegate(QStyledItemDelegate):
     return QSize(150, 20)
 
 
-class TeamCountSlider(QSlider):
+class LabelledSlider(QWidget):
+  def __init__(self, label):
+    super(LabelledSlider, self).__init__()
+    layout = QHBoxLayout()
+    self.slider = QSlider(Qt.Horizontal)
+    self.staticLabel = QLabel(label)
+    self.valueLabel = QLabel()
+    self.updateValueLabel(self.slider.value())
+    self.slider.valueChanged.connect(self.updateValueLabel)
+
+    layout.addWidget(self.staticLabel)
+    layout.addWidget(self.valueLabel)
+    layout.addWidget(self.slider)
+
+    self.setLayout(layout)
+
+  def formatValue(self, value):
+    "A method for formatting the slider's int value into a label. This should be overridden if you don't just want str()"
+    return str(value)
+
+  def updateValueLabel(self, value):
+    self.valueLabel.setText(self.formatValue(value))
+
+class TeamCountSlider(LabelledSlider):
   def __init__(self, gameState):
-    super(TeamCountSlider, self).__init__(Qt.Horizontal)
+    super(TeamCountSlider, self).__init__("Team Size: ")
 
-    self.setMinimum(1)
-    self.setMaximum(8)
-    self.setSingleStep(1)
-    self.setPageStep(1)
-    self.setTickPosition(QSlider.TicksAbove)
-    self.setTickInterval(1)
-    self.setValue(gameState.targetTeamCount)
-    self.valueChanged.connect(gameState.setTargetTeamCount)
+    self.slider.setMinimum(1)
+    self.slider.setMaximum(8)
+    self.slider.setSingleStep(1)
+    self.slider.setPageStep(1)
+    self.slider.setTickPosition(QSlider.TicksAbove)
+    self.slider.setTickInterval(1)
+    self.slider.setValue(gameState.targetTeamCount)
+    self.slider.valueChanged.connect(gameState.setTargetTeamCount)
 
 
-class GameTimeSlider(QSlider):
+class GameTimeSlider(LabelledSlider):
   def __init__(self, gameState):
-    super(GameTimeSlider, self).__init__(Qt.Horizontal)
+    super(GameTimeSlider, self).__init__("Game Time: ")
 
-    self.setMinimum(60) # 1 minute
-    self.setMaximum(1800) # 30 minutes
-    self.setSingleStep(60) # 1 minute
-    self.setPageStep(300) # 5 minutes
-    self.setTickPosition(QSlider.TicksAbove)
-    self.setTickInterval(300)
-    self.setValue(gameState.gameTime)
-    self.valueChanged.connect(gameState.setGameTime)
+    self.slider.setMinimum(60) # 1 minute
+    self.slider.setMaximum(1800) # 30 minutes
+    self.slider.setSingleStep(60) # 1 minute
+    self.slider.setPageStep(300) # 5 minutes
+    self.slider.setTickPosition(QSlider.TicksAbove)
+    self.slider.setTickInterval(300)
+    self.slider.setValue(gameState.gameTime)
+    self.slider.valueChanged.connect(gameState.setGameTime)
 
+  def formatValue(self, value):
+    return str(value // 60) + ":" + str(value % 60)
 
 class GameControl(QWidget):
   def __init__(self, gameState, parent=None):

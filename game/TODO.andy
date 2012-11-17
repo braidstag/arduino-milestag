@@ -1,7 +1,6 @@
-reset mechanism
 mumble
 test drag and drop ui
-team number slider - numbers and a label
+team number slider - better formatting
 battery checker
 exit the Read and Write threads cleanly.
 use a widget for the player display
@@ -9,4 +8,4 @@ sensible column widths
 hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
 largestTeam and teamCount should go up as well as down.
-when a gamne stops, does it set the state of the buttons correctly?
+when a game stops, does it set the state of the buttons correctly?
