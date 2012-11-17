@@ -193,6 +193,8 @@ class GameControl(QWidget):
     layout.addWidget(gameReset)
     gameStart.clicked.connect(gameReset.toggleEnabled)
 
+    #hLayout = QHBoxLayout()
+
     teamCount = QSlider(Qt.Horizontal)
     teamCount.setMinimum(1)
     teamCount.setMaximum(8)
@@ -202,8 +204,22 @@ class GameControl(QWidget):
     teamCount.setTickInterval(1)
     teamCount.setValue(self.gameState.targetTeamCount)
     teamCount.valueChanged.connect(self.gameState.setTargetTeamCount)
-
+    #hLayout.addWidget(teamCount)
     layout.addWidget(teamCount)
+
+    gameTime = QSlider(Qt.Horizontal)
+    gameTime.setMinimum(60) # 1 minute
+    gameTime.setMaximum(1800) # 30 minutes
+    gameTime.setSingleStep(60) # 1 minute
+    gameTime.setPageStep(300) # 5 minutes
+    gameTime.setTickPosition(QSlider.TicksAbove)
+    gameTime.setTickInterval(300)
+    gameTime.setValue(self.gameState.gameTime)
+    gameTime.valueChanged.connect(self.gameState.setGameTime)
+    #hLayout.addWidget(gameTime)
+    layout.addWidget(gameTime)
+
+    #layout.addWidget(hLayout)
 
     self.setLayout(layout)
 
