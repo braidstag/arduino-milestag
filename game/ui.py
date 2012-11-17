@@ -179,6 +179,34 @@ class PlayerDelegate(QStyledItemDelegate):
     return QSize(150, 20)
 
 
+class TeamCountSlider(QSlider):
+  def __init__(self, gameState):
+    super(TeamCountSlider, self).__init__(Qt.Horizontal)
+
+    self.setMinimum(1)
+    self.setMaximum(8)
+    self.setSingleStep(1)
+    self.setPageStep(1)
+    self.setTickPosition(QSlider.TicksAbove)
+    self.setTickInterval(1)
+    self.setValue(gameState.targetTeamCount)
+    self.valueChanged.connect(gameState.setTargetTeamCount)
+
+
+class GameTimeSlider(QSlider):
+  def __init__(self, gameState):
+    super(GameTimeSlider, self).__init__(Qt.Horizontal)
+
+    self.setMinimum(60) # 1 minute
+    self.setMaximum(1800) # 30 minutes
+    self.setSingleStep(60) # 1 minute
+    self.setPageStep(300) # 5 minutes
+    self.setTickPosition(QSlider.TicksAbove)
+    self.setTickInterval(300)
+    self.setValue(gameState.gameTime)
+    self.valueChanged.connect(gameState.setGameTime)
+
+
 class GameControl(QWidget):
   def __init__(self, gameState, parent=None):
     super(GameControl, self).__init__(parent)
@@ -195,27 +223,11 @@ class GameControl(QWidget):
 
     #hLayout = QHBoxLayout()
 
-    teamCount = QSlider(Qt.Horizontal)
-    teamCount.setMinimum(1)
-    teamCount.setMaximum(8)
-    teamCount.setSingleStep(1)
-    teamCount.setPageStep(1)
-    teamCount.setTickPosition(QSlider.TicksAbove)
-    teamCount.setTickInterval(1)
-    teamCount.setValue(self.gameState.targetTeamCount)
-    teamCount.valueChanged.connect(self.gameState.setTargetTeamCount)
+    teamCount = TeamCountSlider(self.gameState)
     #hLayout.addWidget(teamCount)
     layout.addWidget(teamCount)
 
-    gameTime = QSlider(Qt.Horizontal)
-    gameTime.setMinimum(60) # 1 minute
-    gameTime.setMaximum(1800) # 30 minutes
-    gameTime.setSingleStep(60) # 1 minute
-    gameTime.setPageStep(300) # 5 minutes
-    gameTime.setTickPosition(QSlider.TicksAbove)
-    gameTime.setTickInterval(300)
-    gameTime.setValue(self.gameState.gameTime)
-    gameTime.valueChanged.connect(self.gameState.setGameTime)
+    gameTime = GameTimeSlider(self.gameState)
     #hLayout.addWidget(gameTime)
     layout.addWidget(gameTime)
 
