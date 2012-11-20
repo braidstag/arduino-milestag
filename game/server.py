@@ -180,7 +180,6 @@ class ServerGameState(GameState):
     raise RuntimeError("too many players")
 
   def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
-    print "Moving %d:%d =>%d:%d" % (srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
     if (dstTeamID, dstPlayerID) in self.players:
       raise RuntimeError("Tried to move a player to a non-empty spot")
     if (srcTeamID, srcPlayerID) not in self.players:

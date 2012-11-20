@@ -55,46 +55,10 @@ class GameStateModel(QAbstractTableModel):
     self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
 
   #DnD support
-  
-  def insertRows(self, row, count, parent):
-    print "insertRows"
-    self.beginInsertRows()
-    #TODO
-    self.endInsertRows()
-  
-  def insertColumns(self, column, count, parent):
-    print "insertColumns"
-    self.beginInsertColumns()
-    #TODO
-    self.endInsertColumns()
-
-  def removeRows(row, count, parent):
-    print "Foo"
-    #TODO
-    pass
-
-  def removeRow(row, parent):
-    print "Foo"
-    #TODO
-    pass
-
-  def removeColumns(column, count, parent):
-    print "Foo"
-    #TODO
-    pass
-
-  def removeColumn(column, parent):
-    print "Foo"
-    #TODO
-    pass
-
   def setData(self, index, value, role = Qt.EditRole):
-    print "setting data at %s  %s  %s" % (index, value, role)
     if not index.isValid() or index.column() >= self.gameState.teamCount:
-      print "returning false"
       return False
     if value == None:
-      print "None value"
       return False
     
     #move all the other players down
