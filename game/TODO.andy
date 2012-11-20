@@ -7,5 +7,5 @@ use a widget for the player display
 sensible column widths
 hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
-largestTeam and teamCount should go up as well as down.
+provide a drop target for putting a player into a new team.
 when a game stops, does it set the state of the buttons correctly?
