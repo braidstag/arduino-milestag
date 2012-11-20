@@ -172,7 +172,7 @@ class ServerGameState(GameState):
     return self.players[(sentTeam, sentPlayer)]
 
   def createNewPlayer(self):
-    for playerID in range(1, 32):
+    for playerID in range(1, 33):
       for teamID in range(1, self.targetTeamCount + 1):
         if (teamID, playerID) not in self.players:
           return self.getOrCreatePlayer(teamID, playerID)
@@ -199,8 +199,32 @@ class ServerGameState(GameState):
     if dstPlayerID > self.largestTeam:
       self.largestTeam = dstPlayerID
 
+    if srcTeamID == self.teamCount:
+      #check if this was the only player in this team
+      self._recalculateTeamCount()
+
+    if srcPlayerID == self.largestTeam:
+      #check if this was the only player in this team
+      self._recalculateLargestTeam()
+
     self.listeningThread.movePlayer(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
     #TODO: notify people of the change
+
+  def _recalculateTeamCount(self):
+    for teamID in range(self.teamCount, 0, -1):
+      for playerID in range(self.largestTeam, 0, -1):
+        if (teamID, playerID) in self.players:
+          #still need this team
+          self.teamCount = teamID
+          return
+
+  def _recalculateLargestTeam(self):
+    for playerID in range(self.largestTeam, 0, -1):
+      for teamID in range(self.teamCount, 0, -1):
+        if (teamID, playerID) in self.players:
+          #one team still has this many players
+          self.largestTeam = playerID
+          return
 
   def startGame(self):
     GameState.startGame(self)
