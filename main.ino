@@ -12,7 +12,6 @@ void decode_signal() {
 void setup() {
   //set the pins
   pinMode(9, OUTPUT);
-  pinMode(pin_ir_feedback, OUTPUT);
   pinMode(pin_ir_reciever, INPUT);
   pinMode(power_relay_pin, OUTPUT);
   pinMode(laser_pin, OUTPUT);

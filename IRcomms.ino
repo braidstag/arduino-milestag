@@ -12,7 +12,6 @@
 //#define DEBUG_RECV 1
 
 #define pin_infrared 9 // used for a Carrier wave
-#define pin_ir_feedback 13 // normal LED
 #define pin_ir_reciever 8
 
 #define laser_pin 7
@@ -229,14 +228,12 @@ void signal_send() {
 
 void ir_up() {
   TCCR1A = _BV(COM1A0);
-  digitalWrite(pin_ir_feedback, HIGH);
   writeLastChangeTime = micros();
 }
 
 void ir_down() {
   TCCR1A = 0;
   digitalWrite(pin_infrared, LOW);
-  digitalWrite(pin_ir_feedback, LOW);
   writeLastChangeTime = micros();
 }
 
