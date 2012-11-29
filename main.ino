@@ -17,10 +17,14 @@ void setup() {
   pinMode(power_relay_pin, OUTPUT);
   pinMode(laser_pin, OUTPUT);
   pinMode(trigger_pin, INPUT);
+  pinMode(altfire_pin, INPUT);
   pinMode(power_monitor_pin, INPUT);
   pinMode(muzzlered_pin, OUTPUT);
   pinMode(muzzlegreen_pin, OUTPUT);
   pinMode(muzzleblue_pin, OUTPUT);
+  pinMode(torchred_pin, OUTPUT);
+  pinMode(torchgreen_pin, OUTPUT);
+  pinMode(torchblue_pin, OUTPUT);
   
   // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
   //set the carrier wave frequency. This only sets up pin 9.
@@ -47,6 +51,7 @@ unsigned long time = micros();
 void loop() {
   timeDebug();
   checkTrigger();
+  checkAltfire();
   signal_send();
   if (signal_recieve()) {
     decode_signal();
@@ -84,6 +89,16 @@ void checkTrigger() {
     }
     lastTriggerCheck = micros();
   }
+}
+
+void checkAltfire() {
+ 
+    altfire = digitalRead(altfire_pin);
+if (altfire == HIGH) {
+	torch_up(myteam);
+} else {
+        torch_down();
+     }
 }
 
 void checkBattery() {

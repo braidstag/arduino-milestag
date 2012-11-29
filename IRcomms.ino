@@ -19,12 +19,17 @@
 #define power_relay_pin 10
 #define power_monitor_pin A0
 #define trigger_pin 3
-#define muzzlered_pin 4
-#define muzzlegreen_pin 5
-#define muzzleblue_pin 6
+#define altfire_pin 2
+#define muzzlered_pin 11
+#define muzzlegreen_pin 12
+#define muzzleblue_pin 13
+#define torchred_pin 4
+#define torchgreen_pin 5
+#define torchblue_pin 6
 
 //temporary team ID to test muzzle flash code
 int myteam = 7;
+int altfire = 0;
 
 // some timings
 long headerDuration = 2400;
@@ -307,5 +312,50 @@ void muzzleflash_down ( void) {
   digitalWrite(muzzlered_pin, LOW);
   digitalWrite(muzzlegreen_pin, LOW);
   digitalWrite(muzzleblue_pin, LOW);
+}
+
+void torch_up(int flashteam) {
+//red
+  if (flashteam == 1) {
+    digitalWrite(torchred_pin, HIGH);
+  }
+//green
+  if (flashteam == 2) {
+    digitalWrite(torchgreen_pin, HIGH);
+  }
+//blue
+  if (flashteam == 3) {
+    digitalWrite(torchblue_pin, HIGH);
+  }
+//yellow
+  if (flashteam == 4) {
+    digitalWrite(torchred_pin, HIGH);
+    digitalWrite(torchgreen_pin, HIGH);
+  }
+//purple
+  if (flashteam == 5) {
+    digitalWrite(torchred_pin, HIGH);
+    digitalWrite(torchblue_pin, HIGH);
+  }
+//cyan
+  if (flashteam == 6) {
+    digitalWrite(torchgreen_pin, HIGH);
+    digitalWrite(torchblue_pin, HIGH);
+  }
+//white
+  if (flashteam == 7) { 
+    digitalWrite(torchred_pin, HIGH);
+    digitalWrite(torchgreen_pin, HIGH);
+    digitalWrite(torchblue_pin, HIGH);
+  }
+
+    //?? run out of digital combinations
+
+}
+
+void torch_down ( void) {
+  digitalWrite(torchred_pin, LOW);
+  digitalWrite(torchgreen_pin, LOW);
+  digitalWrite(torchblue_pin, LOW);
 }
 
