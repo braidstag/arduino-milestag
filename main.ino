@@ -24,7 +24,9 @@ void setup() {
   pinMode(torchred_pin, OUTPUT);
   pinMode(torchgreen_pin, OUTPUT);
   pinMode(torchblue_pin, OUTPUT);
-  
+
+  digitalWrite(power_relay_pin, HIGH);
+
   // see http://www.atmel.com/dyn/resources/prod_documents/doc8161.pdf for more details (page 136 onwards)
   //set the carrier wave frequency. This only sets up pin 9.
   TCCR1A = _BV(COM1A0); // | _BV(COM1B0); for another pin (10)
@@ -40,8 +42,6 @@ void setup() {
 
   //debug  
   Serial.begin(115200);
-  
-  digitalWrite(power_relay_pin, HIGH);
 }
 
 boolean clientConnected = false;
