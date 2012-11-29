@@ -21,8 +21,8 @@
 #define pin_infrared 9
 #define power_relay_pin 10
 #define muzzlered_pin 11
-#define muzzlegreen_pin 12
-#define muzzleblue_pin 13
+#define muzzleblue_pin 12
+#define muzzlegreen_pin 13
 #define power_monitor_pin A0
 
 // some timings
