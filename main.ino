@@ -1,4 +1,5 @@
 //#define DEBUG_DECODE 1
+//#define DEBUG_MAIN_LOOP 1
 
 void decode_signal() {
 #ifdef DEBUG_DECODE
@@ -48,7 +49,9 @@ boolean clientConnected = false;
 unsigned long time = micros();
 
 void loop() {
+#ifdef DEBUG_MAIN_LOOP
   timeDebug();
+#endif
   checkTrigger();
   checkAltfire();
   signal_send();
@@ -58,7 +61,9 @@ void loop() {
   }
 
   checkSerial();
+#ifdef DEBUG_MAIN_LOOP
   timeDebug();
+#endif
 }
 
 boolean oldTrigger = false;
