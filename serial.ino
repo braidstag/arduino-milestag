@@ -44,25 +44,25 @@ void checkSerial() {
       }
 //temporary crap code for team select
       else if (strncmp("red", serialBuffer, 3) == 0) {
-        myteam = 1;
+        preConnectedTeamId = 1;
       }
       else if (strncmp("green", serialBuffer, 5) == 0) {
-        myteam = 2;
+        preConnectedTeamId = 2;
       }
       else if (strncmp("blue", serialBuffer, 4) == 0) {
-        myteam = 3;
+        preConnectedTeamId = 3;
       }
       else if (strncmp("yellow", serialBuffer, 6) == 0) {
-        myteam = 4;
+        preConnectedTeamId = 4;
       }
       else if (strncmp("purple", serialBuffer, 6) == 0) {
-        myteam = 5;
+        preConnectedTeamId = 5;
       }
       else if (strncmp("cyan", serialBuffer, 4) == 0) {
-        myteam = 6;
+        preConnectedTeamId = 6;
       }
       else if (strncmp("white", serialBuffer, 5) == 0) {
-        myteam = 7;
+        preConnectedTeamId = 7;
       }
     }
   }

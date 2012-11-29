@@ -46,7 +46,7 @@ void setup() {
 }
 
 boolean clientConnected = false;
-unsigned long time = micros();
+int preConnectedTeamId = 7; //our teamId - only used before a proper client connects.
 
 void loop() {
 #ifdef DEBUG_MAIN_LOOP
@@ -99,7 +99,7 @@ void checkAltfire() {
   boolean altfire = digitalRead(altfire_pin);
 
   if (altfire) {
-   	torch_up(myteam);
+   	torch_up(preConnectedTeamId);
   } else {
     torch_down();
   }

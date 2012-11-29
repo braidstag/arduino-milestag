@@ -115,10 +115,10 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
 
 
 void mt_fireShot() {
-  mt_fireShot(1,1,3);
+  mt_fireShot(preConnectedTeamId, 1, 3);
 }
 
 void mt_fireShot(byte teamId, byte playerId, byte dmg) {
   unsigned long shot = (teamId << MT1_TEAM_OFFSET) | (playerId << MT1_PLAYER_OFFSET) | dmg;
-  start_command(shot);
+  start_command(shot, teamId);
 }

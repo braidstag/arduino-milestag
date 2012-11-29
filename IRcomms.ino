@@ -25,9 +25,6 @@
 #define muzzleblue_pin 13
 #define power_monitor_pin A0
 
-//temporary team ID to test muzzle flash code
-int myteam = 7;
-
 // some timings
 long headerDuration = 2400;
 long intervalDuration = 600;
@@ -153,7 +150,7 @@ boolean within_tolerance(unsigned long value, unsigned long target, byte toleran
 ////////////////////////
 // IR writing functions
 
-void start_command(unsigned long command) {
+void start_command(unsigned long command, byte myTeamId) {
   if (writeUpTime || writeDownTime || postDataTime) {
     //already writing ignore this
     return;
@@ -164,7 +161,7 @@ void start_command(unsigned long command) {
   writeBits = 17;
 
   digitalWrite(laser_pin, HIGH);
-  muzzleflash_up(myteam);
+  muzzleflash_up(myTeamId);
 
   //write header
   ir_up();
@@ -265,92 +262,77 @@ void timeDebug() {
 }
 
 void muzzleflash_up(int flashteam) {
-//red
-  if (flashteam == 1) {
-    digitalWrite(muzzlered_pin, HIGH);
+  switch (flashteam) {
+    case 1: //red
+      digitalWrite(muzzlered_pin, HIGH);
+      break;
+    case 2: //green
+      digitalWrite(muzzlegreen_pin, HIGH);
+      break;
+    case 3: //blue
+      digitalWrite(muzzleblue_pin, HIGH);
+      break;
+    case 4: //yellow
+      digitalWrite(muzzlered_pin, HIGH);
+      digitalWrite(muzzlegreen_pin, HIGH);
+      break;
+    case 5: //purple
+      digitalWrite(muzzlered_pin, HIGH);
+      digitalWrite(muzzleblue_pin, HIGH);
+      break;
+    case 6: //cyan
+      digitalWrite(muzzlegreen_pin, HIGH);
+      digitalWrite(muzzleblue_pin, HIGH);
+      break;
+    case 7: //white
+      digitalWrite(muzzlered_pin, HIGH);
+      digitalWrite(muzzlegreen_pin, HIGH);
+      digitalWrite(muzzleblue_pin, HIGH);
+      break;
   }
-//green
-  if (flashteam == 2) {
-    digitalWrite(muzzlegreen_pin, HIGH);
-  }
-//blue
-  if (flashteam == 3) {
-    digitalWrite(muzzleblue_pin, HIGH);
-  }
-//yellow
-  if (flashteam == 4) {
-    digitalWrite(muzzlered_pin, HIGH);
-    digitalWrite(muzzlegreen_pin, HIGH);
-  }
-//purple
-  if (flashteam == 5) {
-    digitalWrite(muzzlered_pin, HIGH);
-    digitalWrite(muzzleblue_pin, HIGH);
-  }
-//cyan
-  if (flashteam == 6) {
-    digitalWrite(muzzlegreen_pin, HIGH);
-    digitalWrite(muzzleblue_pin, HIGH);
-  }
-//white
-  if (flashteam == 7) { 
-    digitalWrite(muzzlered_pin, HIGH);
-    digitalWrite(muzzlegreen_pin, HIGH);
-    digitalWrite(muzzleblue_pin, HIGH);
-  }
-
-    //?? run out of digital combinations
-
+  //?? run out of digital combinations
 }
 
-void muzzleflash_down ( void) {
+void muzzleflash_down() {
   digitalWrite(muzzlered_pin, LOW);
   digitalWrite(muzzlegreen_pin, LOW);
   digitalWrite(muzzleblue_pin, LOW);
 }
 
 void torch_up(int flashteam) {
-//red
-  if (flashteam == 1) {
-    digitalWrite(torchred_pin, HIGH);
+  switch (flashteam) {
+    case 1: //red
+      digitalWrite(torchred_pin, HIGH);
+      break;
+    case 2: //green
+      digitalWrite(torchgreen_pin, HIGH);
+      break;
+    case 3: //blue
+      digitalWrite(torchblue_pin, HIGH);
+      break;
+    case 4: //yellow
+      digitalWrite(torchred_pin, HIGH);
+      digitalWrite(torchgreen_pin, HIGH);
+      break;
+    case 5: //purple
+      digitalWrite(torchred_pin, HIGH);
+      digitalWrite(torchblue_pin, HIGH);
+      break;
+    case 6: //cyan
+      digitalWrite(torchgreen_pin, HIGH);
+      digitalWrite(torchblue_pin, HIGH);
+      break;
+    case 7: //white
+      digitalWrite(torchred_pin, HIGH);
+      digitalWrite(torchgreen_pin, HIGH);
+      digitalWrite(torchblue_pin, HIGH);
+      break;
   }
-//green
-  if (flashteam == 2) {
-    digitalWrite(torchgreen_pin, HIGH);
-  }
-//blue
-  if (flashteam == 3) {
-    digitalWrite(torchblue_pin, HIGH);
-  }
-//yellow
-  if (flashteam == 4) {
-    digitalWrite(torchred_pin, HIGH);
-    digitalWrite(torchgreen_pin, HIGH);
-  }
-//purple
-  if (flashteam == 5) {
-    digitalWrite(torchred_pin, HIGH);
-    digitalWrite(torchblue_pin, HIGH);
-  }
-//cyan
-  if (flashteam == 6) {
-    digitalWrite(torchgreen_pin, HIGH);
-    digitalWrite(torchblue_pin, HIGH);
-  }
-//white
-  if (flashteam == 7) { 
-    digitalWrite(torchred_pin, HIGH);
-    digitalWrite(torchgreen_pin, HIGH);
-    digitalWrite(torchblue_pin, HIGH);
-  }
-
-    //?? run out of digital combinations
-
+  //?? run out of digital combinations
 }
 
-void torch_down ( void) {
+void torch_down() {
   digitalWrite(torchred_pin, LOW);
   digitalWrite(torchgreen_pin, LOW);
   digitalWrite(torchblue_pin, LOW);
 }
-
