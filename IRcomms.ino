@@ -142,6 +142,10 @@ int signal_recieve() {
   }
 }
 
+void finished_signal_decode() {
+  bitsRead = -1;
+}
+
 boolean within_tolerance(unsigned long value, unsigned long target, byte tolerance) {
   long remainder = value - target;
   return remainder < tolerance && remainder > -tolerance;
@@ -255,7 +259,24 @@ void timeDebug() {
   else {
     int diff = micros() - timeCache;
     if (diff > 800) {
-      Serial.println(diff);
+      Serial.print(diff);
+      //some status flags as well
+      if (writeUpTime || writeDownTime || postDataTime) {
+        //in the middle of sending IR!
+        Serial.print("S");
+      }
+      else {
+        Serial.print(" ");
+      }
+
+      if (bitsRead > -1) {
+        //in the middle of receiving IR!
+        Serial.print("R");
+      }
+      else {
+        Serial.print(" ");
+      }
+      Serial.println();
     }
     timeCache = 0;
   }

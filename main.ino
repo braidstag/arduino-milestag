@@ -1,5 +1,5 @@
 //#define DEBUG_DECODE 1
-//#define DEBUG_MAIN_LOOP 1
+#define DEBUG_MAIN_LOOP 1
 
 void decode_signal() {
 #ifdef DEBUG_DECODE
@@ -58,6 +58,7 @@ void loop() {
   if (signal_recieve()) {
     decode_signal();
     mt_parseIRMessage(readBuffer);
+    finished_signal_decode();
   }
 
   checkSerial();
