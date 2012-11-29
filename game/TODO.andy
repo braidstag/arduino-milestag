@@ -1,5 +1,10 @@
+shorter timeout of client connection to server
+/r/n problem a->pi
+corrupt packets. does sending less bytes over serial help?
+
+review and maybe merge michael's branches.
+why does server take over 100% CPU?
 mumble
-test drag and drop ui
 team number slider - better formatting
 battery checker
 exit the Read and Write threads cleanly.
@@ -8,4 +13,6 @@ sensible column widths
 hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
 provide a drop target for putting a player into a new team.
+provide a drop target for "deleting" a player
 when a game stops, does it set the state of the buttons correctly?
+shut down clients
