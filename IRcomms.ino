@@ -27,7 +27,6 @@
 
 //temporary team ID to test muzzle flash code
 int myteam = 7;
-int altfire = 0;
 
 // some timings
 long headerDuration = 2400;

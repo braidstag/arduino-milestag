@@ -96,13 +96,13 @@ void checkTrigger() {
 }
 
 void checkAltfire() {
- 
-    altfire = digitalRead(altfire_pin);
-if (altfire == HIGH) {
-	torch_up(myteam);
-} else {
-        torch_down();
-     }
+  boolean altfire = digitalRead(altfire_pin);
+
+  if (altfire) {
+   	torch_up(myteam);
+  } else {
+    torch_down();
+  }
 }
 
 void checkBattery() {
