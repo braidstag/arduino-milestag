@@ -2,6 +2,20 @@
 //milestag protocol 2 documented at http://www.lasertagparts.com/mtformat-2.htm
 // we currently only implement MT1 as MT2 seems incomplete.
 
+//a faster version of serialPrint. It just concatenates it's arguments until it finds a NULL argument.
+void serialPrint2(char *arg1, ...) {
+  va_list ap;
+  va_start(ap, arg1);
+  
+  //iterate until we find a negative number.
+  for (char *i = arg1; i; i = va_arg(ap, char *))
+    Serial.print(i);
+  
+  Serial.println();
+
+  va_end(ap);
+}
+
 void serialPrint(int size, const char * fmt, ...) {
   char* out = (char*) malloc(size);
   va_list ap;
@@ -16,7 +30,7 @@ void serialPrint(int size, const char * fmt, ...) {
 
 void mt_parseIRMessage(unsigned long recvBuffer) {
     if (!isEvenParity(recvBuffer)) {
-        serialPrint(14, "Shot(Corrupt)");
+        serialPrint2("C", NULL);
         return;
     }
 
@@ -109,7 +123,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
                 break;
         }
         
-        serialPrint(23, "Shot(Hit(%u,%u,%u))", recv_TeamID, recv_PlayerID, damage/*, baseDamage*/);
+        serialPrint2("H", recv_TeamID, ",", recv_PlayerID, ",", damage/*, ",", baseDamage*/, NULL);
     }
 }
 

@@ -123,7 +123,7 @@ class Main():
     self.serialWrite(proto.CLIENTCONNECT.create())
     line = self.serial.readline()
     try:
-      proto.CLIENTCONNECTED.parse(line)
+      proto.CLIENT_CONNECTED.parse(line)
     except proto.MessageParseException:
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
 

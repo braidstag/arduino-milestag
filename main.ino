@@ -77,7 +77,7 @@ void checkTrigger() {
     if (trigger && trigger != oldTrigger) {
       //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
       if (clientConnected) {
-        Serial.println("Trigger()");
+        Serial.println("T");
       }
       else {
         mt_fireShot();
@@ -87,7 +87,7 @@ void checkTrigger() {
     }
     if (!trigger && trigger != oldTrigger) {
       if (clientConnected) {
-        Serial.println("TriggerRelease()");
+        Serial.println("t");
       }
 
       oldTrigger = trigger;    
@@ -107,6 +107,7 @@ void checkAltfire() {
 }
 
 void checkBattery() {
+  Serial.print("B");
   Serial.println(analogRead(power_monitor_pin) * 5 / 1023.0);
 }
 

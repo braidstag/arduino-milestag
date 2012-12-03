@@ -36,13 +36,17 @@ STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 STOPGAME = Message(r"ResetGame\(\)", "ResetGame()")
 
 #server -> client only
-TRIGGER = Message(r"Trigger\(\)", "Trigger()")
 TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
-HIT = Message(r"Shot\(Hit\((\d),(\d),(\d)\)\)", None)
-CLIENTCONNECTED = Message(r"ClientConnected\(\)", None)
+HIT =                 Message(r"H(\d),(\d),(\d)", None)
+CORRUPT =             Message(r"C", None)
+CLIENT_CONNECTED =    Message(r"c", None)
+CLIENT_DISCONNECTED = Message(r"d", None)
+TRIGGER =             Message(r"T", None)
+TRIGGER_RELEASE =     Message(r"t", None)
+BATTERY =             Message(r"B(\d)", None)
 
 #client -> gun
-CLIENTCONNECT = Message(None, "ClientConnect()")
+CLIENTCONNECT = Message(None, "c")
 
