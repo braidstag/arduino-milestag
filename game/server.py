@@ -64,7 +64,7 @@ class Server(ClientServerConnection):
       with self.eventLock:
         if int(teamID) == -1:
           player = self.gameState.createNewPlayer()
-          self.queueMessage("TeamPlayer(%s,%s)\n" % (player.teamID, player.playerID))
+          self.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
         else:
           player = self.gameState.getOrCreatePlayer(teamID, playerID)
           self.queueMessage("Ack()\n")
@@ -73,7 +73,7 @@ class Server(ClientServerConnection):
           
         #TODO if the game has started, also tell the client this.
         if self.gameState.isGameStarted():
-          self.queueMessage("StartGame(%d)\n" % (self.gameState.gameTimeRemaining()))
+          self.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
     except proto.MessageParseException:
       pass
 
@@ -130,7 +130,7 @@ class ListeningThread(Thread):
   def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
     self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
     del self.connections[(srcTeamID, srcPlayerID)]
-    self.queueMessage(dstTeamID, dstPlayerID, "TeamPlayer(%s,%s)\n" % (dstTeamID, dstPlayerID))
+    self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
 
   def stop(self):
     self.shouldStop = True
@@ -234,18 +234,18 @@ class ServerGameState(GameState):
       self.stopGame()
     self.stopGameTimer = Timer(self.gameTime, timerStop)
     self.stopGameTimer.start()
-    self.listeningThread.queueMessageToAll("StartGame(%d)\n" % (self.gameTime))
+    self.listeningThread.queueMessageToAll(proto.STARTGAME.create(self.gameTime))
 
   def stopGame(self):
     GameState.stopGame(self)
-    self.listeningThread.queueMessageToAll("StopGame()\n")
+    self.listeningThread.queueMessageToAll(proto.STOPGAME.create())
     if self.stopGameTimer:
       self.stopGameTimer.cancel()
     self.stopGameTimer = None
 
   def resetGame(self):
     #GameState.resetGame(self)
-    self.listeningThread.queueMessageToAll("ResetGame()\n")
+    self.listeningThread.queueMessageToAll(proto.RESETGAME.create())
     for p in gameState.players.values():
       p.reset()
       for listener in self.listeners:

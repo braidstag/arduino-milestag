@@ -98,7 +98,7 @@ class WriteThread(Thread):
   def run(self):
     while not (self.queue.empty() and self.shouldStop):
       try:
-        msg = self.queue.get(True, 5)
+        msg = self.queue.get(True, 5) + "\n"
       except Queue.Empty:
         #timeout, go back round the loop to see if we should be stopping.
         continue

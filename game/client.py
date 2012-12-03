@@ -65,7 +65,7 @@ class Main():
     self.args = parser.parse_args()
 
     self.serverConnection = Client(self)
-    self._sendToServer("Hello(-1,-1)\n")
+    self._sendToServer(proto.HELLO.create(-1,-1))
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)
@@ -82,9 +82,9 @@ class Main():
 
   def serialWrite(self, line):
     if (self.properSerial):
-      self.serial.write(line)
+      self.serial.write(line + "\n")
     else:
-      print(line)
+      print(line + "\n")
 
   def eventLoop(self):
     for line in self.serial:
@@ -101,12 +101,12 @@ class Main():
         proto.TRIGGER.parse(line)
 
         if (self.logic.trigger(self.gameState, self.player)):
-          self.serialWrite("Fire(%d,%d,%d)\n" % (self.player.teamID, self.player.playerID, self.player.gunDamage))
+          self.serialWrite(proto.FIRE.create(self.player.teamID, self.player.playerID, self.player.gunDamage))
       except proto.MessageParseException:
         pass
 
 
-      msg = "Recv(%s,%s,%s)\n" % (self.player.teamID, self.player.playerID, line)
+      msg = proto.RECV.create(self.player.teamID, self.player.playerID, line)
       self._sendToServer(msg)
 
   def _stringToPlayerID(self, inp):
@@ -120,9 +120,11 @@ class Main():
     self.serverConnection.queueMessage(msg)
   
   def connectToArduino(self):
-    self.serialWrite("ClientConnect()\n")
+    self.serialWrite(proto.CLIENTCONNECT.create())
     line = self.serial.readline()
-    if (line != "ClientConnected()\n"):
+    try:
+      proto.CLIENTCONNECTED.parse(line)
+    except proto.MessageParseException:
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
 
 
