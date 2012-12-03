@@ -2,6 +2,7 @@ shorter timeout of client connection to server
 /r/n problem a->pi
 corrupt packets. does sending less bytes over serial help?
 
+auto fire when you hold down the trigger
 review and maybe merge michael's branches.
 why does server take over 100% CPU?
 mumble
