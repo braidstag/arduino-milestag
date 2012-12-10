@@ -2,21 +2,21 @@
 //milestag protocol 2 documented at http://www.lasertagparts.com/mtformat-2.htm
 // we currently only implement MT1 as MT2 seems incomplete.
 
-//a faster version of serialPrint. It just concatenates it's arguments until it finds a NULL argument.
-void serialPrint2(char *arg1, ...) {
+//a faster version of serialQueue. It just concatenates it's arguments until it finds a NULL argument.
+void serialQueue2(char *arg1, ...) {
   va_list ap;
   va_start(ap, arg1);
   
   //iterate until we find a negative number.
   for (char *i = arg1; i; i = va_arg(ap, char *))
-    Serial.print(i);
+    serialQueue(i);
   
-  Serial.println();
+  serialQueue("\n");
 
   va_end(ap);
 }
 
-void serialPrint(int size, const char * fmt, ...) {
+void serialQueue(int size, const char * fmt, ...) {
   char* out = (char*) malloc(size);
   va_list ap;
   va_start(ap, fmt);
@@ -30,7 +30,7 @@ void serialPrint(int size, const char * fmt, ...) {
 
 void mt_parseIRMessage(unsigned long recvBuffer) {
     if (!isEvenParity(recvBuffer)) {
-        serialPrint2("C", NULL);
+        serialQueue2("C", NULL);
         return;
     }
 
@@ -45,17 +45,17 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
         
         switch (recv_SystemMessage) {
             case SYSTEM_MESSAGE_SET_TEAM_ID:
-                serialPrint(19, "Shot(SetTeam(%u))", DataByte2);
+                serialQueue(19, "Shot(SetTeam(%u))", DataByte2);
                 break;
             case SYSTEM_MESSAGE_SET_PLAYER_ID:
-                serialPrint(21, "Shot(SetPlayer(%u))", DataByte2);
+                serialQueue(21, "Shot(SetPlayer(%u))", DataByte2);
                 break;
             case SYSTEM_MESSAGE_ADD_HEALTH:
-                serialPrint(21, "Shot(AddHealth(%u))", DataByte2);
+                serialQueue(21, "Shot(AddHealth(%u))", DataByte2);
                 break;
             case SYSTEM_MESSAGE_ADD_CLIPS:
             {
-                serialPrint(20, "Shot(AddClips(%u))", DataByte2);
+                serialQueue(20, "Shot(AddClips(%u))", DataByte2);
                 break;
             }
             case SYSTEM_MESSAGE_GOD_GUN:
@@ -63,33 +63,33 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
                 byte recv_GodGun = DataByte2;
                 switch (recv_GodGun) {
                     case GOD_GUN_KILL_PLAYER:
-                        serialPrint(15, "Shot(Killed())");
+                        serialQueue(15, "Shot(Killed())");
                         break;
                     case GOD_GUN_FULL_AMMO:
-                        serialPrint(17, "Shot(FullAmmo())");
+                        serialQueue(17, "Shot(FullAmmo())");
                         break;
                     case GOD_GUN_RESPAWN_PLAYER:
-                        serialPrint(15, "Shot(ReSpawn())");
+                        serialQueue(15, "Shot(ReSpawn())");
                         break;
                     case GOD_GUN_PAUSE_PLAYER:
                     case GOD_GUN_START_GAME:
                     case GOD_GUN_INIT_PLAYER:
                     case GOD_GUN_END_PLAYER:
                     default:
-                        serialPrint(17, "Shot(UnknownGGM)");
+                        serialQueue(17, "Shot(UnknownGGM)");
                         break;
                 }
                 
                 break;
             }
             case SYSTEM_MESSAGE_ADD_ROUNDS:
-                serialPrint(21, "Shot(AddRounds(%u))", DataByte2);
+                serialQueue(21, "Shot(AddRounds(%u))", DataByte2);
                 break;
             case SYSTEM_MESSAGE_ADD_RPG_ROUNDS:
             case SYSTEM_MESSAGE_SCORE_DATA_HEADER:
             case SYSTEM_MESSAGE_SCORE_REQUEST:
             default:
-                serialPrint(28, "Shot(UnknownSM(%lu))", recvBuffer);
+                serialQueue(28, "Shot(UnknownSM(%lu))", recvBuffer);
                 break;
         }
     } else {
@@ -119,11 +119,18 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
             */
 
             default:
-                serialPrint(17, "Shot(UnknownDmg)");
+                serialQueue(17, "Shot(UnknownDmg)");
                 break;
         }
         
-        serialPrint2("H", recv_TeamID, ",", recv_PlayerID, ",", damage/*, ",", baseDamage*/, NULL);
+        serialQueue("H");
+        serialQueue(recv_TeamID);
+        serialQueue(",");
+        serialQueue(recv_PlayerID);
+        serialQueue(",");
+        serialQueue(damage);
+        /*serialQueue(","); serialQueue(baseDamage);*/
+        serialQueue("\n");
     }
 }
 

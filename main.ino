@@ -62,6 +62,7 @@ void loop() {
   }
 
   checkSerial();
+  writeSerialChar();
 #ifdef DEBUG_MAIN_LOOP
   timeDebug();
 #endif
@@ -77,7 +78,7 @@ void checkTrigger() {
     if (trigger && trigger != oldTrigger) {
       //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
       if (clientConnected) {
-        Serial.println("T");
+        serialQueue("T\n");
       }
       else {
         mt_fireShot();
@@ -87,7 +88,7 @@ void checkTrigger() {
     }
     if (!trigger && trigger != oldTrigger) {
       if (clientConnected) {
-        Serial.println("t");
+        serialQueue("t\n");
       }
 
       oldTrigger = trigger;    
@@ -107,8 +108,9 @@ void checkAltfire() {
 }
 
 void checkBattery() {
-  Serial.print("B");
-  Serial.println(analogRead(power_monitor_pin) * 5 / 1023.0);
+  serialQueue("B");
+  serialQueue(analogRead(power_monitor_pin) * 5 / 1023.0);
+  serialQueue("/n");
 }
 
 void shutdown() {
