@@ -49,4 +49,6 @@ BATTERY =             Message(r"B(\d)", None)
 
 #client -> gun
 CLIENTCONNECT = Message(None, "c")
+CLIENTDISCONNECT = Message(None, "d")
+FIRE = Message(None, "Fire(%d,%d,%d)")
 
