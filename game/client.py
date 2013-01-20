@@ -86,9 +86,9 @@ class Main():
   def serialWrite(self, line):
     if (self.properSerial):
       self.serial.write(line + "\n")
-    else:
-      print "-a>", repr(line)
-      sys.stdout.flush()
+
+    print "-a>", repr(line)
+    sys.stdout.flush()
 
   def eventLoop(self):
     for line in self.serial:
@@ -129,6 +129,8 @@ class Main():
   def connectToArduino(self):
     self.serialWrite(proto.CLIENTCONNECT.create())
     line = self.serial.readline()
+    print "<a-", repr(line)
+    sys.stdout.flush()
     try:
       proto.CLIENT_CONNECTED.parse(line)
     except proto.MessageParseException:
