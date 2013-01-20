@@ -56,35 +56,52 @@ class ReadThread(Thread):
     self.shouldStop = False
 
   def run(self):
+    recieved = ''
     while True:
-      recieved = ''
-      while not self._completeResponse(recieved):
-        try:
-          chunk = self.sock.recv(1024)
-        except socket.error:
-          if self.shouldStop:
-            #this is expected
-            return
-          self.parent.onDisconnect()
-        if chunk == '':
-          if self.shouldStop:
-            #this is expected
-            return
-          self.parent.onDisconnect()
-        recieved = recieved + chunk
-
-      #TODO: actually track these
-      if recieved == "Ack()\n":
+      try:
+        chunk = self.sock.recv(1024)
+      except socket.timeout:
+        if self.shouldStop:
+          #this is expected
+          return
         continue
+      except socket.error as e:
+        if self.shouldStop:
+          #this is expected
+          return
+        print e
+        self.parent.onDisconnect()
+      if chunk == '':
+        if self.shouldStop:
+          #this is expected
+          return
+        self.parent.onDisconnect()
+      recieved = recieved + chunk
 
-      if self.parent.handleMsg(recieved):
-        continue
-      
-      raise RuntimeError("Received unknown message: %s" % recieved)
+      (partial, complete) = self._takeCompleteResponses(recieved)
+      recieved = partial
 
-  def _completeResponse(self, recieved):
-    #TODO cope with getting multiple lines at once.
-    return recieved != None and len(recieved) > 0 and recieved[-1] == '\n'
+      for i in complete:
+        #TODO: actually track these
+        if i == "Ack()\n":
+          continue
+
+        print "<--", repr(i)
+        sys.stdout.flush()
+
+        if self.parent.handleMsg(i):
+          continue
+        else:
+          raise RuntimeError("Received unknown message: %s" % i)
+
+  def _takeCompleteResponses(self, recieved):
+    """Extract complete responses from a char stream.
+       return a tuple containing the remaining partial response and a list of complete responses
+    """
+    allResp = recieved.split('\n')
+    partial = allResp.pop(-1)
+
+    return (partial, allResp)
 
   def stop(self):
     self.shouldStop = True
