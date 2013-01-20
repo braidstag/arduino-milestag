@@ -2,7 +2,7 @@ corrupt packets. does sending less bytes over serial help?
 
 auto fire when you hold down the trigger
 review and maybe merge michael's branches.
-why does server take over 100% CPU?
+why does server take over 100% CPU? - it is to do with the table code but it is hard to profile as it is all in callbacks :-(
 mumble
 team number slider - better formatting
 battery checker
