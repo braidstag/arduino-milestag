@@ -94,6 +94,8 @@ void serialQueue(char *str) {
       //we have gone off the end of the buffer
       writeOffset = 0;
     }
+    
+    offset++;
   }
 }
 

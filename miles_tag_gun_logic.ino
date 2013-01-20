@@ -124,11 +124,11 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
         }
         
         serialQueue("H");
-        serialQueue(recv_TeamID);
+        serialQueue((int) recv_TeamID);
         serialQueue(",");
-        serialQueue(recv_PlayerID);
+        serialQueue((int) recv_PlayerID);
         serialQueue(",");
-        serialQueue(damage);
+        serialQueue((int) damage);
         /*serialQueue(","); serialQueue(baseDamage);*/
         serialQueue("\n");
     }
