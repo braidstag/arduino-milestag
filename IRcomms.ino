@@ -252,6 +252,10 @@ unsigned long reverse(unsigned long in, int num) {
 
 unsigned long timeCache = 0;
 
+//these are set by the serial code to say whther we have just written (or read) from the serial line.
+boolean serialWritten = false;
+boolean serialRead = false;
+
 void timeDebug() {
   if (timeCache == 0) {
     timeCache = micros();
@@ -276,6 +280,21 @@ void timeDebug() {
       else {
         Serial.print(" ");
       }
+      
+      if (serialWritten) {
+        Serial.print("s");
+      }
+      else {
+        Serial.print(" ");
+      }
+      
+      if (serialRead) {
+        Serial.print("r");
+      }
+      else {
+        Serial.print(" ");
+      }
+      
       Serial.println();
     }
     timeCache = 0;

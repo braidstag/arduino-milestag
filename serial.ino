@@ -2,6 +2,7 @@ char serialReadBuffer[64];
 
 void checkSerial() {
   if (Serial.available() > 0) {
+    serialRead = true;
     byte bytesRead = Serial.readBytesUntil('\n', serialReadBuffer, 64);
 
     if (bytesRead == 0) {
@@ -61,6 +62,9 @@ void checkSerial() {
       preConnectedTeamId = 7;
     }
   }
+  else {
+    serialRead = false;
+  }
 }
 
 #define serialWriteBufferSize 64
@@ -116,6 +120,7 @@ void serialQueue(int i) {
 void writeSerialChar() {
   if (writeOffset == readOffset) {
     //nothng to be read form the circle buffer (to be written to the serial line)
+    serialWritten = false;
     return;
   }
 
@@ -125,4 +130,5 @@ void writeSerialChar() {
     //we have gone off the end of the buffer
     readOffset = 0;
   }
+  serialWritten = true;
 }
