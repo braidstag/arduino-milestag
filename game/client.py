@@ -87,11 +87,15 @@ class Main():
     if (self.properSerial):
       self.serial.write(line + "\n")
     else:
-      print(line + "\n")
+      print "-a>", repr(line)
+      sys.stdout.flush()
 
   def eventLoop(self):
     for line in self.serial:
       line = line.rstrip()
+      print "<a-", repr(line)
+      sys.stdout.flush()
+
 
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)

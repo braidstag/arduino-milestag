@@ -13,6 +13,9 @@ class ClientServerConnection():
     self.writeThread.start()
 
   def queueMessage(self, msg):
+    print "-->", repr(msg)
+    sys.stdout.flush()
+
     self.writeThread.queueMessage(msg)
 
   def setSocket(self, sock):

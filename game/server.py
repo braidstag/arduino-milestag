@@ -28,9 +28,7 @@ class Server(ClientServerConnection):
     
   def handleMsg(self, fullLine):
     with self.eventLock:
-      print "<-", fullLine
       mainWindow.lineReceived(fullLine)
-      sys.stdout.flush()
   
     try:
       (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
@@ -125,7 +123,6 @@ class ListeningThread(Thread):
       self.connections[key].queueMessage(msg)
 
   def queueMessage(self, teamID, playerID, msg):
-    print "->", msg
     self.connections[(teamID, playerID)].queueMessage(msg)
 
   def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
