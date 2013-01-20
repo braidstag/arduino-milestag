@@ -18,19 +18,19 @@ void checkSerial() {
       shutdown();
     }
 //commands from the real client
+    else if (bytesRead == 1 && serialReadBuffer[0] == 'c') {
+      clientConnected = true;
+      serialQueue("c\n");
+    }
+    else if (bytesRead == 1 && serialReadBuffer[0] == 'd') {
+      clientConnected = false;
+      serialQueue("d\n");
+    }
     else if (bytesRead > 4 && strncmp("Fire", serialReadBuffer, 4) == 0) {
       //Fire
       byte teamId, playerId, dmg;
       sscanf(serialReadBuffer, "Fire(%hhd,%hhd,%hhd)", &teamId, &playerId, &dmg);
       mt_fireShot(teamId, playerId, dmg);
-    }
-    else if (bytesRead > 13 && strncmp("ClientConnect", serialReadBuffer, 13) == 0) {
-      clientConnected = true;
-      serialQueue("c");
-    }
-    else if (bytesRead > 16 && strncmp("ClientDisconnect", serialReadBuffer, 16) == 0) {
-      clientConnected = false;
-      serialQueue("d");
     }
     else if (bytesRead > 12 && strncmp("BatteryCheck", serialReadBuffer, 12) == 0) {
       checkBattery();
