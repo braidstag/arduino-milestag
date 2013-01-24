@@ -15,11 +15,11 @@ void checkSerial() {
     
     if (serialReadBufferOffset >= 64) {
       serialReadBufferOffset = 0;
-      //report that we have overrun our serial read buffer
+      //TODO: report that we have overrun our serial read buffer
     }
   }
   
-  //if this is  a \n, check the whole message
+  //if this is a \n, check the whole message
   if (byteRead == '\n') {
     byte numBytesRead = serialReadBufferOffset - 1; //we don't count the \n
     if (numBytesRead == 0) {
