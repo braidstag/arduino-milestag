@@ -21,7 +21,7 @@ void checkSerial() {
   
   //if this is  a \n, check the whole message
   if (byteRead == '\n') {
-    numBytesRead = serialReadBufferOffset - 1; //we don't count the \n
+    byte numBytesRead = serialReadBufferOffset - 1; //we don't count the \n
     if (numBytesRead == 0) {
       //too little to be interesting
     }
