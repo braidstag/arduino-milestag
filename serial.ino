@@ -1,69 +1,86 @@
 char serialReadBuffer[64];
+byte serialReadBufferOffset = 0;
 
 void checkSerial() {
-  if (Serial.available() > 0) {
+  byte byteRead = Serial.read();
+  
+  if (byteRead == -1) {
+    serialRead = false;
+  }
+  else {
     serialRead = true;
-    byte bytesRead = Serial.readBytesUntil('\n', serialReadBuffer, 64);
-
-    if (bytesRead == 0) {
+    
+    serialReadBuffer[serialReadBufferOffset] = byteRead;
+    serialReadBufferOffset++;
+    
+    if (serialReadBufferOffset >= 64) {
+      serialReadBufferOffset = 0;
+      //report that we have overrun our serial read buffer
+    }
+  }
+  
+  //if this is  a \n, check the whole message
+  if (byteRead == '\n') {
+    numBytesRead = serialReadBufferOffset - 1; //we don't count the \n
+    if (numBytesRead == 0) {
       //too little to be interesting
     }
 //single character debugging commands
-    else if (bytesRead == 1 && serialReadBuffer[0] == 'f') {
+    else if (numBytesRead == 1 && serialReadBuffer[0] == 'f') {
       mt_fireShot();
     }
-    else if (bytesRead == 1 && serialReadBuffer[0] == 'b') {
+    else if (numBytesRead == 1 && serialReadBuffer[0] == 'b') {
       checkBattery();
     }
-    else if (bytesRead == 1 && serialReadBuffer[0] == 's') {
+    else if (numBytesRead == 1 && serialReadBuffer[0] == 's') {
       shutdown();
     }
 //commands from the real client
-    else if (bytesRead == 1 && serialReadBuffer[0] == 'c') {
+    else if (numBytesRead == 1 && serialReadBuffer[0] == 'c') {
       clientConnected = true;
       serialQueue("c\n");
     }
-    else if (bytesRead == 1 && serialReadBuffer[0] == 'd') {
+    else if (numBytesRead == 1 && serialReadBuffer[0] == 'd') {
       clientConnected = false;
       serialQueue("d\n");
     }
-    else if (bytesRead > 4 && strncmp("Fire", serialReadBuffer, 4) == 0) {
+    else if (numBytesRead > 4 && strncmp("Fire", serialReadBuffer, 4) == 0) {
       //Fire
       byte teamId, playerId, dmg;
       sscanf(serialReadBuffer, "Fire(%hhd,%hhd,%hhd)", &teamId, &playerId, &dmg);
       mt_fireShot(teamId, playerId, dmg);
     }
-    else if (bytesRead > 12 && strncmp("BatteryCheck", serialReadBuffer, 12) == 0) {
+    else if (numBytesRead > 12 && strncmp("BatteryCheck", serialReadBuffer, 12) == 0) {
       checkBattery();
     }
-    else if (bytesRead > 8 && strncmp("Shutdown", serialReadBuffer, 8) == 0) {
+    else if (numBytesRead > 8 && strncmp("Shutdown", serialReadBuffer, 8) == 0) {
       shutdown();
     }
 //temporary crap code for team select
-    else if (bytesRead > 3 && strncmp("red", serialReadBuffer, 3) == 0) {
+    else if (numBytesRead > 3 && strncmp("red", serialReadBuffer, 3) == 0) {
       preConnectedTeamId = 1;
     }
-    else if (bytesRead > 5 && strncmp("green", serialReadBuffer, 5) == 0) {
+    else if (numBytesRead > 5 && strncmp("green", serialReadBuffer, 5) == 0) {
       preConnectedTeamId = 2;
     }
-    else if (bytesRead > 4 && strncmp("blue", serialReadBuffer, 4) == 0) {
+    else if (numBytesRead > 4 && strncmp("blue", serialReadBuffer, 4) == 0) {
       preConnectedTeamId = 3;
     }
-    else if (bytesRead > 6 && strncmp("yellow", serialReadBuffer, 6) == 0) {
+    else if (numBytesRead > 6 && strncmp("yellow", serialReadBuffer, 6) == 0) {
       preConnectedTeamId = 4;
     }
-    else if (bytesRead > 6 && strncmp("purple", serialReadBuffer, 6) == 0) {
+    else if (numBytesRead > 6 && strncmp("purple", serialReadBuffer, 6) == 0) {
       preConnectedTeamId = 5;
     }
-    else if (bytesRead > 4 && strncmp("cyan", serialReadBuffer, 4) == 0) {
+    else if (numBytesRead > 4 && strncmp("cyan", serialReadBuffer, 4) == 0) {
       preConnectedTeamId = 6;
     }
-    else if (bytesRead > 5 && strncmp("white", serialReadBuffer, 5) == 0) {
+    else if (numBytesRead > 5 && strncmp("white", serialReadBuffer, 5) == 0) {
       preConnectedTeamId = 7;
     }
-  }
-  else {
-    serialRead = false;
+    
+    //reset the buffer
+    serialReadBufferOffset = 0;
   }
 }
 
