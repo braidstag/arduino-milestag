@@ -262,7 +262,7 @@ void timeDebug() {
   }
   else {
     int diff = micros() - timeCache;
-    if (diff > 800) {
+    if (diff > 500) {
       Serial.print(diff);
       //some status flags as well
       if (writeUpTime || writeDownTime || postDataTime) {
