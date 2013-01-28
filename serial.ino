@@ -2,7 +2,7 @@ char serialReadBuffer[64];
 byte serialReadBufferOffset = 0;
 
 void checkSerial() {
-  byte byteRead = Serial.read();
+  int byteRead = Serial.read();
   
   if (byteRead == -1) {
     serialRead = false;
