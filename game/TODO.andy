@@ -1,7 +1,6 @@
-corrupt packets. does sending less bytes over serial help?
+corrupt packets.
 
 auto fire when you hold down the trigger
-review and maybe merge michael's branches.
 why does server take over 100% CPU? - it is to do with the table code but it is hard to profile as it is all in callbacks :-(
 mumble
 team number slider - better formatting
@@ -15,3 +14,5 @@ provide a drop target for putting a player into a new team.
 provide a drop target for "deleting" a player
 when a game stops, does it set the state of the buttons correctly?
 shut down clients
+show a game time countdown
+game reset

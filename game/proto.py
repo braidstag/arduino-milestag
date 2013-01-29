@@ -33,7 +33,7 @@ SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
 HELLO = Message(r"Hello\((-?\d*),(-?\d*)\)", "Hello(%d,%d)")
 STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
-STOPGAME = Message(r"ResetGame\(\)", "ResetGame()")
+RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
 
 #server -> client only
 TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
