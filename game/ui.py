@@ -7,8 +7,6 @@ import sys
 from threading import Thread, Lock
 from time import time
 
-from core import Player, StandardGameLogic, ClientServer
-
 from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtDeclarative import QDeclarativeView
