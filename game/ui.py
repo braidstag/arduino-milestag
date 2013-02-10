@@ -194,7 +194,7 @@ class GameTimeSlider(LabelledSlider):
     self.slider.valueChanged.connect(gameState.setGameTime)
 
   def formatValue(self, value):
-    return str(value // 60) + ":" + str(value % 60)
+    return "%02d:%02d" % ((value // 60),  (value % 60))
 
 class GameControl(QWidget):
   def __init__(self, gameState, parent=None):
