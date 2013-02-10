@@ -40,7 +40,7 @@ class Server(ClientServerConnection):
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           self.logic.hit(self.gameState, player, sentTeam, sentPlayer, damage)
-          mainWindow.playerUpdated(recvTeam, recvPlayer)
+          self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
@@ -50,7 +50,7 @@ class Server(ClientServerConnection):
         with self.eventLock:
           player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
           if (self.logic.trigger(self.gameState, player)):
-            mainWindow.playerUpdated(recvTeam, recvPlayer)
+            self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
@@ -242,7 +242,7 @@ class ServerGameState(GameState):
     self.listeningThread.queueMessageToAll(proto.RESETGAME.create())
     for p in gameState.players.values():
       p.reset()
-      self.playerUpdated(p.teamID, p.playerID)
+      self.playerUpdated.emit(p.teamID, p.playerID)
 
   def setTargetTeamCount(self, value):
     self.targetTeamCount = value
