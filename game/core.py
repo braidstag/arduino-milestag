@@ -51,16 +51,11 @@ class GameState(QObject):
   gameStarted = Signal()
   gameStopped = Signal()
 
-class DefaultCallback():
-  def playerDead(self):
-    pass
-
-class StandardGameLogic():
-  def __init__(self, callback = DefaultCallback()):
-    self.callback = callback
+class StandardGameLogic(QObject):
 
   def hit(self, gameState, toPlayer, fromTeam, fromPlayer, damage):
     if not gameState.isGameStarted():
+      print("hit before game started")
       pass
       #TODO how does this happen, log this?
     elif (fromPlayer == toPlayer.playerID and fromTeam == toPlayer.teamID):
@@ -70,7 +65,7 @@ class StandardGameLogic():
       if (toPlayer.health > int(damage)):
         toPlayer.health -= int(damage)
       elif (toPlayer.health > 0):
-        self.callback.playerDead()
+        self.playerDead.emit()
         toPlayer.health = 0
       else:
         #already have 0 health
@@ -84,6 +79,8 @@ class StandardGameLogic():
       return True
     else:
       return False
+
+  playerDead = Signal()
 
 class ClientServer():
   PORT=7079

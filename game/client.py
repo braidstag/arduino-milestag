@@ -10,11 +10,6 @@ from core import Player, StandardGameLogic, ClientServer, GameState
 from connection import ClientServerConnection
 import proto
 
-class ClientCallback():
-  def playerDead(self):
-    print "Out of lives!"
-
-
 class Client(ClientServerConnection):
   def __init__(self, main):
     ClientServerConnection.__init__(self)
@@ -78,7 +73,11 @@ class Main():
       self.serial = open(self.args.serial)
       self.properSerial = False
 
-    self.logic = StandardGameLogic(ClientCallback())
+    def playerDead():
+      print "Out of lives!"
+
+    self.logic = StandardGameLogic()
+    self.logic.playerDead.connect(playerDead)
     self.gameState = GameState()
 
     self.connectToArduino()
