@@ -5,6 +5,7 @@ import re
 import socket
 import sys
 from threading import Thread, Lock
+from time import time
 
 from core import Player, StandardGameLogic, ClientServer
 
@@ -88,9 +89,10 @@ class GameStateModel(QAbstractTableModel):
 
 
 class GameStartToggleButton(QPushButton):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameState, gameTimeLabel, parent=None):
     super(GameStartToggleButton, self).__init__("Start Game", parent)
     self.gameState = gameState
+    self.gameTimeLabel = gameTimeLabel
     self.clicked.connect(self.toggleGameStarted)
     self.gameStarted = False
 
@@ -99,9 +101,23 @@ class GameStartToggleButton(QPushButton):
     if self.gameStarted:
       self.gameState.startGame()
       self.setText("End Game")
+
+      self.gameTimeLabelTimer = QTimer()
+      self.gameTimeLabelTimer.timeout.connect(self.updateGameTimeLabel)
+      self.gameTimeLabelTimer.start(1000)
+      self.updateGameTimeLabel()
     else:
       self.gameState.stopGame()
       self.setText("Start Game")
+
+      self.gameTimeLabel.setText("--:--")
+      if self.gameTimeLabelTimer:
+        self.gameTimeLabelTimer.cancel()
+      self.gameTimeLabelTimer = None
+
+  def updateGameTimeLabel(self):
+    toGo = max(0, self.gameState.gameEndTime - time())
+    self.gameTimeLabel.setText("%02d:%02d" % ((toGo // 60),  (toGo % 60)))
 
 
 class GameResetButton(QPushButton):
@@ -202,25 +218,25 @@ class GameControl(QWidget):
     self.gameState = gameState
 
     layout = QVBoxLayout()
+    hLayout = QHBoxLayout()
 
-    gameStart = GameStartToggleButton(gameState)
-    layout.addWidget(gameStart)
+    gameTimeLabel = QLabel("--:--")
+
+    gameStart = GameStartToggleButton(gameState, gameTimeLabel)
+    hLayout.addWidget(gameTimeLabel)
+    hLayout.addWidget(gameStart)
 
     gameReset = GameResetButton(gameState)
-    layout.addWidget(gameReset)
+    hLayout.addWidget(gameReset)
     gameStart.clicked.connect(gameReset.toggleEnabled)
 
-    #hLayout = QHBoxLayout()
+    layout.addLayout(hLayout)
 
     teamCount = TeamCountSlider(self.gameState)
-    #hLayout.addWidget(teamCount)
     layout.addWidget(teamCount)
 
     gameTime = GameTimeSlider(self.gameState)
-    #hLayout.addWidget(gameTime)
     layout.addWidget(gameTime)
-
-    #layout.addWidget(hLayout)
 
     self.setLayout(layout)
 
