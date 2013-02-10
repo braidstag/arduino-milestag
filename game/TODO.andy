@@ -12,7 +12,5 @@ hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
 provide a drop target for putting a player into a new team.
 provide a drop target for "deleting" a player
-when a game stops, does it set the state of the buttons correctly?
 shut down clients
-show a game time countdown
 game reset
