@@ -89,35 +89,49 @@ class GameStateModel(QAbstractTableModel):
 
 
 class GameStartToggleButton(QPushButton):
-  def __init__(self, gameState, gameTimeLabel, parent=None):
+  def __init__(self, gameState, parent=None):
     super(GameStartToggleButton, self).__init__("Start Game", parent)
     self.gameState = gameState
-    self.gameTimeLabel = gameTimeLabel
     self.clicked.connect(self.toggleGameStarted)
-    self.gameStarted = False
+    self.gameState.gameStarted.connect(self.gameStarted)
+    self.gameState.gameStopped.connect(self.gameStopped)
 
   def toggleGameStarted(self):
-    self.gameStarted = not self.gameStarted
-    if self.gameStarted:
+    if not self.gameState.isGameStarted():
       self.gameState.startGame()
-      self.setText("End Game")
-
-      self.gameTimeLabelTimer = QTimer()
-      self.gameTimeLabelTimer.timeout.connect(self.updateGameTimeLabel)
-      self.gameTimeLabelTimer.start(1000)
-      self.updateGameTimeLabel()
     else:
       self.gameState.stopGame()
-      self.setText("Start Game")
 
-      self.gameTimeLabel.setText("--:--")
-      if self.gameTimeLabelTimer:
-        self.gameTimeLabelTimer.cancel()
-      self.gameTimeLabelTimer = None
+  def gameStarted(self):
+    self.setText("End Game")
+
+  def gameStopped(self):
+    self.setText("Start Game")
+
+
+class GameTimeLabel(QLabel):
+  def __init__(self, gameState, parent=None):
+    super(GameTimeLabel, self).__init__("--:--", parent)
+    self.gameState = gameState
+    self.gameState.gameStarted.connect(self.gameStarted)
+    self.gameState.gameStopped.connect(self.gameStopped)
+    self.gameTimeLabelTimer = None
+
+  def gameStarted(self):
+    self.gameTimeLabelTimer = QTimer()
+    self.gameTimeLabelTimer.timeout.connect(self.updateGameTimeLabel)
+    self.gameTimeLabelTimer.start(1000)
+    self.updateGameTimeLabel()
+
+  def gameStopped(self):
+    self.setText("--:--")
+    if self.gameTimeLabelTimer:
+      self.gameTimeLabelTimer.stop()
+    self.gameTimeLabelTimer = None
 
   def updateGameTimeLabel(self):
     toGo = max(0, self.gameState.gameEndTime - time())
-    self.gameTimeLabel.setText("%02d:%02d" % ((toGo // 60),  (toGo % 60)))
+    self.setText("%02d:%02d" % ((toGo // 60),  (toGo % 60)))
 
 
 class GameResetButton(QPushButton):
@@ -125,12 +139,17 @@ class GameResetButton(QPushButton):
     super(GameResetButton, self).__init__("Reset", parent)
     self.gameState = gameState
     self.clicked.connect(self.reset)
+    self.gameState.gameStarted.connect(self.gameStarted)
+    self.gameState.gameStopped.connect(self.gameStopped)
 
   def reset(self):
     self.gameState.resetGame()
 
-  def toggleEnabled(self):
-    self.setEnabled(not self.isEnabled())
+  def gameStarted(self):
+    self.setEnabled(False)
+
+  def gameStopped(self):
+    self.setEnabled(True)
 
 
 class PlayerDelegate(QStyledItemDelegate):
@@ -220,15 +239,14 @@ class GameControl(QWidget):
     layout = QVBoxLayout()
     hLayout = QHBoxLayout()
 
-    gameTimeLabel = QLabel("--:--")
-
-    gameStart = GameStartToggleButton(gameState, gameTimeLabel)
+    gameTimeLabel = GameTimeLabel(gameState)
     hLayout.addWidget(gameTimeLabel)
+
+    gameStart = GameStartToggleButton(gameState)
     hLayout.addWidget(gameStart)
 
     gameReset = GameResetButton(gameState)
     hLayout.addWidget(gameReset)
-    gameStart.clicked.connect(gameReset.toggleEnabled)
 
     layout.addLayout(hLayout)
 

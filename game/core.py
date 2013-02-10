@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import time
+from PySide.QtCore import Signal, QObject
 
 class Player():
 
@@ -18,8 +19,9 @@ class Player():
   def __str__(self):
     return "Player(team=%d, id=%d, ammo=%d, health=%d)" % (self.teamID, self.playerID, self.ammo, self.health)
 
-class GameState():
+class GameState(QObject):
   def __init__(self):
+    super(GameState, self).__init__()
     self.gameStartTime = None
     self.gameEndTime = None
     self.gameTime = 0
@@ -30,10 +32,12 @@ class GameState():
   def startGame(self):
     self.gameStartTime = time.time()
     self.gameEndTime = time.time() + self.gameTime
+    self.gameStarted.emit()
 
   def stopGame(self):
     self.gameStartTime = None
     self.gameEndTime = None
+    self.gameStopped.emit()
 
   def isGameStarted(self):
     return self.gameEndTime and self.gameEndTime > time.time()
@@ -43,6 +47,9 @@ class GameState():
       return 0
     
     return int(self.gameEndTime - time.time())
+
+  gameStarted = Signal()
+  gameStopped = Signal()
 
 class DefaultCallback():
   def playerDead(self):
@@ -81,4 +88,5 @@ class StandardGameLogic():
 class ClientServer():
   PORT=7079
   #SERVER="192.168.1.116"
+  #SERVER="192.168.3.199"
   SERVER="192.168.1.151"
