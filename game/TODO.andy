@@ -13,4 +13,4 @@ Why do I get Broken pipes when moving players around?
 provide a drop target for putting a player into a new team.
 provide a drop target for "deleting" a player
 shut down clients
-game reset
+Better support for clients disconnecting and reconnecting.
