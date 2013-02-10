@@ -260,8 +260,6 @@ class GameControl(QWidget):
 class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
-    gameState.addPlayerUpdateListener(self)
-
     self.setWindowTitle("BraidsTag Server")
     layout = QVBoxLayout()
     tabs = QTabWidget(self)
@@ -270,6 +268,9 @@ class MainWindow(QWidget):
     tabs.addTab(gameControl, "&1. Control")
 
     self.model = GameStateModel(gameState)
+    gameState.playerUpdated.connect(self.model.playerUpdated)
+    gameState.playerAdded.connect(self.playerAdded)
+
     tableView = QTableView()
     tableView.setModel(self.model)
     tableView.setItemDelegate(PlayerDelegate())
@@ -289,9 +290,6 @@ class MainWindow(QWidget):
     layout.addWidget(tabs)
 
     self.setLayout(layout)
-
-  def playerUpdated(self, teamID, playerID):
-    self.model.playerUpdated(teamID, playerID)
 
   def  playerAdded(self, sentTeam, sentPlayer):
     self.model.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.

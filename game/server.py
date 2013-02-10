@@ -13,6 +13,7 @@ from connection import ClientServerConnection
 import proto
 
 from PySide.QtGui import QApplication
+from PySide.QtCore import Signal
 
 class Server(ClientServerConnection):
   def __init__(self, listeningThread, gameState, sock):
@@ -145,14 +146,10 @@ class ServerGameState(GameState):
     self.largestTeam = 0
     self.stopGameTimer = None
     self.targetTeamCount = 2
-    self.listeners = []
     self.setGameTime(GAME_TIME)
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
-
-  def addPlayerUpdateListener(self, listener):
-    self.listeners.append(listener)
 
   def getOrCreatePlayer(self, sentTeamStr, sentPlayerStr):
     sentTeam = int(sentTeamStr)
@@ -165,8 +162,7 @@ class ServerGameState(GameState):
       if sentPlayer > self.largestTeam:
         self.largestTeam = sentPlayer
 
-      for listener in self.listeners:
-        listener.playerAdded(sentTeam, sentPlayer);
+      self.playerAdded.emit(sentTeam, sentPlayer)
     return self.players[(sentTeam, sentPlayer)]
 
   def createNewPlayer(self):
@@ -246,14 +242,17 @@ class ServerGameState(GameState):
     self.listeningThread.queueMessageToAll(proto.RESETGAME.create())
     for p in gameState.players.values():
       p.reset()
-      for listener in self.listeners:
-        listener.playerUpdated(p.teamID, p.playerID)
+      self.playerUpdated(p.teamID, p.playerID)
 
   def setTargetTeamCount(self, value):
     self.targetTeamCount = value
 
   def terminate(self):
     self.stopGame()
+
+  playerAdded = Signal(int, int)
+  playerUpdated = Signal(int, int)
+
 
 parser = argparse.ArgumentParser(description='BraidsTag server.')
 args = parser.parse_args()
