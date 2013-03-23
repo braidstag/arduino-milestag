@@ -1,16 +1,22 @@
+== comms
 corrupt packets.
-
-auto fire when you hold down the trigger
 why does server take over 100% CPU? - it is to do with the table code but it is hard to profile as it is all in callbacks :-(
-mumble
-team number slider - better formatting
-battery checker
 exit the Read and Write threads cleanly.
+shut down clients
+Better support for clients disconnecting and reconnecting.
+
+== UI
+team number slider - better formatting
 use a widget for the player display
 sensible column widths
 hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
 provide a drop target for putting a player into a new team.
 provide a drop target for "deleting" a player
-shut down clients
-Better support for clients disconnecting and reconnecting.
+
+== Gameplay
+auto fire when you hold down the trigger
+
+== system features
+battery checker
+mumble
