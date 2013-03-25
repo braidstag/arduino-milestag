@@ -6,13 +6,11 @@ shut down clients
 Better support for clients disconnecting and reconnecting.
 
 == UI
-team number slider - better formatting
 use a widget for the player display
 sensible column widths
 hide the acellerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
 provide a drop target for putting a player into a new team.
-provide a drop target for "deleting" a player
 
 == Gameplay
 auto fire when you hold down the trigger

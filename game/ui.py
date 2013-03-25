@@ -57,8 +57,9 @@ class GameStateModel(QAbstractTableModel):
   def setData(self, index, value, role = Qt.EditRole):
     if not index.isValid() or index.column() >= self.gameState.teamCount:
       return False
+
     if value == None:
-      return False
+      return self.deletePlayer(index)
     
     #move all the other players down
     lowestBlank = self.gameState.largestTeam
@@ -76,7 +77,13 @@ class GameStateModel(QAbstractTableModel):
     self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
     self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(self.gameState.largestTeam - 1, index.column(), QModelIndex()))
     self.dataChanged.emit(self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()), self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()))
-    self.layoutChanged.emit() #TODO
+    self.layoutChanged.emit() #TODO only emit this if it actually has
+    return True
+
+  def deletePlayer(self, index):
+    self.gameState.deletePlayer(index.column() + 1, index.row() + 1)
+    self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(index.row(), index.column(), QModelIndex()))
+    self.layoutChanged.emit() #TODO only emit this if it actually has
     return True
 
   def flags(self, index):
@@ -257,9 +264,53 @@ class GameControl(QWidget):
     self.setLayout(layout)
 
 
+class TrashDropTarget(QLabel):
+  def __init__(self, parent=None):
+    super(TrashDropTarget, self).__init__("Trash", parent)
+    self.setAcceptDrops(True)
+
+  def dragEnterEvent(self, event):
+    event.acceptProposedAction()
+
+  def dropEvent(self, event):
+    event.acceptProposedAction()
+
+class PlayersView(QWidget):
+  def __init__(self, model, parent=None):
+    super(PlayersView, self).__init__(parent)
+    self.model = model
+
+    layout = QVBoxLayout()
+    hLayout = QHBoxLayout()
+
+    trashLabel = TrashDropTarget()
+    hLayout.addWidget(trashLabel)
+
+    layout.addLayout(hLayout)
+
+    tableView = QTableView()
+    tableView.setModel(self.model)
+    tableView.setItemDelegate(PlayerDelegate())
+    tableView.setSelectionMode(QAbstractItemView.SingleSelection)
+    tableView.setDragEnabled(True)
+    tableView.setAcceptDrops(True)
+    tableView.setDropIndicatorShown(True)
+    #enable drag and drop but only accept things locally (still allows dragging them out though)
+    tableView.setDragDropMode(QAbstractItemView.DragDrop)
+    tableView.setDefaultDropAction(Qt.MoveAction)
+    self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
+
+    layout.addWidget(tableView)
+    self.setLayout(layout)
+
+
 class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
+    self.model = GameStateModel(gameState)
+    gameState.playerUpdated.connect(self.model.playerUpdated)
+    gameState.playerAdded.connect(self.playerAdded)
+
     self.setWindowTitle("BraidsTag Server")
     layout = QVBoxLayout()
     tabs = QTabWidget(self)
@@ -267,20 +318,8 @@ class MainWindow(QWidget):
     gameControl = GameControl(gameState)
     tabs.addTab(gameControl, "&1. Control")
 
-    self.model = GameStateModel(gameState)
-    gameState.playerUpdated.connect(self.model.playerUpdated)
-    gameState.playerAdded.connect(self.playerAdded)
-
-    tableView = QTableView()
-    tableView.setModel(self.model)
-    tableView.setItemDelegate(PlayerDelegate())
-    tableView.setSelectionMode(QAbstractItemView.SingleSelection);
-    tableView.setDragEnabled(True)
-    tableView.setAcceptDrops(True)
-    tableView.setDropIndicatorShown(True);
-    tableView.setDragDropMode(QAbstractItemView.InternalMove);
-    self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
-    tabs.addTab(tableView, "&2. Players")
+    players = PlayersView(self.model)
+    tabs.addTab(players, "&2. Players")
 
     self.log = QTextEdit()
     #self.log.document().setMaximumBlockCount(10)
@@ -288,7 +327,6 @@ class MainWindow(QWidget):
     tabs.addTab(self.log, "&3. Log")
 
     layout.addWidget(tabs)
-
     self.setLayout(layout)
 
   def  playerAdded(self, sentTeam, sentPlayer):

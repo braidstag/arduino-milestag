@@ -131,6 +131,9 @@ class ListeningThread(Thread):
     del self.connections[(srcTeamID, srcPlayerID)]
     self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
 
+  def deletePlayer(self, teamID, playerID):
+    del self.connections[(teamID, playerID)]
+
   def stop(self):
     self.shouldStop = True
     self.serversocket.close()
@@ -202,6 +205,22 @@ class ServerGameState(GameState):
 
     self.listeningThread.movePlayer(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
     #TODO: notify people of the change
+
+  def deletePlayer(self, teamID, playerID):
+    if (teamID, playerID) not in self.players:
+      return
+
+    del self.players[(teamID, playerID)]
+
+    if teamID == self.teamCount:
+      #check if this was the only player in this team
+      self._recalculateTeamCount()
+
+    if playerID == self.largestTeam:
+      #check if this was the only player in this team
+      self._recalculateLargestTeam()
+
+    self.listeningThread.deletePlayer(teamID, playerID)
 
   def _recalculateTeamCount(self):
     for teamID in range(self.teamCount, 0, -1):
