@@ -86,4 +86,5 @@ class ClientServer():
   PORT=7079
   #SERVER="192.168.1.116"
   #SERVER="192.168.3.199"
+  #SERVER="192.168.0.58"
   SERVER="192.168.1.151"
