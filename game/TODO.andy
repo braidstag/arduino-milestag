@@ -4,6 +4,7 @@ why does server take over 100% CPU? - it is to do with the table code but it is 
 exit the Read and Write threads cleanly.
 shut down clients
 Better support for clients disconnecting and reconnecting.
+don't transmit '?'s -a->pi
 
 == UI
 use a widget for the player display
@@ -14,6 +15,9 @@ provide a drop target for putting a player into a new team.
 
 == Gameplay
 auto fire when you hold down the trigger
+persist team and player across restarts?
+assign (and persist) a name for each gun.
+use pi serial number as a unique id for guns.
 
 == system features
 battery checker
