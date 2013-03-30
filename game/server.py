@@ -124,15 +124,18 @@ class ListeningThread(Thread):
       self.connections[key].queueMessage(msg)
 
   def queueMessage(self, teamID, playerID, msg):
-    self.connections[(teamID, playerID)].queueMessage(msg)
+    if (teamID, playerID) in self.connections:
+      self.connections[(teamID, playerID)].queueMessage(msg)
 
   def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
-    self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
-    del self.connections[(srcTeamID, srcPlayerID)]
-    self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
+    if (srcTeamID, srcPlayerID) in self.connections:
+      self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
+      del self.connections[(srcTeamID, srcPlayerID)]
+      self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
 
   def deletePlayer(self, teamID, playerID):
-    del self.connections[(teamID, playerID)]
+    if (teamID, playerID) in self.connections:
+      del self.connections[(teamID, playerID)]
 
   def stop(self):
     self.shouldStop = True
