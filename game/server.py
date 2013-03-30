@@ -134,6 +134,7 @@ class ListeningThread(Thread):
       self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
 
   def deletePlayer(self, teamID, playerID):
+    self.queueMessage(teamID, playerID, proto.DELETED.create())
     if (teamID, playerID) in self.connections:
       del self.connections[(teamID, playerID)]
 

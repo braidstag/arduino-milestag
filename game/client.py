@@ -40,6 +40,14 @@ class Client(ClientServerConnection):
     except proto.MessageParseException:
       pass
     
+    try:
+      proto.DELETED.parse(msg)
+      #just treat this as the game stopping for us.
+      self.main.gameState.stopGame()
+      return True
+    except proto.MessageParseException:
+      pass
+    
     return False
 
   def _openConnection(self):

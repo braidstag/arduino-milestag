@@ -31,12 +31,13 @@ class MessageParseException(Exception):
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)", "Recv(%d,%d,%s)")
 SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
 HELLO = Message(r"Hello\((-?\d*),(-?\d*)\)", "Hello(%d,%d)")
+#server -> client only
+TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
 STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
 
-#server -> client only
-TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
+DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 HIT =                 Message(r"H(\d),(\d),(\d)", None)
