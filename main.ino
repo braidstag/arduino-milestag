@@ -35,7 +35,7 @@ void setup() {
   
   TIMSK1 = 0; //no interupts
   TIFR1 = _BV(OCF1A) | _BV(OCF1A); //clear Output Compare Match Flags (by setting them :-P )
-  unsigned long desired_freq = 40000;
+  unsigned long desired_freq = 38000;
   OCR1A = 10000000/desired_freq - 1; // see page 126 of datasheet for this equation
   //OCR1B = 10000000/desired_freq - 1; for another pin (10)
 
