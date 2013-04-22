@@ -128,8 +128,8 @@ void serialQueue(double d) {
 }
 
 void serialQueue(int i) {
-  char* out = (char*) malloc(10);
-  snprintf(out, 32, "%.2f", i);
+  char* out = (char*) malloc(11);
+  snprintf(out, 11, "%.2f", i);
   serialQueue(out);
   free(out);
 }
