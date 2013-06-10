@@ -69,7 +69,7 @@ void loop() {
 }
 
 boolean oldTrigger = false;
-long lastTriggerCheck = 0;
+unsigned long lastTriggerCheck = 0;
 
 void checkTrigger() {
   //only check the trigger every millisecond as a crude de-bounce.

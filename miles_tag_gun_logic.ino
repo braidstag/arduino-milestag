@@ -3,12 +3,12 @@
 // we currently only implement MT1 as MT2 seems incomplete.
 
 //a faster version of serialQueue. It just concatenates it's arguments until it finds a NULL argument.
-void serialQueue2(char *arg1, ...) {
+void serialQueue2(const char *arg1, ...) {
   va_list ap;
   va_start(ap, arg1);
   
   //iterate until we find a negative number.
-  for (char *i = arg1; i; i = va_arg(ap, char *))
+  for (const char *i = arg1; i; i = va_arg(ap, const char *))
     serialQueue(i);
   
   serialQueue("\n");
@@ -94,7 +94,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
         }
     } else {
         byte recv_PlayerID = (recvBuffer & MT1_PLAYER_MASK) >> MT1_PLAYER_OFFSET;
-        signed char damage;
+        signed char damage = 0;
         
         byte recv_PlayerWeaponHit = DataByte2;
         switch (recv_PlayerWeaponHit) {
@@ -129,7 +129,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
         serialQueue((int) recv_PlayerID);
         serialQueue(",");
         serialQueue((int) damage);
-        /*serialQueue(","); serialQueue(baseDamage);*/
+        /*serialQueue(","); serialQueue((int) baseDamage);*/
         serialQueue("\n");
     }
 }
