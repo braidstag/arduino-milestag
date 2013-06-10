@@ -92,7 +92,7 @@ byte writeOffset = 0;
 //an offset from serialWriteBuffer ptr to the byte we next need to read from the circle buffer
 byte readOffset = 0;
 
-void serialQueue(char *str) {
+void serialQueue(const char *str) {
   //copy this byte-by-byte into the circle buffer
   int offset = 0;
   while (*(str + offset)) {
@@ -122,14 +122,14 @@ void serialQueue(char *str) {
 
 void serialQueue(double d) {
   char* out = (char*) malloc(32);
-  snprintf(out, 32, "%d", d);
+  snprintf(out, 32, "%.2f", d);
   serialQueue(out);
   free(out);
 }
 
 void serialQueue(int i) {
   char* out = (char*) malloc(11);
-  snprintf(out, 11, "%.2f", i);
+  snprintf(out, 11, "%d", i);
   serialQueue(out);
   free(out);
 }
