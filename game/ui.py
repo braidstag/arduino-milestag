@@ -21,10 +21,10 @@ class GameStateModel(QAbstractTableModel):
     self.gameState = gameState
 
   def rowCount(self, index):
-    return self.gameState.largestTeam
+    return self.gameState.largestTeam + 1
 
   def columnCount(self, index):
-    return self.gameState.teamCount
+    return self.gameState.teamCount + 1
 
   def data(self, index, role = Qt.DisplayRole):
     if not index.isValid():
@@ -55,7 +55,7 @@ class GameStateModel(QAbstractTableModel):
 
   #DnD support
   def setData(self, index, value, role = Qt.EditRole):
-    if not index.isValid() or index.column() >= self.gameState.teamCount:
+    if not index.isValid():
       return False
 
     if value == None:
@@ -279,48 +279,6 @@ class TrashDropTarget(QLabel):
     event.acceptProposedAction()
 
 
-class NewTeamDropTarget(QLabel):
-  def __init__(self, model, parent=None):
-    super(NewTeamDropTarget, self).__init__("New Team", parent)
-    self.model = model
-    self.setAcceptDrops(True)
-
-  def dragEnterEvent(self, event):
-    event.acceptProposedAction()
-
-  def dropEvent(self, event):
-    #put this item into a new column
-    if not event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
-      return
-
-    decodedData = self.decode_data(event.mimeData().data("application/x-qabstractitemmodeldatalist"))
-
-    for item in decodedData:
-      (srcRow, srcColumn) = item
-      self.model.movePlayer(srcColumn + 1, srcRow + 1, self.model.gameState.teamCount + 1, 1)
-
-    event.acceptProposedAction()
-
-  def decode_data(self, encodedData):
-    data = []
-       
-    ds = QDataStream(encodedData)
-    while not ds.atEnd():
-      item = {}
-      row = ds.readInt32()
-      column = ds.readInt32()
-            
-      map_items = ds.readInt32()
-      for i in range(map_items):
-        key = ds.readInt32()
-        value = ds.readQVariant()
-        #throw key and value away
-            
-      data.append((row, column))
-        
-    return data
-
-
 class PlayersView(QWidget):
   def __init__(self, model, parent=None):
     super(PlayersView, self).__init__(parent)
@@ -331,9 +289,6 @@ class PlayersView(QWidget):
 
     trashLabel = TrashDropTarget()
     hLayout.addWidget(trashLabel)
-
-    newTeamLabel = NewTeamDropTarget(model)
-    hLayout.addWidget(newTeamLabel)
 
     layout.addLayout(hLayout)
 
