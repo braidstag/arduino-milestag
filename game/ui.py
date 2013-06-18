@@ -74,8 +74,11 @@ class GameStateModel(QAbstractTableModel):
 
     oldTeamID = value.teamID
     oldPlayerID = value.playerID
-    self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
-    self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(self.gameState.largestTeam - 1, index.column(), QModelIndex()))
+    return self.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
+
+  def movePlayer(self, oldTeamID, oldPlayerID, newTeamID, newPlayerID):
+    self.gameState.movePlayer(oldTeamID, oldPlayerID, newTeamID, newPlayerID)
+    self.dataChanged.emit(self.index(newTeamID - 1, newPlayerID - 1, QModelIndex()), self.index(self.gameState.largestTeam - 1, newPlayerID - 1, QModelIndex()))
     self.dataChanged.emit(self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()), self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()))
     self.layoutChanged.emit() #TODO only emit this if it actually has
     return True
@@ -275,6 +278,49 @@ class TrashDropTarget(QLabel):
   def dropEvent(self, event):
     event.acceptProposedAction()
 
+
+class NewTeamDropTarget(QLabel):
+  def __init__(self, model, parent=None):
+    super(NewTeamDropTarget, self).__init__("New Team", parent)
+    self.model = model
+    self.setAcceptDrops(True)
+
+  def dragEnterEvent(self, event):
+    event.acceptProposedAction()
+
+  def dropEvent(self, event):
+    #put this item into a new column
+    if not event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
+      return
+
+    decodedData = self.decode_data(event.mimeData().data("application/x-qabstractitemmodeldatalist"))
+
+    for item in decodedData:
+      (srcRow, srcColumn) = item
+      self.model.movePlayer(srcColumn + 1, srcRow + 1, self.model.gameState.teamCount + 1, 1)
+
+    event.acceptProposedAction()
+
+  def decode_data(self, encodedData):
+    data = []
+       
+    ds = QDataStream(encodedData)
+    while not ds.atEnd():
+      item = {}
+      row = ds.readInt32()
+      column = ds.readInt32()
+            
+      map_items = ds.readInt32()
+      for i in range(map_items):
+        key = ds.readInt32()
+        value = ds.readQVariant()
+        #throw key and value away
+            
+      data.append((row, column))
+        
+    return data
+
+
 class PlayersView(QWidget):
   def __init__(self, model, parent=None):
     super(PlayersView, self).__init__(parent)
@@ -285,6 +331,9 @@ class PlayersView(QWidget):
 
     trashLabel = TrashDropTarget()
     hLayout.addWidget(trashLabel)
+
+    newTeamLabel = NewTeamDropTarget(model)
+    hLayout.addWidget(newTeamLabel)
 
     layout.addLayout(hLayout)
 
