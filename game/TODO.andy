@@ -18,6 +18,7 @@ auto fire when you hold down the trigger
 persist team and player across restarts?
 assign (and persist) a name for each gun.
 use pi serial number as a unique id for guns.
+system to sync the clients and server in the face of significant lag (clients may be out of touch with the server for minutes at a time).
 
 == system features
 battery checker

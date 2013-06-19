@@ -57,7 +57,7 @@ class StandardGameLogic(QObject):
     if not gameState.isGameStarted():
       print("hit before game started")
       pass
-      #TODO how does this happen, log this?
+      #TODO how does this happen, log this? client->server lag will trigger this
     elif (fromPlayer == toPlayer.playerID and fromTeam == toPlayer.teamID):
       #self shot, ignore this
       pass
