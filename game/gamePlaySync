@@ -1,0 +1,30 @@
+Notes about how to keep the gameplay in sync between the client and the server
+
+h2. Principles
+
+* Client trumps server.
+** A malicious client is far less likely than a comms failure.
+** I'm not aware of any existing system which protects against mailicous clients.
+* Each client has a uniqueId (taken from the pi's serial number)
+* Each client has a synchronised clock with the server which doesn't drift much.
+* Client memory may be limited but we assume that the server has plenty.
+
+h2. Design
+
+Clients collect a list of //event// objects which describe something happening. 
+This might be a player initiated thing (like firing) or a reactive thing (like being hit).
+These are sent to the server along with the client's id and the time at which the event happened.
+
+Clients keep track of the current state of their stats and update it as they become aware of events. 
+This should ialways be accurate (by definition, they have primacy).
+Clients should "check in" or "ping" the server so that the server can know they are still active and that it is up-to-date.
+
+The Server keeps a list of events, from which the current state of everyone's attributes can be estimated.
+As it recieves events from clients, it updates the list (keeping it in chronological order) and recalculates the state.
+
+As the client will send (and recieve Acks for) one event at a time, and because the client has primacy over it's own stats, the server can be confident of each clients stats as of a particular time (the "confidence point" for that player).
+This can be used to detect known inconsistencies as the match is progressing.
+
+As an optimisation, the server can cache game state information. 
+The most obvious example would be for the earliest confidence point. This cached state would never need to be discarded (except to be replaced as confidence progresses).
+By allowing some values to be discarded, you could also cache states //after// the earliest confidence point.
