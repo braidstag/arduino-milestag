@@ -30,9 +30,12 @@ class Server(ClientServerConnection):
   def handleMsg(self, fullLine):
     with self.eventLock:
       mainWindow.lineReceived(fullLine)
+
+    event = proto.parseEvent(fullLine)
+    msgStr = event.msgStr
   
     try:
-      (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
+      (recvTeam, recvPlayer, line) = proto.RECV.parse(msgStr)
 
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
@@ -58,7 +61,7 @@ class Server(ClientServerConnection):
       pass
 
     try:
-      (teamID, playerID) = proto.HELLO.parse(fullLine)
+      (teamID, playerID) = proto.HELLO.parse(msgStr)
 
       with self.eventLock:
         if int(teamID) == -1:

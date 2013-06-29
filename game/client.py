@@ -17,16 +17,19 @@ class Client(ClientServerConnection):
     
     self._openConnection()
   
-  def handleMsg(self, msg):
+  def handleMsg(self, fullLine):
+    event = proto.parseEvent(fullLine)
+    msgStr = event.msgStr
+  
     try:
-      (teamID, playerID) = proto.TEAMPLAYER.parse(msg)
+      (teamID, playerID) = proto.TEAMPLAYER.parse(msgStr)
       self.main.player = Player(teamID, playerID)
       return True
     except proto.MessageParseException:
       pass
     
     try:
-      (duration,) = proto.STARTGAME.parse(msg)
+      (duration,) = proto.STARTGAME.parse(msgStr)
       self.main.gameState.setGameTime(int(duration))
       self.main.gameState.startGame()
       return True
@@ -34,14 +37,14 @@ class Client(ClientServerConnection):
       pass
     
     try:
-      proto.STOPGAME.parse(msg)
+      proto.STOPGAME.parse(msgStr)
       self.main.gameState.stopGame()
       return True
     except proto.MessageParseException:
       pass
     
     try:
-      proto.DELETED.parse(msg)
+      proto.DELETED.parse(msgStr)
       #just treat this as the game stopping for us.
       self.main.gameState.stopGame()
       return True
