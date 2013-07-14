@@ -1,0 +1,14 @@
+Revision 2 PCB Requirements
+
+Add relay/transistor to take reset pin to GND, control from RPi
+
+Add control lines for RPi on power main power relay.
+
+Add holes for reset microswitch on PCB for duemilanove.
+
+Add access to hot 5v rail
+
+
+
+
+
