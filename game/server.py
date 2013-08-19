@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 from threading import Thread, Lock, Timer
+from bisect import insort
 
 from core import Player, StandardGameLogic, ClientServer, GameState
 from ui import MainWindow
@@ -22,6 +23,13 @@ class Server(ClientServerConnection):
     self.logic = StandardGameLogic()
     self.gameState = gameState
 
+    #map from id to timestamp
+    self.playerLastSeen = {}
+    self.confidencePointGameState = gameState
+    self.eventsSinceConfidencePoint = [] # a sorted list of (timestamp, event)
+    self.confidencePoint = 0
+    self.confidencePointMinimumInterval = 10 # Only update the cache at most once this many seconds.
+
     self.setSocket(sock)
   
   #so we don't try to process messages from 2 clients at once.
@@ -31,44 +39,68 @@ class Server(ClientServerConnection):
     with self.eventLock:
       mainWindow.lineReceived(fullLine)
 
-    event = proto.parseEvent(fullLine)
+      event = proto.parseEvent(fullLine)
+
+      self.playerLastSeen[event.id] = event.time
+
+      #Check if we need to update the confidence point. If so, we will do so after we have parsed/handled this message.
+      newConfidencePoint = min(self.playerLastSeen.values())
+      updateConfidencePoint = newConfidencePoint > self.confidencePoint + self.confidencePointMinimumInterval
+
+      #insert this event in the correct order (just because it was recieved last, doesn't mean it happened last!)
+      insort(self.eventsSinceConfidencePoint, (event.time, event))
+
+      #loop over all events since confidence point, creating a new best-guess gameState.
+      self.gameState = self.confidencePointGameState
+      for currEvent in self.eventsSinceConfidencePoint:
+        self.handleEvent(currEvent[1], self.gameState)
+
+      if updateConfidencePoint:
+        self.confidencePointGameState = self.gameState
+        self.eventsSinceConfidencePoint = []
+        self.confidencePoint = newConfidencePoint
+
+    return "Ack()\n"
+
+  def handleEvent(self, event, gameState):
+    """handle an event, you must be holding self.eveentLock vbefore calling this"""
+    alreadyHandled = event.handled
+    event.handled = True
     msgStr = event.msgStr
-  
     try:
       (recvTeam, recvPlayer, line) = proto.RECV.parse(msgStr)
 
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          self.logic.hit(self.gameState, player, sentTeam, sentPlayer, damage)
-          self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
+        gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
       try:
         proto.TRIGGER.parse(line)
 
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          if (self.logic.trigger(self.gameState, player)):
-            self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        if (self.logic.trigger(gameState, player)):
+          gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
     except proto.MessageParseException:
       pass
 
-    try:
-      (teamID, playerID) = proto.HELLO.parse(msgStr)
+    #TODO: I need to work out what I do with a Hello in the new world of clients having ids and handleEvent being called more than once per event.
+    if not alreadyHandled:
+      try:
+        (teamID, playerID) = proto.HELLO.parse(msgStr)
 
-      with self.eventLock:
         if int(teamID) == -1:
-          player = self.gameState.createNewPlayer()
+          player = gameState.createNewPlayer()
           self.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
         else:
-          player = self.gameState.getOrCreatePlayer(teamID, playerID)
+          player = gameState.getOrCreatePlayer(teamID, playerID)
           self.queueMessage("Ack()\n")
         #TODO: we need to preserve the sendQueue when we do this
         self.listeningThread.moveConnection(self, player)
@@ -76,10 +108,9 @@ class Server(ClientServerConnection):
         #TODO if the game has started, also tell the client this.
         if self.gameState.isGameStarted():
           self.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
-    except proto.MessageParseException:
-      pass
+      except proto.MessageParseException:
+        pass
 
-    return "Ack()\n"
 
   def onDisconnect(self):
     #not much we can do until they reconnect

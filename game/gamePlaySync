@@ -18,6 +18,7 @@ These are sent to the server along with the client's id and the time at which th
 Clients keep track of the current state of their stats and update it as they become aware of events. 
 This should ialways be accurate (by definition, they have primacy).
 Clients should "check in" or "ping" the server so that the server can know they are still active and that it is up-to-date.
+Clients mustn't do anything (or have anything done to them) until the server has acknowledged their existence.
 
 The Server keeps a list of events, from which the current state of everyone's attributes can be estimated.
 As it recieves events from clients, it updates the list (keeping it in chronological order) and recalculates the state.
