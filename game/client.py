@@ -148,7 +148,10 @@ class Main():
 
 
 main = Main()
-print main.player
+try:
+  print main.player
+except:
+  pass
 main.eventLoop()
 print main.player
 main.serverConnection.stop()
