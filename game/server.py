@@ -16,9 +16,8 @@ import proto
 from PySide.QtGui import QApplication
 from PySide.QtCore import Signal
 
-class Server(ClientServerConnection):
-  def __init__(self, listeningThread, gameState, sock):
-    ClientServerConnection.__init__(self)
+class ServerMsgHandler():
+  def __init__(self, listeningThread, gameState):
     self.listeningThread = listeningThread
     self.logic = StandardGameLogic()
     self.gameState = gameState
@@ -30,14 +29,13 @@ class Server(ClientServerConnection):
     self.confidencePoint = 0
     self.confidencePointMinimumInterval = 10 # Only update the cache at most once this many seconds.
 
-    self.setSocket(sock)
-  
   #so we don't try to process messages from 2 clients at once.
   eventLock = Lock()
     
   def handleMsg(self, fullLine):
     with self.eventLock:
-      mainWindow.lineReceived(fullLine)
+      if mainWindow: # This should only be None in tests.
+        mainWindow.lineReceived(fullLine)
 
       event = proto.parseEvent(fullLine)
 
@@ -51,9 +49,9 @@ class Server(ClientServerConnection):
       insort(self.eventsSinceConfidencePoint, (event.time, event))
 
       #loop over all events since confidence point, creating a new best-guess gameState.
-      self.gameState = self.confidencePointGameState
+      self.gameState = self.confidencePointGameState #TODO clone/copy this
       for currEvent in self.eventsSinceConfidencePoint:
-        self.handleEvent(currEvent[1], self.gameState)
+        self.__handleEvent(currEvent[1], self.gameState)
 
       if updateConfidencePoint:
         self.confidencePointGameState = self.gameState
@@ -62,8 +60,8 @@ class Server(ClientServerConnection):
 
     return "Ack()\n"
 
-  def handleEvent(self, event, gameState):
-    """handle an event, you must be holding self.eveentLock vbefore calling this"""
+  def __handleEvent(self, event, gameState):
+    """handle an event, you must be holding self.eventLock before calling this"""
     alreadyHandled = event.handled
     event.handled = True
     msgStr = event.msgStr
@@ -111,6 +109,16 @@ class Server(ClientServerConnection):
       except proto.MessageParseException:
         pass
 
+
+class Server(ClientServerConnection):
+  def __init__(self, listeningThread, gameState, sock):
+    ClientServerConnection.__init__(self)
+    self.msgHandler = ServerMsgHandler(listeningThread, gameState)
+
+    self.setSocket(sock)
+  
+  def handleMsg(self, fullLine):
+    self.msgHandler.handleMsg(fullLine)
 
   def onDisconnect(self):
     #not much we can do until they reconnect
@@ -310,42 +318,44 @@ class ServerGameState(GameState):
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
 
+mainWindow = None
 
-parser = argparse.ArgumentParser(description='BraidsTag server.')
-args = parser.parse_args()
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='BraidsTag server.')
+  args = parser.parse_args()
 
-gameState = ServerGameState()
+  gameState = ServerGameState()
 
-main = ListeningThread(gameState)
-main.start()
+  main = ListeningThread(gameState)
+  main.start()
 
-# Create Qt application
-app = QApplication(sys.argv)
-mainWindow = MainWindow(gameState)
-mainWindow.show()
+  # Create Qt application
+  app = QApplication(sys.argv)
+  mainWindow = MainWindow(gameState)
+  mainWindow.show()
 
-# Enter Qt main loop
-retval = app.exec_()
+  # Enter Qt main loop
+  retval = app.exec_()
 
-for i in gameState.players.values():
-  print i
+  for i in gameState.players.values():
+    print i
 
-main.stop()
-gameState.terminate()
+  main.stop()
+  gameState.terminate()
 
-#print >> sys.stderr, "\n*** STACKTRACE - START ***\n"
-#code = []
-#for threadId, stack in sys._current_frames().items():
-#    code.append("\n# ThreadID: %s" % threadId)
-#    for filename, lineno, name, line in traceback.extract_stack(stack):
-#        code.append('File: "%s", line %d, in %s' % (filename,
-#                                                    lineno, name))
-#        if line:
-#            code.append("  %s" % (line.strip()))
-#
-#for line in code:
-#    print >> sys.stderr, line
-#print >> sys.stderr, "\n*** STACKTRACE - END ***\n"
-#
+  #print >> sys.stderr, "\n*** STACKTRACE - START ***\n"
+  #code = []
+  #for threadId, stack in sys._current_frames().items():
+  #    code.append("\n# ThreadID: %s" % threadId)
+  #    for filename, lineno, name, line in traceback.extract_stack(stack):
+  #        code.append('File: "%s", line %d, in %s' % (filename,
+  #                                                    lineno, name))
+  #        if line:
+  #            code.append("  %s" % (line.strip()))
+  #
+  #for line in code:
+  #    print >> sys.stderr, line
+  #print >> sys.stderr, "\n*** STACKTRACE - END ***\n"
+  #
 
-sys.exit(retval)
+  sys.exit(retval)
