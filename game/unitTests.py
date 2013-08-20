@@ -3,6 +3,7 @@
 import unittest
 
 from core import Player, StandardGameLogic, GameState
+from server import ServerMsgHandler, ServerGameState
 
 class TestTakingHits(unittest.TestCase):
   def setUp(self):
@@ -81,6 +82,27 @@ class TestTakingHits(unittest.TestCase):
     self.assertEqual(0, player.health)
     #TODO assert NO death signal
 
+class TestEventReordering(unittest.TestCase):
+  """Some very tightly integrated tests of the event  ququeing and re-oredering."""
+  def setUp(self):
+    gameState = ServerGameState()
+
+    class StubListeningThread():
+      def queueMessageToAll(self, msg):
+        pass
+
+    listeningThread = StubListeningThread()
+    gameState.setListeningThread(listeningThread)
+
+    gameState.setGameTime(120)
+    gameState.startGame()
+
+    self.serverMsgHandler = ServerMsgHandler(listeningThread, gameState)
+    
+  def test_singleEvent(self):
+    self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,3))")
+    player = self.serverMsgHandler.gameState.players[(1,1)]
+    self.assertEqual(2, player.health)
 
 if __name__ == '__main__':
   unittest.main()
