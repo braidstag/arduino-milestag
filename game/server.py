@@ -17,6 +17,7 @@ from PySide.QtGui import QApplication
 from PySide.QtCore import Signal
 
 class ServerMsgHandler():
+  """A class to handle messages from clients to the server. There should only be one instance of this class""" 
   def __init__(self, listeningThread, gameState):
     self.listeningThread = listeningThread
     self.logic = StandardGameLogic()
@@ -103,7 +104,6 @@ class ServerMsgHandler():
         #TODO: we need to preserve the sendQueue when we do this
         self.listeningThread.moveConnection(self, player)
           
-        #TODO if the game has started, also tell the client this.
         if self.gameState.isGameStarted():
           self.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
       except proto.MessageParseException:
@@ -111,9 +111,10 @@ class ServerMsgHandler():
 
 
 class Server(ClientServerConnection):
-  def __init__(self, listeningThread, gameState, sock):
+  """A Class for a connection from a client to the Server. There are many instaces of this class, 1 for each connection"""
+  def __init__(self, sock, msgHandler):
     ClientServerConnection.__init__(self)
-    self.msgHandler = ServerMsgHandler(listeningThread, gameState)
+    self.msgHandler = msgHandler
 
     self.setSocket(sock)
   
@@ -133,6 +134,8 @@ class ListeningThread(Thread):
     self.gameState = gameState
     gameState.setListeningThread(self)
 
+    self.msgHandler = ServerMsgHandler(self, gameState)
+
     self.connections = {}
     self.unestablishedConnections = set()
 
@@ -151,7 +154,7 @@ class ListeningThread(Thread):
 
       try:
         (clientsocket, address) = self.serversocket.accept();
-        self.unestablishedConnections.add(Server(self, gameState, clientsocket))
+        self.unestablishedConnections.add(Server(clientsocket, self.msgHandler))
       except KeyboardInterrupt:
         break
       except socket.timeout:
