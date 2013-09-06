@@ -38,11 +38,11 @@ void checkSerial() {
 //commands from the real client
     else if (numBytesRead == 1 && serialReadBuffer[0] == 'c') {
       clientConnected = true;
-      serialQueue("c\n");
+      serialQueue_s("c\n");
     }
     else if (numBytesRead == 1 && serialReadBuffer[0] == 'd') {
       clientConnected = false;
-      serialQueue("d\n");
+      serialQueue_s("d\n");
     }
     else if (numBytesRead > 4 && strncmp("Fire", serialReadBuffer, 4) == 0) {
       //Fire
@@ -92,7 +92,7 @@ byte writeOffset = 0;
 //an offset from serialWriteBuffer ptr to the byte we next need to read from the circle buffer
 byte readOffset = 0;
 
-void serialQueue(const char *str) {
+void serialQueue_s(const char *str) {
   //copy this byte-by-byte into the circle buffer
   int offset = 0;
   while (*(str + offset)) {
@@ -120,17 +120,17 @@ void serialQueue(const char *str) {
   }
 }
 
-void serialQueue(double d) {
+void serialQueue_d(double d) {
   char* out = (char*) malloc(32);
   snprintf(out, 32, "%.2f", d);
-  serialQueue(out);
+  serialQueue_s(out);
   free(out);
 }
 
-void serialQueue(int i) {
+void serialQueue_i(int i) {
   char* out = (char*) malloc(11);
   snprintf(out, 11, "%d", i);
-  serialQueue(out);
+  serialQueue_s(out);
   free(out);
 }
 
