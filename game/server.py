@@ -72,6 +72,9 @@ class ServerMsgHandler():
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
+	#TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
+	#(although if they are, it could be because we have incomplete data)
+
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
         gameState.playerUpdated.emit(recvTeam, recvPlayer)

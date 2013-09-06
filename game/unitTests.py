@@ -69,7 +69,7 @@ class TestTakingHits(unittest.TestCase):
   
     sentTeam = 2
     sentPlayer = 1
-    damage = (player.health // 2) + 1 # this will faile if the player only starts with 2 health :-(
+    damage = (player.health // 2) + 1 # this will fail if the player only starts with 2 health :-(
   
     self.gl.hit(self.gameState, player, sentTeam, sentPlayer, damage)
     self.assertEqual(initialHealth - damage, player.health)
@@ -83,7 +83,7 @@ class TestTakingHits(unittest.TestCase):
     #TODO assert NO death signal
 
 class TestEventReordering(unittest.TestCase):
-  """Some very tightly integrated tests of the event  ququeing and re-oredering."""
+  """Some very tightly integrated tests of the event queueing and re-oredering."""
   def setUp(self):
     gameState = ServerGameState()
 
@@ -98,11 +98,25 @@ class TestEventReordering(unittest.TestCase):
     gameState.startGame()
 
     self.serverMsgHandler = ServerMsgHandler(listeningThread, gameState)
-    
+
   def test_singleEvent(self):
     self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,3))")
     player = self.serverMsgHandler.gameState.players[(1,1)]
-    self.assertEqual(2, player.health)
+    self.assertEqual(2, player.health) # This depends on the player starting with 5 health
+
+  def test_twoIndependantEventsCorrectOrder(self):
+    self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,1))")
+    player = self.serverMsgHandler.gameState.players[(1,1)]
+    self.assertEqual(4, player.health) # This depends on the player starting with 5 health
+    self.serverMsgHandler.handleMsg("E(1,1001,Recv(1,1,H2,1,1))")
+    self.assertEqual(3, player.health) # This depends on the player starting with 5 health
+
+  def test_twoIndependantEventsIncorrectOrder(self):
+    self.serverMsgHandler.handleMsg("E(1,1001,Recv(1,1,H2,1,1))")
+    player = self.serverMsgHandler.gameState.players[(1,1)]
+    self.assertEqual(4, player.health) # This depends on the player starting with 5 health
+    self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,1))")
+    self.assertEqual(3, player.health) # This depends on the player starting with 5 health
 
 if __name__ == '__main__':
   unittest.main()
