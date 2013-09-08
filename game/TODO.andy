@@ -1,10 +1,10 @@
 == comms
-corrupt packets. - done with new sensor(?)
 why does server take over 100% CPU? - it is to do with the table code but it is hard to profile as it is all in callbacks :-(
 exit the Read and Write threads cleanly.
 shut down clients
 Better support for clients disconnecting and reconnecting.
-don't transmit '?'s -a->pi  - done?
+adjust game start etc. for lag.
+client  -> server should be Fire... not T/t
 
 == UI
 use a widget for the player display
