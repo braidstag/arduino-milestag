@@ -51,6 +51,7 @@ class ServerMsgHandler():
 
       #loop over all events since confidence point, creating a new best-guess gameState.
       self.gameState = self.confidencePointGameState #TODO clone/copy this
+      #print("Processing", self.eventsSinceConfidencePoint)
       for currEvent in self.eventsSinceConfidencePoint:
         self.__handleEvent(currEvent[1], self.gameState)
 
@@ -86,6 +87,15 @@ class ServerMsgHandler():
 
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         if (self.logic.trigger(gameState, player)):
+          gameState.playerUpdated.emit(recvTeam, recvPlayer)
+      except proto.MessageParseException:
+        pass
+
+      try:
+        proto.FULL_AMMO.parse(line)
+
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        if (self.logic.fullAmmo(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass

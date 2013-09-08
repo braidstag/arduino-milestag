@@ -105,18 +105,40 @@ class TestEventReordering(unittest.TestCase):
     self.assertEqual(2, player.health) # This depends on the player starting with 5 health
 
   def test_twoIndependantEventsCorrectOrder(self):
-    self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,1))")
+    self.serverMsgHandler.handleMsg("E(1,2000,Recv(1,1,H2,1,1))")
     player = self.serverMsgHandler.gameState.players[(1,1)]
     self.assertEqual(4, player.health) # This depends on the player starting with 5 health
-    self.serverMsgHandler.handleMsg("E(1,1001,Recv(1,1,H2,1,1))")
+    self.serverMsgHandler.handleMsg("E(1,2001,Recv(1,1,H2,1,1))")
     self.assertEqual(3, player.health) # This depends on the player starting with 5 health
 
+  def test_twoIndependantEventsCorrectOrder2(self):
+    self.serverMsgHandler.handleMsg("E(1,3000,Recv(1,1,T))")
+    self.serverMsgHandler.handleMsg("E(1,3001,Recv(1,1,t))")
+    self.serverMsgHandler.handleMsg("E(1,3002,Recv(1,1,T))")
+    self.serverMsgHandler.handleMsg("E(1,3003,Recv(1,1,t))")
+    player = self.serverMsgHandler.gameState.players[(1,1)]
+    self.assertEqual(98, player.ammo) # This depends on the player starting with 100 ammo
+    self.serverMsgHandler.handleMsg("E(1,3004,Recv(1,1,FA))")
+    self.assertEqual(100, player.ammo) # This depends on the player starting with max 100 ammo
+
   def test_twoIndependantEventsIncorrectOrder(self):
-    self.serverMsgHandler.handleMsg("E(1,1001,Recv(1,1,H2,1,1))")
+    self.serverMsgHandler.handleMsg("E(1,4001,Recv(1,1,H2,1,1))")
     player = self.serverMsgHandler.gameState.players[(1,1)]
     self.assertEqual(4, player.health) # This depends on the player starting with 5 health
-    self.serverMsgHandler.handleMsg("E(1,1000,Recv(1,1,H2,1,1))")
+    self.serverMsgHandler.handleMsg("E(1,4000,Recv(1,1,H2,1,1))")
     self.assertEqual(3, player.health) # This depends on the player starting with 5 health
+
+  def test_twoIndependantEventsIncorrectOrder2(self):
+    """Even though the trigger is recieved last by the server, it was recieved first by the client so the FA should be the most recent thing processed whenever we check. That means there should always be 100 ammo."""
+    #NB. we have to have the first Tt as otherwise, the point immediatesly-after the FA becomes the confidence point as we assume messages from a single client are ordered correctly. This then means it isn't last as we would expect!
+    self.serverMsgHandler.handleMsg("E(1,5000,Recv(1,1,T))")
+    self.serverMsgHandler.handleMsg("E(1,5001,Recv(1,1,t))")
+    self.serverMsgHandler.handleMsg("E(1,5004,Recv(1,1,FA))")
+    player = self.serverMsgHandler.gameState.players[(1,1)]
+    self.assertEqual(100, player.ammo) # This depends on the player starting with 100 ammo
+    self.serverMsgHandler.handleMsg("E(1,5002,Recv(1,1,T))")
+    self.serverMsgHandler.handleMsg("E(1,5003,Recv(1,1,t))")
+    self.assertEqual(100, player.ammo) # This depends on the player starting with max 100 ammo
 
 if __name__ == '__main__':
   unittest.main()

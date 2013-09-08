@@ -12,6 +12,7 @@ class Player():
 
   def reset(self):
     self.ammo = 100
+    self.maxAmmo = 100
     self.health = 5
     self.maxHealth = 8
     self.gunDamage = 1
@@ -79,6 +80,11 @@ class StandardGameLogic(QObject):
       return True
     else:
       return False
+
+  def fullAmmo(self, gameState, player):
+    retval = player.ammo != player.maxAmmo
+    player.ammo = player.maxAmmo
+    return retval
 
   playerDead = Signal()
 

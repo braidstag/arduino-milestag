@@ -63,6 +63,7 @@ DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 HIT =                 Message(r"H(\d),(\d),(\d)", None)
+FULL_AMMO =           Message(r"FA", None)
 CORRUPT =             Message(r"C", None)
 CLIENT_CONNECTED =    Message(r"c", None)
 CLIENT_DISCONNECTED = Message(r"d", None)

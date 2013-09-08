@@ -52,7 +52,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
                         serialQueue_s("Shot(Killed())\n");
                         break;
                     case GOD_GUN_FULL_AMMO:
-                        serialQueue_s("Shot(FullAmmo())\n");
+                        serialQueue_s("FA\n");
                         break;
                     case GOD_GUN_RESPAWN_PLAYER:
                         serialQueue_s("Shot(ReSpawn())\n");

@@ -115,6 +115,13 @@ class Main():
         pass
 
       try:
+        proto.FULL_AMMO.parse(line)
+
+        self.logic.fullAmmo(self.gameState, self.player)
+      except proto.MessageParseException:
+        pass
+
+      try:
         proto.TRIGGER.parse(line)
 
         if (self.logic.trigger(self.gameState, self.player)):
