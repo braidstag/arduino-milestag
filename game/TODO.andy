@@ -11,6 +11,8 @@ use a widget for the player display
 sensible column widths
 hide the accelerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
+Show battery level on player list
+Highlight a player on the player list when they are in-communicado
 
 == Gameplay
 auto fire when you hold down the trigger
