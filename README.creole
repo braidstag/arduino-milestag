@@ -1,28 +1,10 @@
-== Arduino Milestag
+== BraidsTag
 
-An implementation of the milestag protocol and some game mechanics intended to run on the arduino.
-I possess no skills (or tbh, interest) in hardware and as such, an arduino with a few led's wedged into it seems like a good platform :-P Since starting the project, we  have become more interested in using the arduino as a hardware interface and putting all of the logic onto a raspberry pi.
+An implementation of the milestag protocol and some game mechanics intended to run on an arduino and a raspberry pi.
+
+The arduino interacts with some bespoke electronics and defers to the pi for any gameplay logic. The pi allows us to have a client-server connection over a wi-fi mesh network which should allow for some very interesting mechanincs more often associated with coomputer games such as voice communication, team power ups etc.
 
 == Electronics
-I still have to enhance the electronics so that the IR LED can be driven at a high enough power to be useful. until then I am using the following electronic circuit:
+The electronics have become significantly more complex than I first imagined but there is very little which I think could be removed without loosing a lot of functionality,
 
-{{{
-                                Arduino
-5v---------------\
-    |           LED1
-    |            |
-    |            R1
-    |  IRR out---/-------------- 12
-    \--IRR Vcc
-    /--IRR Gnd            /----- 8
-    |                     R2
-    |                     |
-    |                   IRLED
-    |                     \----- 9
-0v--/
-}}}
-
-* LED1 is for monitoring the reciever
-* R1 is massive overkill just needed to protect LED1
-* IRLED is set with the cathode (-ve) to pin 9
-* R2 is an R270 giving about 20mA through the IR LED. It should be able to handle > 1A for real.
+The circuit and board layout for the elctronics is included in "fritzing" files.

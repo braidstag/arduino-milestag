@@ -69,7 +69,7 @@ void loop() {
 }
 
 boolean oldTrigger = false;
-long lastTriggerCheck = 0;
+unsigned long lastTriggerCheck = 0;
 
 void checkTrigger() {
   //only check the trigger every millisecond as a crude de-bounce.
@@ -78,7 +78,7 @@ void checkTrigger() {
     if (trigger && trigger != oldTrigger) {
       //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
       if (clientConnected) {
-        serialQueue("T\n");
+        serialQueue_s("T\n");
       }
       else {
         mt_fireShot();
@@ -88,7 +88,7 @@ void checkTrigger() {
     }
     if (!trigger && trigger != oldTrigger) {
       if (clientConnected) {
-        serialQueue("t\n");
+        serialQueue_s("t\n");
       }
 
       oldTrigger = trigger;    
@@ -108,9 +108,9 @@ void checkAltfire() {
 }
 
 void checkBattery() {
-  serialQueue("B");
-  serialQueue(analogRead(power_monitor_pin) * 5 / 1023.0);
-  serialQueue("/n");
+  serialQueue_s("B");
+  serialQueue_i(analogRead(power_monitor_pin) * 5 / 1023.0);
+  serialQueue_s("/n");
 }
 
 void shutdown() {

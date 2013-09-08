@@ -1,15 +1,22 @@
 import socket
 import sys
+import time
 from threading import Thread, Lock
 import Queue
 
 from core import ClientServer
+from proto import Event
+
+class PiSerialIdProvider():
+  def __call__(self):
+    return 1
+
 
 class ClientServerConnection():
-  def __init__(self):
+  def __init__(self, idProvider = PiSerialIdProvider(), timeProvider = time.time):
     self.sock = None
     self.readThread = None
-    self.writeThread = WriteThread()
+    self.writeThread = WriteThread(idProvider, timeProvider)
     self.writeThread.start()
 
   def queueMessage(self, msg):
@@ -107,7 +114,7 @@ class ReadThread(Thread):
     self.shouldStop = True
 
 class WriteThread(Thread):
-  def __init__(self):
+  def __init__(self, idProvider, timeProvider):
     super(WriteThread, self).__init__(group=None)
     self.setDaemon(True)
     self.name = "Client/Server Write Thread"
@@ -115,10 +122,13 @@ class WriteThread(Thread):
     self.queue = Queue.Queue()
     self.shouldStop = False
 
+    self.idProvider = idProvider
+    self.timeProvider = timeProvider
+
   def run(self):
     while not (self.queue.empty() and self.shouldStop):
       try:
-        msg = self.queue.get(True, 5) + "\n"
+        msg = self.queue.get(True, 5).toStr() + "\n"
       except Queue.Empty:
         #timeout, go back round the loop to see if we should be stopping.
         continue
@@ -142,8 +152,7 @@ class WriteThread(Thread):
     self.join()
   
   def queueMessage(self, msg):
-    self.queue.put(msg)
+    self.queue.put(Event(msg, self.idProvider(), self.timeProvider()))
 
   def setSocket(self, sock):
     self.sock = sock
-

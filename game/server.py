@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 from threading import Thread, Lock, Timer
+from bisect import insort
 
 from core import Player, StandardGameLogic, ClientServer, GameState
 from ui import MainWindow
@@ -15,68 +16,123 @@ import proto
 from PySide.QtGui import QApplication
 from PySide.QtCore import Signal
 
-class Server(ClientServerConnection):
-  def __init__(self, listeningThread, gameState, sock):
-    ClientServerConnection.__init__(self)
+class ServerMsgHandler():
+  """A class to handle messages from clients to the server. There should only be one instance of this class""" 
+  def __init__(self, listeningThread, gameState):
     self.listeningThread = listeningThread
     self.logic = StandardGameLogic()
     self.gameState = gameState
 
-    self.setSocket(sock)
-  
+    #map from id to timestamp
+    self.playerLastSeen = {}
+    self.confidencePointGameState = gameState
+    self.eventsSinceConfidencePoint = [] # a sorted list of (timestamp, event)
+    self.confidencePoint = 0
+    self.confidencePointMinimumInterval = 10 # Only update the cache at most once this many seconds.
+
   #so we don't try to process messages from 2 clients at once.
   eventLock = Lock()
     
   def handleMsg(self, fullLine):
     with self.eventLock:
-      mainWindow.lineReceived(fullLine)
-  
+      if mainWindow: # This should only be None in tests.
+        mainWindow.lineReceived(fullLine)
+
+      event = proto.parseEvent(fullLine)
+
+      self.playerLastSeen[event.id] = event.time
+
+      #Check if we need to update the confidence point. If so, we will do so after we have parsed/handled this message.
+      newConfidencePoint = min(self.playerLastSeen.values())
+      updateConfidencePoint = newConfidencePoint > self.confidencePoint + self.confidencePointMinimumInterval
+
+      #insert this event in the correct order (just because it was recieved last, doesn't mean it happened last!)
+      insort(self.eventsSinceConfidencePoint, (event.time, event))
+
+      #loop over all events since confidence point, creating a new best-guess gameState.
+      self.gameState = self.confidencePointGameState #TODO clone/copy this
+      #print("Processing", self.eventsSinceConfidencePoint)
+      for currEvent in self.eventsSinceConfidencePoint:
+        self.__handleEvent(currEvent[1], self.gameState)
+
+      if updateConfidencePoint:
+        self.confidencePointGameState = self.gameState
+        self.eventsSinceConfidencePoint = []
+        self.confidencePoint = newConfidencePoint
+
+    return "Ack()\n"
+
+  def __handleEvent(self, event, gameState):
+    """handle an event, you must be holding self.eventLock before calling this"""
+    alreadyHandled = event.handled
+    event.handled = True
+    msgStr = event.msgStr
     try:
-      (recvTeam, recvPlayer, line) = proto.RECV.parse(fullLine)
+      (recvTeam, recvPlayer, line) = proto.RECV.parse(msgStr)
 
       try:
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          self.logic.hit(self.gameState, player, sentTeam, sentPlayer, damage)
-          self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
+	#TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
+	#(although if they are, it could be because we have incomplete data)
+
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
+        gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
       try:
         proto.TRIGGER.parse(line)
 
-        with self.eventLock:
-          player = self.gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-          if (self.logic.trigger(self.gameState, player)):
-            self.gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        if (self.logic.trigger(gameState, player)):
+          gameState.playerUpdated.emit(recvTeam, recvPlayer)
+      except proto.MessageParseException:
+        pass
+
+      try:
+        proto.FULL_AMMO.parse(line)
+
+        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+        if (self.logic.fullAmmo(gameState, player)):
+          gameState.playerUpdated.emit(recvTeam, recvPlayer)
       except proto.MessageParseException:
         pass
 
     except proto.MessageParseException:
       pass
 
-    try:
-      (teamID, playerID) = proto.HELLO.parse(fullLine)
+    #TODO: I need to work out what I do with a Hello in the new world of clients having ids and handleEvent being called more than once per event.
+    if not alreadyHandled:
+      try:
+        (teamID, playerID) = proto.HELLO.parse(msgStr)
 
-      with self.eventLock:
         if int(teamID) == -1:
-          player = self.gameState.createNewPlayer()
+          player = gameState.createNewPlayer()
           self.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
         else:
-          player = self.gameState.getOrCreatePlayer(teamID, playerID)
+          player = gameState.getOrCreatePlayer(teamID, playerID)
           self.queueMessage("Ack()\n")
         #TODO: we need to preserve the sendQueue when we do this
         self.listeningThread.moveConnection(self, player)
           
-        #TODO if the game has started, also tell the client this.
         if self.gameState.isGameStarted():
           self.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
-    except proto.MessageParseException:
-      pass
+      except proto.MessageParseException:
+        pass
 
-    return "Ack()\n"
+
+class Server(ClientServerConnection):
+  """A Class for a connection from a client to the Server. There are many instaces of this class, 1 for each connection"""
+  def __init__(self, sock, msgHandler):
+    ClientServerConnection.__init__(self)
+    self.msgHandler = msgHandler
+
+    self.setSocket(sock)
+  
+  def handleMsg(self, fullLine):
+    self.msgHandler.handleMsg(fullLine)
 
   def onDisconnect(self):
     #not much we can do until they reconnect
@@ -90,6 +146,8 @@ class ListeningThread(Thread):
     self.name = "Server Listening Thread"
     self.gameState = gameState
     gameState.setListeningThread(self)
+
+    self.msgHandler = ServerMsgHandler(self, gameState)
 
     self.connections = {}
     self.unestablishedConnections = set()
@@ -109,7 +167,7 @@ class ListeningThread(Thread):
 
       try:
         (clientsocket, address) = self.serversocket.accept();
-        self.unestablishedConnections.add(Server(self, gameState, clientsocket))
+        self.unestablishedConnections.add(Server(clientsocket, self.msgHandler))
       except KeyboardInterrupt:
         break
       except socket.timeout:
@@ -276,42 +334,44 @@ class ServerGameState(GameState):
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
 
+mainWindow = None
 
-parser = argparse.ArgumentParser(description='BraidsTag server.')
-args = parser.parse_args()
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='BraidsTag server.')
+  args = parser.parse_args()
 
-gameState = ServerGameState()
+  gameState = ServerGameState()
 
-main = ListeningThread(gameState)
-main.start()
+  main = ListeningThread(gameState)
+  main.start()
 
-# Create Qt application
-app = QApplication(sys.argv)
-mainWindow = MainWindow(gameState)
-mainWindow.show()
+  # Create Qt application
+  app = QApplication(sys.argv)
+  mainWindow = MainWindow(gameState)
+  mainWindow.show()
 
-# Enter Qt main loop
-retval = app.exec_()
+  # Enter Qt main loop
+  retval = app.exec_()
 
-for i in gameState.players.values():
-  print i
+  for i in gameState.players.values():
+    print i
 
-main.stop()
-gameState.terminate()
+  main.stop()
+  gameState.terminate()
 
-#print >> sys.stderr, "\n*** STACKTRACE - START ***\n"
-#code = []
-#for threadId, stack in sys._current_frames().items():
-#    code.append("\n# ThreadID: %s" % threadId)
-#    for filename, lineno, name, line in traceback.extract_stack(stack):
-#        code.append('File: "%s", line %d, in %s' % (filename,
-#                                                    lineno, name))
-#        if line:
-#            code.append("  %s" % (line.strip()))
-#
-#for line in code:
-#    print >> sys.stderr, line
-#print >> sys.stderr, "\n*** STACKTRACE - END ***\n"
-#
+  #print >> sys.stderr, "\n*** STACKTRACE - START ***\n"
+  #code = []
+  #for threadId, stack in sys._current_frames().items():
+  #    code.append("\n# ThreadID: %s" % threadId)
+  #    for filename, lineno, name, line in traceback.extract_stack(stack):
+  #        code.append('File: "%s", line %d, in %s' % (filename,
+  #                                                    lineno, name))
+  #        if line:
+  #            code.append("  %s" % (line.strip()))
+  #
+  #for line in code:
+  #    print >> sys.stderr, line
+  #print >> sys.stderr, "\n*** STACKTRACE - END ***\n"
+  #
 
-sys.exit(retval)
+  sys.exit(retval)

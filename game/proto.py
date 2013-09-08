@@ -2,12 +2,34 @@
 
 import re
 
+class Event():
+  """ An event is a message from a particular client (or the server if id == 0) at a particular time."""
+  def __init__(self, msgStr, id, time):
+    self.msgStr = msgStr
+    self.id = id
+    self.time = time
+    self.handled = False
+
+  def toStr(self):
+    return "E(%x,%f,%s)" % (self.id, self.time, self.msgStr)
+
+
+def parseEvent(line):
+  regex = re.compile("^E\(([0-9a-f]+),([0-9.]+),(.*)\)$")
+  m = regex.match(line)
+  if(not m):
+    raise MessageParseException("Couldn't parse an event from '%s'" % line)
+  (id, time, msgStr) = m.groups()
+  return Event(msgStr, int(id), float(time))
+
+
 class Message():
+  """ A message, this is wrapped in an event for client <-> server and sent raw from client <-> arduino."""
   def __init__(self, regex, subst):
     if regex == None:
       self.regex = None
     else:
-      self.regex = re.compile(regex)
+      self.regex = re.compile("^" + regex + "$")
     self.subst = subst
 
   def parse(self, line):
@@ -41,6 +63,7 @@ DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 HIT =                 Message(r"H(\d),(\d),(\d)", None)
+FULL_AMMO =           Message(r"FA", None)
 CORRUPT =             Message(r"C", None)
 CLIENT_CONNECTED =    Message(r"c", None)
 CLIENT_DISCONNECTED = Message(r"d", None)

@@ -21,10 +21,10 @@ class GameStateModel(QAbstractTableModel):
     self.gameState = gameState
 
   def rowCount(self, index):
-    return self.gameState.largestTeam
+    return self.gameState.largestTeam + 1
 
   def columnCount(self, index):
-    return self.gameState.teamCount
+    return self.gameState.teamCount + 1
 
   def data(self, index, role = Qt.DisplayRole):
     if not index.isValid():
@@ -55,7 +55,7 @@ class GameStateModel(QAbstractTableModel):
 
   #DnD support
   def setData(self, index, value, role = Qt.EditRole):
-    if not index.isValid() or index.column() >= self.gameState.teamCount:
+    if not index.isValid():
       return False
 
     if value == None:
@@ -74,8 +74,11 @@ class GameStateModel(QAbstractTableModel):
 
     oldTeamID = value.teamID
     oldPlayerID = value.playerID
-    self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
-    self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(self.gameState.largestTeam - 1, index.column(), QModelIndex()))
+    return self.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
+
+  def movePlayer(self, oldTeamID, oldPlayerID, newTeamID, newPlayerID):
+    self.gameState.movePlayer(oldTeamID, oldPlayerID, newTeamID, newPlayerID)
+    self.dataChanged.emit(self.index(newTeamID - 1, newPlayerID - 1, QModelIndex()), self.index(self.gameState.largestTeam - 1, newPlayerID - 1, QModelIndex()))
     self.dataChanged.emit(self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()), self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()))
     self.layoutChanged.emit() #TODO only emit this if it actually has
     return True
@@ -274,6 +277,7 @@ class TrashDropTarget(QLabel):
 
   def dropEvent(self, event):
     event.acceptProposedAction()
+
 
 class PlayersView(QWidget):
   def __init__(self, model, parent=None):

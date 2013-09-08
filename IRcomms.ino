@@ -26,11 +26,11 @@
 #define power_monitor_pin A0
 
 // some timings
-long headerDuration = 2400;
-long intervalDuration = 600;
-long oneDuration = 1200;
-long zeroDuration = 600;
-long postDataDuration = 200000; //must be at least intervalDuration + timingTolerance * 2
+unsigned int headerDuration = 2400;
+unsigned int intervalDuration = 600;
+unsigned int oneDuration = 1200;
+unsigned int zeroDuration = 600;
+unsigned long postDataDuration = 200000; //must be at least intervalDuration + timingTolerance * 2
 
 byte timingTolerance = 100;
 
@@ -239,9 +239,9 @@ void ir_down() {
 /*
  * Reverse the num least significant bits.
  */
-unsigned long reverse(unsigned long in, int num) {
+unsigned long reverse(unsigned long in, unsigned int num) {
   unsigned long out = 0;
-  for (int i = 0; i < num; i++) {
+  for (unsigned int i = 0; i < num; i++) {
     out = out << 1;
     out = out | (in & 1); //take the lsb from in to out
     in = in >> 1;
@@ -301,7 +301,7 @@ void timeDebug() {
   }
 }
 
-void muzzleflash_up(int flashteam) {
+void muzzleflash_up(unsigned int flashteam) {
   switch (flashteam) {
     case 1: //red
       digitalWrite(muzzlered_pin, HIGH);
@@ -339,7 +339,7 @@ void muzzleflash_down() {
   digitalWrite(muzzleblue_pin, LOW);
 }
 
-void torch_up(int flashteam) {
+void torch_up(unsigned int flashteam) {
   switch (flashteam) {
     case 1: //red
       digitalWrite(torchred_pin, HIGH);
