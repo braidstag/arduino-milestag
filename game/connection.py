@@ -89,10 +89,6 @@ class ReadThread(Thread):
       recieved = partial
 
       for i in complete:
-        #TODO: actually track these
-        if i == "Ack()\n":
-          continue
-
         print "<--", repr(i)
         sys.stdout.flush()
 

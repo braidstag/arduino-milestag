@@ -85,7 +85,6 @@ class ServerMsgHandler():
         connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
       else:
         player = gameState.getOrCreatePlayer(teamID, playerID)
-        connection.queueMessage("Ack()\n")
       self.listeningThread.establishConnection(connection, player)
         
       if self.gameState.isGameStarted():
