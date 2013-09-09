@@ -35,7 +35,8 @@ class ServerMsgHandler():
 
       self.__handleEvent(event, self.gameState, connection)
 
-    return "Ack()\n"
+    #TODO be more discerning 
+    return True
 
   def __handleEvent(self, event, gameState, connection):
     """handle an event, you must be holding self.eventLock before calling this"""
@@ -47,7 +48,6 @@ class ServerMsgHandler():
         (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
 
 	#TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
-	#(although if they are, it could be because we have incomplete data)
 
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
@@ -76,7 +76,7 @@ class ServerMsgHandler():
     except proto.MessageParseException:
       pass
 
-    #TODO: I need to work out what I do with a Hello in the new world of clients having ids and handleEvent being called more than once per event.
+    #TODO: I need to work out what I do with a Hello in the new world of clients having ids
     try:
       (teamID, playerID) = proto.HELLO.parse(msgStr)
 
@@ -86,8 +86,7 @@ class ServerMsgHandler():
       else:
         player = gameState.getOrCreatePlayer(teamID, playerID)
         connection.queueMessage("Ack()\n")
-      #TODO: we need to preserve the sendQueue when we do this
-      self.listeningThread.moveConnection(connection, player)
+      self.listeningThread.establishConnection(connection, player)
         
       if self.gameState.isGameStarted():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
@@ -96,7 +95,7 @@ class ServerMsgHandler():
 
 
 class Server(ClientServerConnection):
-  """A Class for a connection from a client to the Server. There are many instaces of this class, 1 for each connection"""
+  """A connection from a client to the server. There are many instaces of this class, 1 for each connection"""
   def __init__(self, sock, msgHandler):
     ClientServerConnection.__init__(self)
     self.msgHandler = msgHandler
@@ -112,6 +111,9 @@ class Server(ClientServerConnection):
 
 
 class ListeningThread(Thread):
+  """A thread which listens for new connections from a client. 
+     Spawns a Server instance to handle the ongoing communication and stores them all to enable sending broadcast messages
+  """
 
   def __init__(self, gameState):
     super(ListeningThread, self).__init__(group=None)
@@ -145,7 +147,8 @@ class ListeningThread(Thread):
       except socket.timeout:
         pass
 
-  def moveConnection(self, server, player):
+  def establishConnection(self, server, player):
+    #TODO: we need to preserve the sendQueue when we do this
     self.unestablishedConnections.remove(server)
     self.connections[(player.teamID, player.playerID)] = server
     
@@ -158,6 +161,7 @@ class ListeningThread(Thread):
       self.connections[(teamID, playerID)].queueMessage(msg)
 
   def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
+    #TODO: we need to preserve the sendQueue when we do this
     if (srcTeamID, srcPlayerID) in self.connections:
       self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
       del self.connections[(srcTeamID, srcPlayerID)]
@@ -172,17 +176,20 @@ class ListeningThread(Thread):
     self.shouldStop = True
     self.serversocket.close()
 
+#initial game settings, these are told to the clients and can be changed in the UI. 
 GAME_TIME=1200 #20 mins
 #GAME_TIME=12
+TEAM_COUNT=2
 
 class ServerGameState(GameState):
+  """A store of all of the gamestate which the server knows about. There is only one instance of this class on the server."""
   def __init__(self):
     GameState.__init__(self)
     self.players = {}
     self.teamCount = 0
     self.largestTeam = 0
     self.stopGameTimer = None
-    self.targetTeamCount = 2
+    self.targetTeamCount = TEAM_COUNT
     self.setGameTime(GAME_TIME)
   
   def setListeningThread(self, lt):
@@ -306,6 +313,7 @@ class ServerGameState(GameState):
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
 
+#TODO don't have this as a global
 mainWindow = None
 
 if __name__ == '__main__':

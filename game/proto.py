@@ -23,7 +23,7 @@ def parseEvent(line):
 
 
 class Message():
-  """ A message, this is wrapped in an event for client <-> server and sent raw from client <-> arduino."""
+  """ A message, this is wrapped in an Event for client <-> server and sent raw from client <-> arduino."""
   def __init__(self, regex, subst):
     if regex == None:
       self.regex = None
@@ -42,6 +42,7 @@ class Message():
     if self.subst == None:
       raise RuntimeError("create is not supported for this message")
     return self.subst % args
+
 
 class MessageParseException(Exception):
   pass
