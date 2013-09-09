@@ -41,45 +41,44 @@ class ServerMsgHandler():
   def __handleEvent(self, event, gameState, connection):
     """handle an event, you must be holding self.eventLock before calling this"""
     msgStr = event.msgStr
-    try:
-      (recvTeam, recvPlayer, line) = proto.RECV.parse(msgStr)
 
-      try:
-        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
+    h1 = proto.MessageHandler()
 
-	#TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
+    @h1.handles(proto.RECV)
+    def recv(recvTeam, recvPlayer, line):
+      h2 = proto.MessageHandler()
+
+      @h2.handles(proto.HIT)
+      def hit(sentTeam, sentPlayer, damage):
+        #TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
 
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
         gameState.playerUpdated.emit(recvTeam, recvPlayer)
-      except proto.MessageParseException:
-        pass
 
-      try:
-        proto.TRIGGER.parse(line)
+        return True
 
+      @h2.handles(proto.TRIGGER)
+      def trigger():
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         if (self.logic.trigger(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
-      except proto.MessageParseException:
-        pass
 
-      try:
-        proto.FULL_AMMO.parse(line)
+        return True
 
+      @h2.handles(proto.FULL_AMMO)
+      def fullAmmo():
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         if (self.logic.fullAmmo(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
-      except proto.MessageParseException:
-        pass
 
-    except proto.MessageParseException:
-      pass
+        return True
 
+      return h2.handle(line)
+
+    @h1.handles(proto.HELLO)
     #TODO: I need to work out what I do with a Hello in the new world of clients having ids
-    try:
-      (teamID, playerID) = proto.HELLO.parse(msgStr)
-
+    def hello(teamID, playerID):
       if int(teamID) == -1:
         player = gameState.createNewPlayer()
         connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
@@ -89,8 +88,10 @@ class ServerMsgHandler():
         
       if self.gameState.isGameStarted():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
-    except proto.MessageParseException:
-      pass
+
+      return True
+
+    return h1.handle(msgStr)
 
 
 class Server(ClientServerConnection):

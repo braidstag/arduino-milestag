@@ -20,38 +20,32 @@ class Client(ClientServerConnection):
   def handleMsg(self, fullLine):
     event = proto.parseEvent(fullLine)
     msgStr = event.msgStr
-  
-    try:
-      (teamID, playerID) = proto.TEAMPLAYER.parse(msgStr)
+    
+    h = proto.MessageHandler()
+
+    @h.handles(proto.TEAMPLAYER)
+    def teamPlayer(teamID, playerID):
       self.main.player = Player(teamID, playerID)
       return True
-    except proto.MessageParseException:
-      pass
-    
-    try:
-      (duration,) = proto.STARTGAME.parse(msgStr)
+      
+    @h.handles(proto.STARTGAME)
+    def startGame(duration):
       self.main.gameState.setGameTime(int(duration))
       self.main.gameState.startGame()
       return True
-    except proto.MessageParseException:
-      pass
     
-    try:
-      proto.STOPGAME.parse(msgStr)
+    @h.handles(proto.STOPGAME)
+    def stopGame():
       self.main.gameState.stopGame()
       return True
-    except proto.MessageParseException:
-      pass
     
-    try:
-      proto.DELETED.parse(msgStr)
+    @h.handles(proto.DELETED)
+    def deleted():
       #just treat this as the game stopping for us.
       self.main.gameState.stopGame()
       return True
-    except proto.MessageParseException:
-      pass
     
-    return False
+    return h.handle(msgStr)
 
   def _openConnection(self):
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,29 +100,26 @@ class Main():
       print "<a-", repr(line)
       sys.stdout.flush()
 
+      h = proto.MessageHandler()
 
-      try:
-        (sentTeam, sentPlayer, damage) = proto.HIT.parse(line)
-
+      @h.handles(proto.HIT)
+      def hit(sentTeam, sentPlayer, damage):
         self.logic.hit(self.gameState, self.player, sentTeam, sentPlayer, damage)
-      except proto.MessageParseException:
-        pass
+        return True
 
-      try:
-        proto.FULL_AMMO.parse(line)
-
+      @h.handles(proto.FULL_AMMO)
+      def fullAmmo():
         self.logic.fullAmmo(self.gameState, self.player)
-      except proto.MessageParseException:
-        pass
+        return True
 
-      try:
-        proto.TRIGGER.parse(line)
-
+      @h.handles(proto.TRIGGER)
+      def trigger():
         if (self.logic.trigger(self.gameState, self.player)):
           self.serialWrite(proto.FIRE.create(self.player.teamID, self.player.playerID, self.player.gunDamage))
-      except proto.MessageParseException:
-        pass
+        return True
 
+      #TODO be more discerning about unparseable input here.
+      h.handle(line)
 
       msg = proto.RECV.create(self.player.teamID, self.player.playerID, line)
       self._sendToServer(msg)
@@ -148,9 +139,8 @@ class Main():
     line = self.serial.readline()
     print "<a-", repr(line)
     sys.stdout.flush()
-    try:
-      proto.CLIENT_CONNECTED.parse(line)
-    except proto.MessageParseException:
+
+    if not proto.CLIENT_CONNECTED.parse(line):
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
 
 

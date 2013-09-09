@@ -22,6 +22,10 @@ def parseEvent(line):
   return Event(msgStr, int(id), float(time))
 
 
+class MessageParseException(Exception):
+  pass
+
+
 class Message():
   """ A message, this is wrapped in an Event for client <-> server and sent raw from client <-> arduino."""
   def __init__(self, regex, subst):
@@ -31,12 +35,13 @@ class Message():
       self.regex = re.compile("^" + regex + "$")
     self.subst = subst
 
-  def parse(self, line):
+  def parse(self, line, action=lambda: True):
     m = self.regex.match(line)
     if(m):
-      return m.groups()
+      #TODO: Can we make return True optional in the action function?
+      return action(*m.groups())
     else:
-      raise MessageParseException()
+      return False
 
   def create(self, *args):
     if self.subst == None:
@@ -44,8 +49,28 @@ class Message():
     return self.subst % args
 
 
-class MessageParseException(Exception):
-  pass
+class MessageHandler():
+  def __init__(self):
+    self.handlers = []
+
+  def handles(self, msg):
+    """A decorator which calls the decorated function if the given msg can be used to parse the given msgStr"""
+    def handles_decorator(f):
+      #defer a function to check if a msgStr parses and if so, invoke f and return True
+      def handles_inner(msgStr):
+        if msg.parse(msgStr, f):
+          return True
+      self.handlers.append(handles_inner)
+
+      #leave the function definition as-is even though it is practically useless now it has been used by the decorator.
+      return f
+    return handles_decorator
+
+  def handle(self, msgStr):
+    for handler in self.handlers:
+      if handler(msgStr):
+        return True
+    return False
 
 # both client <--> server
 
