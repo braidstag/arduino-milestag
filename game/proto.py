@@ -8,7 +8,6 @@ class Event():
     self.msgStr = msgStr
     self.id = id
     self.time = time
-    self.handled = False
 
   def toStr(self):
     return "E(%x,%f,%s)" % (self.id, self.time, self.msgStr)

@@ -23,49 +23,22 @@ class ServerMsgHandler():
     self.logic = StandardGameLogic()
     self.gameState = gameState
 
-    #map from id to timestamp
-    self.playerLastSeen = {}
-    self.confidencePointGameState = gameState
-    self.eventsSinceConfidencePoint = [] # a sorted list of (timestamp, event)
-    self.confidencePoint = 0
-    self.confidencePointMinimumInterval = 10 # Only update the cache at most once this many seconds.
-
   #so we don't try to process messages from 2 clients at once.
   eventLock = Lock()
     
-  def handleMsg(self, fullLine):
+  def handleMsg(self, fullLine, connection):
     with self.eventLock:
       if mainWindow: # This should only be None in tests.
         mainWindow.lineReceived(fullLine)
 
       event = proto.parseEvent(fullLine)
 
-      self.playerLastSeen[event.id] = event.time
-
-      #Check if we need to update the confidence point. If so, we will do so after we have parsed/handled this message.
-      newConfidencePoint = min(self.playerLastSeen.values())
-      updateConfidencePoint = newConfidencePoint > self.confidencePoint + self.confidencePointMinimumInterval
-
-      #insert this event in the correct order (just because it was recieved last, doesn't mean it happened last!)
-      insort(self.eventsSinceConfidencePoint, (event.time, event))
-
-      #loop over all events since confidence point, creating a new best-guess gameState.
-      self.gameState = self.confidencePointGameState #TODO clone/copy this
-      #print("Processing", self.eventsSinceConfidencePoint)
-      for currEvent in self.eventsSinceConfidencePoint:
-        self.__handleEvent(currEvent[1], self.gameState)
-
-      if updateConfidencePoint:
-        self.confidencePointGameState = self.gameState
-        self.eventsSinceConfidencePoint = []
-        self.confidencePoint = newConfidencePoint
+      self.__handleEvent(event, self.gameState, connection)
 
     return "Ack()\n"
 
-  def __handleEvent(self, event, gameState):
+  def __handleEvent(self, event, gameState, connection):
     """handle an event, you must be holding self.eventLock before calling this"""
-    alreadyHandled = event.handled
-    event.handled = True
     msgStr = event.msgStr
     try:
       (recvTeam, recvPlayer, line) = proto.RECV.parse(msgStr)
@@ -104,23 +77,22 @@ class ServerMsgHandler():
       pass
 
     #TODO: I need to work out what I do with a Hello in the new world of clients having ids and handleEvent being called more than once per event.
-    if not alreadyHandled:
-      try:
-        (teamID, playerID) = proto.HELLO.parse(msgStr)
+    try:
+      (teamID, playerID) = proto.HELLO.parse(msgStr)
 
-        if int(teamID) == -1:
-          player = gameState.createNewPlayer()
-          self.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
-        else:
-          player = gameState.getOrCreatePlayer(teamID, playerID)
-          self.queueMessage("Ack()\n")
-        #TODO: we need to preserve the sendQueue when we do this
-        self.listeningThread.moveConnection(self, player)
-          
-        if self.gameState.isGameStarted():
-          self.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
-      except proto.MessageParseException:
-        pass
+      if int(teamID) == -1:
+        player = gameState.createNewPlayer()
+        connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
+      else:
+        player = gameState.getOrCreatePlayer(teamID, playerID)
+        connection.queueMessage("Ack()\n")
+      #TODO: we need to preserve the sendQueue when we do this
+      self.listeningThread.moveConnection(connection, player)
+        
+      if self.gameState.isGameStarted():
+        connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
+    except proto.MessageParseException:
+      pass
 
 
 class Server(ClientServerConnection):
@@ -132,7 +104,7 @@ class Server(ClientServerConnection):
     self.setSocket(sock)
   
   def handleMsg(self, fullLine):
-    self.msgHandler.handleMsg(fullLine)
+    return self.msgHandler.handleMsg(fullLine, self)
 
   def onDisconnect(self):
     #not much we can do until they reconnect
