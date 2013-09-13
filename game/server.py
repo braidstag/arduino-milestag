@@ -77,15 +77,18 @@ class ServerMsgHandler():
       return h2.handle(line)
 
     @h1.handles(proto.HELLO)
-    #TODO: I need to work out what I do with a Hello in the new world of clients having ids
-    def hello(teamID, playerID):
-      if int(teamID) == -1:
-        player = gameState.createNewPlayer()
-        connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
-      else:
-        player = gameState.getOrCreatePlayer(teamID, playerID)
+    def hello():
+      clientId = event.id
+      #if self.listeningThread.isConnected(clientId):
+      #  #TODO maintain the state of this client by sending it an update.
+      #  #For now, simply remove the ghost player from the game.
+      #  self.listeningThread.disconnected(clientId):
+
+      player = gameState.createNewPlayer()
+      connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
+
       self.listeningThread.establishConnection(connection, player)
-        
+
       if self.gameState.isGameStarted():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
 
@@ -148,10 +151,11 @@ class ListeningThread(Thread):
         pass
 
   def establishConnection(self, server, player):
+    """ Register that a connection has associated itself with a player"""
     #TODO: we need to preserve the sendQueue when we do this
     self.unestablishedConnections.remove(server)
     self.connections[(player.teamID, player.playerID)] = server
-    
+
   def queueMessageToAll(self, msg):
     for key in self.connections:
       self.connections[key].queueMessage(msg)

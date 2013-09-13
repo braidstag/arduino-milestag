@@ -68,7 +68,7 @@ class Main():
     self.args = parser.parse_args()
 
     self.serverConnection = Client(self)
-    self._sendToServer(proto.HELLO.create(-1,-1))
+    self._sendToServer(proto.HELLO.create())
 
     try:
       self.serial = serial.Serial(self.args.serial, 115200)

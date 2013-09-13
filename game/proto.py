@@ -77,7 +77,7 @@ class MessageHandler():
 #client -> server only
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)", "Recv(%d,%d,%s)")
 SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
-HELLO = Message(r"Hello\((-?\d*),(-?\d*)\)", "Hello(%d,%d)")
+HELLO = Message(r"Hello\(\)", "Hello()")
 #server -> client only
 TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
 STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
