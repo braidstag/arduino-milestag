@@ -8,8 +8,27 @@ from core import ClientServer
 from proto import Event
 
 class PiSerialIdProvider():
+  """ An IdProvider which uses the serial number of the CPU (i.e. of the Pi) or, failing that, a random number"""
+  def __init__(self):
+    self.clientId = None
+
+    # Try to extract serial from cpuinfo file
+    try:
+      f = open('/proc/cpuinfo','r')
+      for line in f:
+        if line[0:6]=='Serial':
+          self.clientId = long(line[10:26], 16)
+      f.close()
+    except:
+      pass
+
+    #Fallback to a random number
+    if not self.clientId:
+      import random
+      self.clientId = random.getrandbits(64)
+
   def __call__(self):
-    return 1
+    return self.clientId
 
 
 class ClientServerConnection():

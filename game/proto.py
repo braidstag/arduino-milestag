@@ -19,7 +19,7 @@ def parseEvent(line):
   if(not m):
     raise MessageParseException("Couldn't parse an event from '%s'" % line)
   (id, time, msgStr) = m.groups()
-  return Event(msgStr, int(id), float(time))
+  return Event(msgStr, long(id, 16), float(time))
 
 
 class MessageParseException(Exception):
