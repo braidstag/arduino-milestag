@@ -85,15 +85,16 @@ class ServerMsgHandler():
     @h1.handles(proto.HELLO)
     def hello():
       clientId = event.id
-      #if self.listeningThread.isConnected(clientId):
-      #  #TODO maintain the state of this client by sending it an update.
-      #  #For now, simply remove the ghost player from the game.
-      #  self.listeningThread.disconnected(clientId):
+      existingIds = self.listeningThread.isConnected(clientId)
+      if existingIds:
+        #TODO maintain the state of this client by sending it an update (taking our send queu into account).
+        #For now, simply remove the ghost player from the game.
+        self.gameState.deletePlayer(existingIds[0], existingIds[1])
 
       player = gameState.createNewPlayer()
       connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
 
-      self.listeningThread.establishConnection(connection, player)
+      self.listeningThread.establishConnection(connection, player, clientId)
 
       if self.gameState.isGameStarted():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
@@ -134,6 +135,7 @@ class ListeningThread(Thread):
 
     self.connections = {}
     self.unestablishedConnections = set()
+    self.connectedClients = {}
 
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #self.serversocket.bind((socket.gethostname(), ClientServer.PORT))
@@ -156,11 +158,15 @@ class ListeningThread(Thread):
       except socket.timeout:
         pass
 
-  def establishConnection(self, server, player):
+  def establishConnection(self, server, player, clientId):
     """ Register that a connection has associated itself with a player"""
-    #TODO: we need to preserve the sendQueue when we do this
     self.unestablishedConnections.remove(server)
     self.connections[(player.teamID, player.playerID)] = server
+    self.connectedClients[clientId] = (player.teamID, player.playerID)
+
+  def isConnected(self, clientId):
+    """Check is a client is alredy connected. If so, return the (team, player) tuple otherwise return None"""
+    return self.connectedClients.get(clientId)
 
   def queueMessageToAll(self, msg):
     for key in self.connections:
