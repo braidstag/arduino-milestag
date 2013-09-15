@@ -62,8 +62,7 @@ class GameStateModel(QAbstractTableModel):
   # Slots
   #
   def playerChanged(self, teamID, playerID):
-    #TODO: This is called with 1-based numbers, shouldn't it be 0-based when emitted?
-    self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
+    self.dataChanged.emit(self.index(playerID - 1, teamID - 1, QModelIndex()), self.index(playerID - 1, teamID - 1, QModelIndex()))
 
   def playerMoved(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
     self.playerChanged(srcTeamID, srcPlayerID)
