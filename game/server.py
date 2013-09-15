@@ -45,11 +45,17 @@ class ServerMsgHandler():
     h1 = proto.MessageHandler()
 
     @h1.handles(proto.RECV)
-    def recv(recvTeam, recvPlayer, line):
+    def recv(recvTeamStr, recvPlayerStr, line):
+      recvTeam = int(recvTeamStr)
+      recvPlayer = int(recvPlayerStr)
+
       h2 = proto.MessageHandler()
 
       @h2.handles(proto.HIT)
-      def hit(sentTeam, sentPlayer, damage):
+      def hit(sentTeamStr, sentPlayerStr, damage):
+        sentTeam = int(sentTeamStr)
+        sentPlayer = int(sentPlayerStr)
+
         #TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
 
         player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
@@ -199,16 +205,15 @@ class ServerGameState(GameState):
   def setListeningThread(self, lt):
     self.listeningThread = lt
 
-  def getOrCreatePlayer(self, sentTeamStr, sentPlayerStr):
-    sentTeam = int(sentTeamStr)
-    sentPlayer = int(sentPlayerStr)
-
+  def getOrCreatePlayer(self, sentTeam, sentPlayer):
     if not (sentTeam, sentPlayer) in self.players:
       self.players[(sentTeam, sentPlayer)] = Player(sentTeam, sentPlayer)
       if sentTeam > self.teamCount:
         self.teamCount = sentTeam
+        self.teamCountChanged.emit(self.teamCount)
       if sentPlayer > self.largestTeam:
         self.largestTeam = sentPlayer
+        self.largestTeamChanged.emit(self.largestTeam)
 
       self.playerAdded.emit(sentTeam, sentPlayer)
     return self.players[(sentTeam, sentPlayer)]
@@ -236,9 +241,11 @@ class ServerGameState(GameState):
 
     if dstTeamID > self.teamCount:
       self.teamCount = dstTeamID
+      self.teamCountChanged.emit(self.teamCount)
 
     if dstPlayerID > self.largestTeam:
       self.largestTeam = dstPlayerID
+      self.largestTeamChanged.emit(self.largestTeam)
 
     if srcTeamID == self.teamCount:
       #check if this was the only player in this team
@@ -249,7 +256,7 @@ class ServerGameState(GameState):
       self._recalculateLargestTeam()
 
     self.listeningThread.movePlayer(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
-    #TODO: notify people of the change
+    self.playerMoved.emit(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
 
   def deletePlayer(self, teamID, playerID):
     if (teamID, playerID) not in self.players:
@@ -266,21 +273,34 @@ class ServerGameState(GameState):
       self._recalculateLargestTeam()
 
     self.listeningThread.deletePlayer(teamID, playerID)
+    self.playerDeleted.emit(teamID, playerID)
 
   def _recalculateTeamCount(self):
+    """ Recalculate the team count. return True if it has changed 
+        Note that this won't detect if the teamCount is too low so only call this when players have been removed
+    """
     for teamID in range(self.teamCount, 0, -1):
       for playerID in range(self.largestTeam, 0, -1):
         if (teamID, playerID) in self.players:
           #still need this team
-          self.teamCount = teamID
+          if self.teamCount != teamID:
+            self.teamCount = teamID
+            self.teamCountChanged.emit(self.teamCount)
+            
           return
 
   def _recalculateLargestTeam(self):
+    """ Recalculate the largest team. return True if it has changed 
+        Note that this won't detect if the largestTeam is too low so only call this when players have been removed
+    """
     for playerID in range(self.largestTeam, 0, -1):
       for teamID in range(self.teamCount, 0, -1):
         if (teamID, playerID) in self.players:
           #one team still has this many players
-          self.largestTeam = playerID
+          if self.largestTeam != playerID:
+            self.largestTeam = playerID
+            self.largestTeamChanged.emit(self.largestTeam)
+
           return
 
   def startGame(self):
@@ -316,6 +336,10 @@ class ServerGameState(GameState):
 
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
+  playerDeleted = Signal(int, int)
+  playerMoved = Signal(int, int, int, int)
+  largestTeamChanged = Signal(int)
+  teamCountChanged = Signal(int)
 
 #TODO don't have this as a global
 mainWindow = None

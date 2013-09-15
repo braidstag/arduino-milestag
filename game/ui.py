@@ -19,7 +19,18 @@ class GameStateModel(QAbstractTableModel):
   def __init__(self, gameState):
     super(GameStateModel, self).__init__()
     self.gameState = gameState
+    self.gameState.playerUpdated.connect(self.playerChanged)
+    self.gameState.playerAdded.connect(self.playerChanged)
+    self.gameState.playerDeleted.connect(self.playerChanged)
 
+    self.gameState.playerMoved.connect(self.playerMoved)
+    
+    self.gameState.largestTeamChanged.connect(self.playerLayoutChanged)
+    self.gameState.teamCountChanged.connect(self.playerLayoutChanged)
+
+  #
+  # Getters
+  #
   def rowCount(self, index):
     return self.gameState.largestTeam + 1
 
@@ -47,19 +58,30 @@ class GameStateModel(QAbstractTableModel):
 
     return None
 
-  def playerUpdated(self, teamIDStr, playerIDStr):
-    teamID = int(teamIDStr)
-    playerID = int(playerIDStr)
-    #TODO: I think this is called with 1-based numbers, shouldn't it be 0-based when emitted?
+  #
+  # Slots
+  #
+  def playerChanged(self, teamID, playerID):
+    #TODO: This is called with 1-based numbers, shouldn't it be 0-based when emitted?
     self.dataChanged.emit(self.index(playerID, teamID, QModelIndex()), self.index(playerID, teamID, QModelIndex()))
 
+  def playerMoved(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
+    self.playerChanged(srcTeamID, srcPlayerID)
+    self.playerChanged(dstTeamID, dstPlayerID)
+
+  def playerLayoutChanged(self, _):
+    self.layoutChanged.emit()
+
+  #
   #DnD support
+  #
   def setData(self, index, value, role = Qt.EditRole):
     if not index.isValid():
       return False
 
     if value == None:
-      return self.deletePlayer(index)
+      self.gameState.deletePlayer(index.column() + 1, index.row() + 1)
+      return True
     
     #move all the other players down
     lowestBlank = self.gameState.largestTeam
@@ -74,19 +96,7 @@ class GameStateModel(QAbstractTableModel):
 
     oldTeamID = value.teamID
     oldPlayerID = value.playerID
-    return self.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
-
-  def movePlayer(self, oldTeamID, oldPlayerID, newTeamID, newPlayerID):
-    self.gameState.movePlayer(oldTeamID, oldPlayerID, newTeamID, newPlayerID)
-    self.dataChanged.emit(self.index(newTeamID - 1, newPlayerID - 1, QModelIndex()), self.index(self.gameState.largestTeam - 1, newPlayerID - 1, QModelIndex()))
-    self.dataChanged.emit(self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()), self.index(oldTeamID - 1, oldPlayerID - 1, QModelIndex()))
-    self.layoutChanged.emit() #TODO only emit this if it actually has
-    return True
-
-  def deletePlayer(self, index):
-    self.gameState.deletePlayer(index.column() + 1, index.row() + 1)
-    self.dataChanged.emit(self.index(index.row(), index.column(), QModelIndex()), self.index(index.row(), index.column(), QModelIndex()))
-    self.layoutChanged.emit() #TODO only emit this if it actually has
+    self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
     return True
 
   def flags(self, index):
@@ -312,8 +322,6 @@ class MainWindow(QWidget):
   def __init__(self, gameState, parent=None):
     super(MainWindow, self).__init__(parent)
     self.model = GameStateModel(gameState)
-    gameState.playerUpdated.connect(self.model.playerUpdated)
-    gameState.playerAdded.connect(self.playerAdded)
 
     self.setWindowTitle("BraidsTag Server")
     layout = QVBoxLayout()
@@ -332,9 +340,6 @@ class MainWindow(QWidget):
 
     layout.addWidget(tabs)
     self.setLayout(layout)
-
-  def  playerAdded(self, sentTeam, sentPlayer):
-    self.model.layoutChanged.emit(); #TODO: this is a bit of a blunt instrument.
 
   def lineReceived(self, line):
     self.log.append(line.strip())
