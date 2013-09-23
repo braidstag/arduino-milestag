@@ -177,7 +177,6 @@ class PlayerDelegate(QStyledItemDelegate):
       painter.save()
       painter.setClipRect(option.rect)
 
-      #NB. it might be easier to create a widget and call render on it
       ammoStr = str(index.data().ammo)
       painter.drawText(option.rect, ammoStr)
 
@@ -276,6 +275,60 @@ class GameControl(QWidget):
     self.setLayout(layout)
 
 
+class PlayerDetailsWidget(QWidget):
+  def __init__(self, gameState, parent=None):
+    super(PlayerDetailsWidget, self).__init__(parent)
+
+    self.gameState = gameState
+    self.gameState.playerAdded.connect(self.playerUpdated)
+    self.gameState.playerDeleted.connect(self.playerUpdated)
+    self.gameState.playerUpdated.connect(self.playerUpdated)
+    self.gameState.playerMoved.connect(self.playerMoved)
+
+    layout = QVBoxLayout()
+
+    self.idLabel = QLabel("")
+    layout.addWidget(self.idLabel)
+
+    self.ammoLabel = QLabel("")
+    layout.addWidget(self.ammoLabel)
+
+    self.healthLabel = QLabel("")
+    layout.addWidget(self.healthLabel)
+
+    self.playerID = None
+    self.teamID = None
+
+    self.__updateFromPlayer()
+
+    self.setLayout(layout)
+
+  def __updateFromPlayer(self):
+    if (self.teamID, self.playerID) in self.gameState.players:
+      player = self.gameState.getOrCreatePlayer(self.teamID, self.playerID)
+      self.idLabel.setText("%d:%d" % (player.teamID, player.playerID))
+      self.ammoLabel.setText(str(player.ammo))
+      self.healthLabel.setText("%d / %d" % (player.health, player.maxHealth))
+    else:
+      self.idLabel.setText("None")
+      self.ammoLabel.setText("0")
+      self.healthLabel.setText("0 / 0")
+
+
+  def playerUpdated(self, teamID, playerID):
+    if self.teamID and self.teamID == teamID and self.playerID == playerID:
+      #update our display
+      self.__updateFromPlayer()
+
+  def playerMoved(self, fromTeam, fromPlayer, toeam, toPlayer):
+    self.playerUpdated(fromTeam, fromPlayer)
+
+  def currentChanged(self, selected, deselected):
+    self.teamID = selected.column() + 1
+    self.playerID = selected.row() + 1
+    self.__updateFromPlayer()
+
+
 class TrashDropTarget(QLabel):
   def __init__(self, parent=None):
     super(TrashDropTarget, self).__init__("Trash", parent)
@@ -289,17 +342,22 @@ class TrashDropTarget(QLabel):
 
 
 class PlayersView(QWidget):
-  def __init__(self, model, parent=None):
+  def __init__(self, model, gameState, parent=None):
     super(PlayersView, self).__init__(parent)
     self.model = model
 
     layout = QVBoxLayout()
-    hLayout = QHBoxLayout()
+    splitter = QSplitter()
+    layout.addWidget(splitter)
+
+    #This is ugly, is there a better way?!
+    tableLayout = QVBoxLayout()
+    tableLayoutWidget = QWidget()
+    tableLayoutWidget.setLayout(tableLayout)
+    splitter.addWidget(tableLayoutWidget)
 
     trashLabel = TrashDropTarget()
-    hLayout.addWidget(trashLabel)
-
-    layout.addLayout(hLayout)
+    tableLayout.addWidget(trashLabel)
 
     tableView = QTableView()
     tableView.setModel(self.model)
@@ -313,7 +371,14 @@ class PlayersView(QWidget):
     tableView.setDefaultDropAction(Qt.MoveAction)
     self.model.layoutChanged.connect(tableView.resizeColumnsToContents)
 
-    layout.addWidget(tableView)
+    tableLayout.addWidget(tableView)
+
+    self.detailWidget = PlayerDetailsWidget(gameState)
+    splitter.addWidget(self.detailWidget)
+
+    sm = tableView.selectionModel() #This line is needed on windows (and possibly others). I have no idea why!
+    tableView.selectionModel().currentChanged.connect(self.detailWidget.currentChanged)
+
     self.setLayout(layout)
 
 
@@ -329,7 +394,7 @@ class MainWindow(QWidget):
     gameControl = GameControl(gameState)
     tabs.addTab(gameControl, "&1. Control")
 
-    players = PlayersView(self.model)
+    players = PlayersView(self.model, gameState)
     tabs.addTab(players, "&2. Players")
 
     self.log = QTextEdit()
