@@ -8,7 +8,6 @@ client  -> server should be Fire... not T/t
 add a protocol verson check into the HELLO
 
 == UI
-use a widget for the player display
 sensible column widths
 hide the accelerator keys for the tabs.
 Why do I get Broken pipes when moving players around?
