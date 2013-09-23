@@ -8,6 +8,7 @@ class Player():
   def __init__(self, teamID, playerID):
     self.teamID = int(teamID)
     self.playerID = int(playerID)
+    self.lastContact = time.time()
     self.reset()
 
   def reset(self):
@@ -94,3 +95,4 @@ class ClientServer():
   #SERVER="192.168.3.199"
   #SERVER="192.168.0.58"
   SERVER="192.168.1.151"
+  #SERVER="127.0.0.1"

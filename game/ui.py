@@ -296,6 +296,9 @@ class PlayerDetailsWidget(QWidget):
     self.healthLabel = QLabel("")
     layout.addWidget(self.healthLabel)
 
+    self.warningLabel = QLabel("")
+    layout.addWidget(self.warningLabel)
+
     self.playerID = None
     self.teamID = None
 
@@ -303,17 +306,22 @@ class PlayerDetailsWidget(QWidget):
 
     self.setLayout(layout)
 
+  #TODO periodically re-call this method so that the incommunicado warning can be issued when appropriate
   def __updateFromPlayer(self):
     if (self.teamID, self.playerID) in self.gameState.players:
       player = self.gameState.getOrCreatePlayer(self.teamID, self.playerID)
-      self.idLabel.setText("%d:%d" % (player.teamID, player.playerID))
-      self.ammoLabel.setText(str(player.ammo))
+      self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
+      self.ammoLabel.setText("Ammo: %d" % player.ammo)
       self.healthLabel.setText("%d / %d" % (player.health, player.maxHealth))
+      if player.lastContact < time() - 1:#20:
+        self.warningLabel.setText("WARNING: This player has been out\nof contact for at least 2 mins")
+      else:
+        self.warningLabel.setText("")
     else:
       self.idLabel.setText("None")
       self.ammoLabel.setText("0")
       self.healthLabel.setText("0 / 0")
-
+      self.warningLabel.setText("")
 
   def playerUpdated(self, teamID, playerID):
     if self.teamID and self.teamID == teamID and self.playerID == playerID:

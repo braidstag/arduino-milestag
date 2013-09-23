@@ -19,6 +19,9 @@ class Client(ClientServerConnection):
   def handleMsg(self, fullLine):
     event = proto.parseEvent(fullLine)
     msgStr = event.msgStr
+
+    if self.main.player:
+      self.main.player.lastContact = time.time()
     
     h = proto.MessageHandler()
 
@@ -65,6 +68,8 @@ class Main():
     #parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
 
     self.args = parser.parse_args()
+
+    self.player = None
 
     self.serverConnection = Client(self)
     self._sendToServer(proto.HELLO.create())

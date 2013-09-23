@@ -48,6 +48,8 @@ class ServerMsgHandler():
     def recv(recvTeamStr, recvPlayerStr, line):
       recvTeam = int(recvTeamStr)
       recvPlayer = int(recvPlayerStr)
+      player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
+      player.lastContact = time.time()
 
       h2 = proto.MessageHandler()
 
@@ -57,8 +59,6 @@ class ServerMsgHandler():
         sentPlayer = int(sentPlayerStr)
 
         #TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
-
-        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
         gameState.playerUpdated.emit(recvTeam, recvPlayer)
 
@@ -66,7 +66,6 @@ class ServerMsgHandler():
 
       @h2.handles(proto.TRIGGER)
       def trigger():
-        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         if (self.logic.trigger(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
 
@@ -74,7 +73,6 @@ class ServerMsgHandler():
 
       @h2.handles(proto.FULL_AMMO)
       def fullAmmo():
-        player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
         if (self.logic.fullAmmo(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
 
