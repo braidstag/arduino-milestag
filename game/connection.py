@@ -83,6 +83,7 @@ class ReadThread(Thread):
 
   def run(self):
     recieved = ''
+    chunk = ''
     while True:
       try:
         chunk = self.sock.recv(1024)

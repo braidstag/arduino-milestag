@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import argparse
-import serial
 import socket
 import sys
 import time
@@ -71,8 +70,14 @@ class Main():
     self._sendToServer(proto.HELLO.create())
 
     try:
+      import serial
       self.serial = serial.Serial(self.args.serial, 115200)
       self.properSerial = True
+    except ImportError:
+      #We'll have to open this as a file
+      print "WARNING: No serial module, assuming the serial argument is a normal file for testing"
+      self.serial = open(self.args.serial)
+      self.properSerial = False
     except serial.serialutil.SerialException:
       #Try just opening this as a file
       self.serial = open(self.args.serial)
