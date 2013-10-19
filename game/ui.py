@@ -313,7 +313,7 @@ class PlayerDetailsWidget(QWidget):
       self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
       self.healthLabel.setText("%d / %d" % (player.health, player.maxHealth))
-      if player.lastContact < time() - 1:#20:
+      if player.lastContact < time() - 120:
         self.warningLabel.setText("WARNING: This player has been out\nof contact for at least 2 mins")
       else:
         self.warningLabel.setText("")
