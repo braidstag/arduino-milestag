@@ -88,7 +88,7 @@ DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 # NB. If we can create these, it is for the fakeGun
-HIT =                 Message(r"H(\d),(\d),(\d)", None)
+HIT =                 Message(r"H(\d),(\d),(\d)", "H%d,%d,%d") # sentTeam, sentPlayer, damage
 FULL_AMMO =           Message(r"FA", None)
 CORRUPT =             Message(r"C", None)
 CLIENT_CONNECTED =    Message(r"c", None)

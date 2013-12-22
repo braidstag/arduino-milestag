@@ -28,6 +28,18 @@ class TriggerButton(QPushButton):
       self.serial.queueMessage(proto.TRIGGER_RELEASE.create())
 
 
+class ShotButton(QPushButton):
+  def __init__(self, serial, teamID, playerID, parent=None):
+    super(ShotButton, self).__init__(str(teamID) + ", " + str(playerID), parent)
+    self.serial = serial
+    self.teamID = teamID
+    self.playerID = playerID
+    self.clicked.connect(self.shot)
+
+  def shot(self):
+    self.serial.queueMessage(proto.HIT.create(self.teamID, self.playerID, 3))
+
+
 class MainWindow(QWidget):
   def __init__(self, serial, parent=None):
     super(MainWindow, self).__init__(parent)
@@ -40,8 +52,13 @@ class MainWindow(QWidget):
     hLayout.addWidget(TriggerButton(self.serial, "trigger", True, True))
     hLayout.addWidget(TriggerButton(self.serial, "trigger Down", True, False))
     hLayout.addWidget(TriggerButton(self.serial, "trigger Up", False, True))
-
     layout.addLayout(hLayout)
+
+    for i in range(1,4):
+      hLayout2 = QHBoxLayout()
+      for j in range(1,4):
+        hLayout2.addWidget(ShotButton(self.serial, i, j))
+      layout.addLayout(hLayout2)
 
     self.setLayout(layout)
 
