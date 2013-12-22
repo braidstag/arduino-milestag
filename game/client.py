@@ -59,13 +59,18 @@ class Client(ClientServerConnection):
     self.setSocket(self.sock)
 
 
+class ArgumentError(Exception):
+  pass
+
+
 class Main():
 
   def __init__(self):
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
-    parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected', required=True)
+    parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected')
     #parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
     #parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
+    parser.add_argument('-d', '--debugGun', help='use the debuggin gun UI', default=False, action='store_true')
 
     self.args = parser.parse_args()
 
@@ -74,19 +79,27 @@ class Main():
     self.serverConnection = Client(self)
     self._sendToServer(proto.HELLO.create())
 
-    try:
-      import serial
-      self.serial = serial.Serial(self.args.serial, 115200)
-      self.properSerial = True
-    except ImportError:
-      #We'll have to open this as a file
-      print "WARNING: No serial module, assuming the serial argument is a normal file for testing"
-      self.serial = open(self.args.serial)
-      self.properSerial = False
-    except serial.serialutil.SerialException:
-      #Try just opening this as a file
-      self.serial = open(self.args.serial)
-      self.properSerial = False
+    if self.args.debugGun:
+      import fakeGun
+      self.serial = fakeGun.showUI()
+      self.responsiveSerial = True
+    else:
+      if not self.args.serial:
+        raise ArgumentError("You must specify -s if you do not specify -d")
+
+      try:
+        import serial
+        self.serial = serial.Serial(self.args.serial, 115200)
+        self.responsiveSerial = True
+      except ImportError:
+        #We'll have to open this as a file
+        print "WARNING: No serial module, assuming the serial argument is a normal file for testing"
+        self.serial = open(self.args.serial)
+        self.responsiveSerial = False
+      except serial.serialutil.SerialException:
+        #Try just opening this as a file
+        self.serial = open(self.args.serial)
+        self.responsiveSerial = False
 
     def playerDead():
       print "Out of lives!"
@@ -98,10 +111,10 @@ class Main():
     self.connectToArduino()
 
   def serialWrite(self, line):
-    if (self.properSerial):
+    if (self.responsiveSerial):
       self.serial.write(line + "\n")
 
-    print "-a>", repr(line)
+    print "-a>", repr(line + "\n")
     sys.stdout.flush()
 
   def eventLoop(self):

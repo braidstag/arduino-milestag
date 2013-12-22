@@ -87,13 +87,14 @@ RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
 DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
+# NB. If we can create these, it is for the fakeGun
 HIT =                 Message(r"H(\d),(\d),(\d)", None)
 FULL_AMMO =           Message(r"FA", None)
 CORRUPT =             Message(r"C", None)
 CLIENT_CONNECTED =    Message(r"c", None)
 CLIENT_DISCONNECTED = Message(r"d", None)
-TRIGGER =             Message(r"T", None)
-TRIGGER_RELEASE =     Message(r"t", None)
+TRIGGER =             Message(r"T", "T")
+TRIGGER_RELEASE =     Message(r"t", "t")
 BATTERY =             Message(r"B(\d)", None)
 
 #client -> gun
