@@ -142,7 +142,7 @@ class WriteThread(Thread):
     self.timeProvider = timeProvider
 
   def run(self):
-    while not (self.queue.empty() and self.shouldStop):
+    while not (self.shouldStop and self.queue.empty()):
       try:
         msg = self.queue.get(True, 5).toStr() + "\n"
       except Queue.Empty:
