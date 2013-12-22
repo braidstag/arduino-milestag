@@ -2,7 +2,7 @@
 
 An implementation of the milestag protocol and some game mechanics intended to run on an arduino and a raspberry pi.
 
-The arduino interacts with some bespoke electronics and defers to the pi for any gameplay logic. The pi allows us to have a client-server connection over a wi-fi mesh network which should allow for some very interesting mechanincs more often associated with coomputer games such as voice communication, team power ups etc.
+The arduino interacts with some bespoke electronics and defers to the pi for any gameplay logic. The pi allows us to have a client-server connection over a wi-fi mesh network which should allow for some very interesting mechanincs more often associated with computer games such as voice communication, team power ups etc.
 
 == Electronics
 The electronics have become significantly more complex than I first imagined but there is very little which I think could be removed without loosing a lot of functionality,
