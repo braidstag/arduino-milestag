@@ -9,7 +9,6 @@ from time import time
 
 from PySide.QtCore import *
 from PySide.QtGui import *
-from PySide.QtDeclarative import QDeclarativeView
 
 class GameStateModel(QAbstractTableModel):
   """
