@@ -47,6 +47,11 @@ class Client(ClientServerConnection):
       self.main.gameState.stopGame()
       return True
     
+    @h.handles(proto.RESETGAME)
+    def resetGame():
+      self.main.player.reset()
+      return True
+    
     return h.handle(msgStr)
 
   def _openConnection(self):
