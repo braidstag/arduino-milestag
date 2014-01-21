@@ -4,7 +4,7 @@ exit the Read and Write threads cleanly.
 shut down clients
 Better support for clients disconnecting and reconnecting.
 adjust game start etc. for lag.
-client  -> server should be Fire... not T/t
+client -> server should be Fire... not T/t
 add a protocol verson check into the HELLO
 
 == UI

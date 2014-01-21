@@ -4,12 +4,15 @@ import time
 from PySide.QtCore import Signal, QObject
 
 class Player():
+  outOfContactTimeStr = "2 mins"
+  outOfContactTime = 120
 
   def __init__(self, teamID, playerID):
     self.teamID = int(teamID)
     self.playerID = int(playerID)
     self.lastContact = time.time()
     self.reset()
+    self.__triggeredOOCWarning = False
 
   def reset(self):
     self.ammo = 100
@@ -20,6 +23,10 @@ class Player():
 
   def __str__(self):
     return "Player(team=%d, id=%d, ammo=%d, health=%d)" % (self.teamID, self.playerID, self.ammo, self.health)
+
+  def isOutOfContact(self):
+    return self.lastContact < time.time() - self.outOfContactTime
+
 
 class GameState(QObject):
   def __init__(self):

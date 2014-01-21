@@ -205,6 +205,9 @@ class ServerGameState(GameState):
     self.stopGameTimer = None
     self.targetTeamCount = TEAM_COUNT
     self.setGameTime(GAME_TIME)
+    self.oocUpdater = self.OOCUpdater(self)
+    self.oocUpdater.start()
+    self._triggeredOOCWarning = {}
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
@@ -326,7 +329,6 @@ class ServerGameState(GameState):
     self.stopGameTimer = None
 
   def resetGame(self):
-    #GameState.resetGame(self)
     self.listeningThread.queueMessageToAll(proto.RESETGAME.create())
     for p in gameState.players.values():
       p.reset()
@@ -337,6 +339,37 @@ class ServerGameState(GameState):
 
   def terminate(self):
     self.stopGame()
+    self.oocUpdater.terminate()
+
+  def _updateLastContactWarning(self, player):
+    if (player.teamID, player.playerID) not in self._triggeredOOCWarning:
+      self._triggeredOOCWarning[(player.teamID, player.playerID)] = False
+
+    if (not self._triggeredOOCWarning[(player.teamID, player.playerID)]) and player.isOutOfContact():
+      self._triggeredOOCWarning[(player.teamID, player.playerID)] = True
+      self.playerOutOfContactUpdated.emit(player.teamID, player.playerID, True)
+
+    if self._triggeredOOCWarning[(player.teamID, player.playerID)] and (not player.isOutOfContact()):
+      self._triggeredOOCWarning[(player.teamID, player.playerID)] = False
+      self.playerOutOfContactUpdated.emit(player.teamID, player.playerID, False)
+
+  class OOCUpdater(Thread):
+    def __init__(self, gameState):
+      Thread.__init__(self)
+      self.gameState = gameState
+      self.shouldTerminate = False
+    
+    def terminate(self):
+      self.shouldTerminate = True
+
+    def run(self):
+      while not self.shouldTerminate:
+        time.sleep(3)
+
+        for playerID in range(gameState.largestTeam, 0, -1):
+          for teamID in range(gameState.teamCount, 0, -1):
+            if (teamID, playerID) in gameState.players:
+              gameState._updateLastContactWarning(gameState.players[(teamID, playerID)])
 
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
@@ -344,6 +377,7 @@ class ServerGameState(GameState):
   playerMoved = Signal(int, int, int, int)
   largestTeamChanged = Signal(int)
   teamCountChanged = Signal(int)
+  playerOutOfContactUpdated = Signal(int, int, bool)
 
 #TODO don't have this as a global
 mainWindow = None
