@@ -24,6 +24,8 @@ class GameStateModel(QAbstractTableModel):
 
     self.gameState.playerMoved.connect(self.playerMoved)
     
+    self.gameState.playerOutOfContactUpdated.connect(self.playerChanged)
+
     self.gameState.largestTeamChanged.connect(self.playerLayoutChanged)
     self.gameState.teamCountChanged.connect(self.playerLayoutChanged)
 
@@ -187,6 +189,12 @@ class PlayerDelegate(QStyledItemDelegate):
       painter.drawRoundedRect(ammoWidth + 5, 2, 100 * index.data().health / index.data().maxHealth, ammoHeight - 4, 5, 5)
       painter.setBrush(Qt.NoBrush)
       painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
+
+      if index.data().isOutOfContact():
+        triangleStart = ammoWidth + 5 + 100 + 5
+        painter.drawConvexPolygon([QPoint(triangleStart, ammoHeight - 4), QPoint(triangleStart + (ammoHeight // 2), 2), QPoint(triangleStart + ammoHeight, ammoHeight - 4),])
+        painter.drawText(triangleStart + (ammoHeight // 2) - 2, ammoHeight - 4, "!")
+
       painter.restore()
 
   def sizeHint(self, option, index):
