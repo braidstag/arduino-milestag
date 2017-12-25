@@ -11,6 +11,9 @@
 //#define DEBUG_SEND 1
 //#define DEBUG_RECV 1
 
+//Use a I2C scrren for debug instead of serial printing.
+#define SCREEN_DEBUG 1
+
 #define altfire_pin 2
 #define trigger_pin 3
 #define torchred_pin 4
@@ -24,6 +27,7 @@
 #define muzzleblue_pin 12
 #define muzzlegreen_pin 13
 #define power_monitor_pin A0
+// I2c uses A4 and A5
 
 // some timings
 unsigned int headerDuration = 2400;
@@ -59,6 +63,10 @@ unsigned long readFallTime = 0;
 ////////////////////////
 // IR reading functions
 
+#ifdef SCREEN_DEBUG
+  char debugLine[22] = "                      ";
+#endif
+
 //read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
 int signal_recieve() {
   boolean pinValue = ! digitalRead(pin_ir_reciever);
@@ -68,8 +76,13 @@ int signal_recieve() {
     readRiseTime = micros();
     oldPinValue = HIGH;
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+    sprintf(debugLine, "\\ @%d", readRiseTime);
+    screen_addScrollingData(debugLine);
+#else
     Serial.print("\\ @");
     Serial.println(readRiseTime);
+#endif
 #endif
     //there is always more to be read if the IR is high.
     return 0;
@@ -84,7 +97,11 @@ int signal_recieve() {
       readBuffer = 0;
       bitsRead = 0;
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+      screen_addScrollingData("--");
+#else
       Serial.println("--");
+#endif
 #endif
     }
     else if (within_tolerance(duration, oneDuration, timingTolerance)) {
@@ -92,7 +109,11 @@ int signal_recieve() {
       readBuffer = (readBuffer << 1) + 1;
       bitsRead++;
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+      screen_addScrollingData("-1");
+#else
       Serial.println("-1");
+#endif
 #endif
     }
     else if (within_tolerance(duration, zeroDuration, timingTolerance)) {
@@ -100,15 +121,24 @@ int signal_recieve() {
       readBuffer = readBuffer << 1;
       bitsRead++;
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+      screen_addScrollingData("-0");
+#else
       Serial.println("-0");
+#endif
 #endif
     }
     else {
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+      sprintf(debugLine, "/ @%d  %d", readFallTime, duration);
+      screen_addScrollingData(debugLine);
+#else
       Serial.print("/ @");
       Serial.print(readFallTime);
       Serial.print("  ");
       Serial.println(duration);
+#endif
 #endif
     }
 
@@ -131,7 +161,11 @@ int signal_recieve() {
     else if (micros() - readFallTime > intervalDuration + timingTolerance * 2) {
       readFallTime = 0; //cache this result
 #ifdef DEBUG_RECV
+#ifdef SCREEN_DEBUG
+      screen_addScrollingData("xx");
+#else
       Serial.println("xx");
+#endif
 #endif
       return 1;
     }
@@ -170,7 +204,11 @@ void start_command(unsigned long command, byte myTeamId) {
   //write header
   ir_up();
 #ifdef DEBUG_SEND
+#ifdef SCREEN_DEBUG
+  screen_addScrollingData("  \\");
+#else
   Serial.println("  \\");
+#endif
 #endif
   writeDownTime = headerDuration;
 }
@@ -184,10 +222,15 @@ void signal_send() {
   }
   else if (writeDownTime && writeDownTime <= elapsed) {
 #ifdef DEBUG_SEND
+#ifdef SCREEN_DEBUG
+    sprintf(debugLine, "  /%d - %d", elapsed, writeDownTime);
+    screen_addScrollingData(debugLine);
+#else
     Serial.print("  /");
     Serial.print(elapsed);
     Serial.print(" - ");
     Serial.println(writeDownTime, DEC);
+#endif
 #endif
     ir_down();
     writeDownTime = 0;
@@ -203,10 +246,15 @@ void signal_send() {
   }
   else if (writeUpTime && writeUpTime <= elapsed) {
 #ifdef DEBUG_SEND
+#ifdef SCREEN_DEBUG
+    sprintf(debugLine, "  \\%d - %d", elapsed, writeUpTime);
+    screen_addScrollingData(debugLine);
+#else
     Serial.print("  \\");
     Serial.print(elapsed);
     Serial.print(" - ");
     Serial.println(writeUpTime, DEC);
+#endif
 #endif
     ir_up();
     writeUpTime = 0;
@@ -263,39 +311,23 @@ void timeDebug() {
   else {
     int diff = micros() - timeCache;
     if (diff > 500) {
-      Serial.print(diff);
-      //some status flags as well
-      if (writeUpTime || writeDownTime || postDataTime) {
-        //in the middle of sending IR!
-        Serial.print("S");
-      }
-      else {
-        Serial.print(" ");
-      }
+      //some status flags
+      char sendingFlag = (writeUpTime || writeDownTime || postDataTime) ? "S" : "";
+      char receivingFlag = (bitsRead > -1) ? "R" : " ";
+      char serialWrittenFlag = serialWritten ? "s" : " ";
+      char serialReadFlag = serialRead ? "r" : " ";
 
-      if (bitsRead > -1) {
-        //in the middle of receiving IR!
-        Serial.print("R");
-      }
-      else {
-        Serial.print(" ");
-      }
-      
-      if (serialWritten) {
-        Serial.print("s");
-      }
-      else {
-        Serial.print(" ");
-      }
-      
-      if (serialRead) {
-        Serial.print("r");
-      }
-      else {
-        Serial.print(" ");
-      }
-      
+#ifdef SCREEN_DEBUG
+      sprintf(debugLine, "%d%c%c%c%c", diff, sendingFlag, receivingFlag, serialWrittenFlag, serialReadFlag);
+      screen_addScrollingData(debugLine);
+#else
+      Serial.print(diff);
+      Serial.print(sendingFlag);
+      Serial.print(receivingFlag);
+      Serial.print(serialWrittenFlag);
+      Serial.print(serialReadFlag);
       Serial.println();
+#endif
     }
     timeCache = 0;
   }

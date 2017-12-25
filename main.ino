@@ -43,6 +43,10 @@ void setup() {
 
   //debug  
   Serial.begin(115200);
+
+  #ifdef SCREEN_DEBUG
+  screen_setup();
+  #endif
 }
 
 boolean clientConnected = false;
