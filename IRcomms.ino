@@ -51,7 +51,7 @@ unsigned long postDataTime = 0;
 // IR reading variables
 unsigned long readBuffer = 0;
 // the number of bits we have read or -1 if we are not currently reading bits.
-byte bitsRead = -1;
+int bitsRead = -1;
 
 byte oldPinValue = 0;
 
@@ -65,7 +65,7 @@ unsigned long readFallTime = 0;
 // IR reading functions
 
 #ifdef SCREEN_DEBUG
-  char debugLine[22] = "                      ";
+  char debugLine[22] = "                     ";
 #endif
 
 //read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
@@ -99,7 +99,7 @@ int signal_recieve() {
         screen_addScrollingData("header in middle");
       }
 #else
-      char receivingFlag = (bitsRead > -1) ? "R" : " ";
+      char receivingFlag = (bitsRead > -1) ? 'R' : ' ';
       Serial.println("-- %c", receivingFlag);
 #endif
 #endif
@@ -315,10 +315,10 @@ void timeDebug() {
     int diff = micros() - timeCache;
     if (diff > 500) {
       //some status flags
-      char sendingFlag = (writeUpTime || writeDownTime || postDataTime) ? "S" : "";
-      char receivingFlag = (bitsRead > -1) ? "R" : " ";
-      char serialWrittenFlag = serialWritten ? "s" : " ";
-      char serialReadFlag = serialRead ? "r" : " ";
+      char sendingFlag = (writeUpTime || writeDownTime || postDataTime) ? 'S' : ' ';
+      char receivingFlag = (bitsRead > -1) ? 'R' : ' ';
+      char serialWrittenFlag = serialWritten ? 's' : ' ';
+      char serialReadFlag = serialRead ? 'r' : ' ';
 
 #ifdef SCREEN_DEBUG
       sprintf(debugLine, "%d%c%c%c%c", diff, sendingFlag, receivingFlag, serialWrittenFlag, serialReadFlag);
