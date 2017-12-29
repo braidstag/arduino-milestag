@@ -50,7 +50,8 @@ unsigned long postDataTime = 0;
 ////////////////////////
 // IR reading variables
 unsigned long readBuffer = 0;
-byte bitsRead = 0;
+// the number of bits we have read or -1 if we are not currently reading bits.
+byte bitsRead = -1;
 
 byte oldPinValue = 0;
 
@@ -77,8 +78,6 @@ int signal_recieve() {
     oldPinValue = HIGH;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-    sprintf(debugLine, "\\ @%d", readRiseTime);
-    screen_addScrollingData(debugLine);
 #else
     Serial.print("\\ @");
     Serial.println(readRiseTime);
@@ -94,15 +93,18 @@ int signal_recieve() {
 
     if (within_tolerance(duration, headerDuration, timingTolerance)) {
       //we are within tolerance of 2400 us - a restart
-      readBuffer = 0;
-      bitsRead = 0;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      screen_addScrollingData("--");
+      if (bitsRead > -1) {
+        screen_addScrollingData("header in middle");
+      }
 #else
-      Serial.println("--");
+      char receivingFlag = (bitsRead > -1) ? "R" : " ";
+      Serial.println("-- %c", receivingFlag);
 #endif
 #endif
+      readBuffer = 0;
+      bitsRead = 0;
     }
     else if (within_tolerance(duration, oneDuration, timingTolerance)) {
       //we are within tolerance of 1200 us - a one
@@ -110,7 +112,6 @@ int signal_recieve() {
       bitsRead++;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      screen_addScrollingData("-1");
 #else
       Serial.println("-1");
 #endif
@@ -122,7 +123,6 @@ int signal_recieve() {
       bitsRead++;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      screen_addScrollingData("-0");
 #else
       Serial.println("-0");
 #endif
@@ -131,7 +131,7 @@ int signal_recieve() {
     else {
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      sprintf(debugLine, "/ @%d  %d", readFallTime, duration);
+      sprintf(debugLine, "timing error %d", duration);
       screen_addScrollingData(debugLine);
 #else
       Serial.print("/ @");
@@ -162,7 +162,7 @@ int signal_recieve() {
       readFallTime = 0; //cache this result
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      screen_addScrollingData("xx");
+      screen_addScrollingData("read %d bits", bitsRead);
 #else
       Serial.println("xx");
 #endif
@@ -205,7 +205,6 @@ void start_command(unsigned long command, byte myTeamId) {
   ir_up();
 #ifdef DEBUG_SEND
 #ifdef SCREEN_DEBUG
-  screen_addScrollingData("  \\");
 #else
   Serial.println("  \\");
 #endif
@@ -223,8 +222,10 @@ void signal_send() {
   else if (writeDownTime && writeDownTime <= elapsed) {
 #ifdef DEBUG_SEND
 #ifdef SCREEN_DEBUG
-    sprintf(debugLine, "  /%d - %d", elapsed, writeDownTime);
-    screen_addScrollingData(debugLine);
+    if (elapsed - writeDownTime > tolerance) {
+      sprintf(debugLine, "too slow by %d", elapsed - writeDownTime);
+      screen_addScrollingData(debugLine);
+    }
 #else
     Serial.print("  /");
     Serial.print(elapsed);
@@ -247,8 +248,10 @@ void signal_send() {
   else if (writeUpTime && writeUpTime <= elapsed) {
 #ifdef DEBUG_SEND
 #ifdef SCREEN_DEBUG
-    sprintf(debugLine, "  \\%d - %d", elapsed, writeUpTime);
-    screen_addScrollingData(debugLine);
+    if (elapsed - writeUpTime > tolerance) {
+      sprintf(debugLine, "too slow by %d", elapsed - writeUpTime);
+      screen_addScrollingData(debugLine);
+    }
 #else
     Serial.print("  \\");
     Serial.print(elapsed);
