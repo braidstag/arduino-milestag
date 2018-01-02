@@ -73,6 +73,7 @@ char screen_scrollingData[SCREEN_HEIGHT][SCREEN_WIDTH] = {
   "    / FireStorm  \\  ",
   "   /______________\\ "
 };
+byte screen_scrollingDataBottomLineIndex = 7;
 
 void screen_setup() {
 
@@ -157,7 +158,7 @@ void display() {
     byte lineBufferCount = 0;
     
     for(int8_t charCol=0; charCol<21; charCol++) { // 21 characters per row
-      char c = screen_scrollingData[charRow][charCol];
+      char c = screen_scrollingData[(screen_scrollingDataBottomLineIndex + 1 + charRow) % 8][charCol];
       for(int8_t i=0; i<5; i++) { // 5 cols within each character
         //right shift to find the correct row and check least significant bit 
         uint8_t vline = (c == 0 || c == 0x20) ? 0 : pgm_read_byte(&font[c * 5 + i]);
@@ -192,11 +193,9 @@ void display() {
   }
 }
 
-byte screen_scrollingDataBottomLineIndex = 7;
-
 void screen_addScrollingData(const char newLine[]) {
-  strncpy(screen_scrollingData[screen_scrollingDataBottomLineIndex], newLine, SCREEN_WIDTH);
   screen_scrollingDataBottomLineIndex = (screen_scrollingDataBottomLineIndex + 1) % SCREEN_HEIGHT;
+  strncpy(screen_scrollingData[screen_scrollingDataBottomLineIndex], newLine, SCREEN_WIDTH);
   display();
 }
 
