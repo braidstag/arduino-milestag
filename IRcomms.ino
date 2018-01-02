@@ -36,7 +36,7 @@ unsigned int oneDuration = 1200;
 unsigned int zeroDuration = 600;
 unsigned long postDataDuration = 200000; //must be at least intervalDuration + timingTolerance * 2
 
-byte timingTolerance = 100;
+byte timingTolerance = 200;
 
 ////////////////////////
 // IR Writing variables
