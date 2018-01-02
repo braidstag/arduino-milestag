@@ -131,7 +131,7 @@ int signal_recieve() {
     else {
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      sprintf(debugLine, "timing error %d", duration);
+      sprintf(debugLine, "timing error %lu", duration);
       screen_addScrollingData(debugLine);
 #else
       Serial.print("/ @");
@@ -162,7 +162,8 @@ int signal_recieve() {
       readFallTime = 0; //cache this result
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
-      screen_addScrollingData("read %d bits", bitsRead);
+      sprintf(debugLine, "rx %lx(%d)", readBuffer, bitsRead);
+      screen_addScrollingData(debugLine);
 #else
       Serial.println("xx");
 #endif
@@ -178,6 +179,7 @@ int signal_recieve() {
 
 void finished_signal_decode() {
   bitsRead = -1;
+  readBuffer = 0;
 }
 
 boolean within_tolerance(unsigned long value, unsigned long target, byte tolerance) {
@@ -222,8 +224,8 @@ void signal_send() {
   else if (writeDownTime && writeDownTime <= elapsed) {
 #ifdef DEBUG_SEND
 #ifdef SCREEN_DEBUG
-    if (elapsed - writeDownTime > tolerance) {
-      sprintf(debugLine, "too slow by %d", elapsed - writeDownTime);
+    if (elapsed - writeDownTime > timingTolerance) {
+      sprintf(debugLine, "too slow by %lu", elapsed - writeDownTime);
       screen_addScrollingData(debugLine);
     }
 #else
@@ -248,8 +250,8 @@ void signal_send() {
   else if (writeUpTime && writeUpTime <= elapsed) {
 #ifdef DEBUG_SEND
 #ifdef SCREEN_DEBUG
-    if (elapsed - writeUpTime > tolerance) {
-      sprintf(debugLine, "too slow by %d", elapsed - writeUpTime);
+    if (elapsed - writeUpTime > timingTolerance) {
+      sprintf(debugLine, "too slow by %lu", elapsed - writeUpTime);
       screen_addScrollingData(debugLine);
     }
 #else
