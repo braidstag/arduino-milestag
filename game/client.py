@@ -59,6 +59,7 @@ class Client(ClientServerConnection):
     #reduce the timeout while we are testing on a good network.
     #This will want increasing dramatically when we are on the wireless mesh.
     self.sock.settimeout(1)
+    print "Connecting to " + ClientServer.SERVER + ":" + str(ClientServer.PORT)
     self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
 
     self.setSocket(self.sock)

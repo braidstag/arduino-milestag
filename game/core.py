@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import time
+import os
 from PySide.QtCore import Signal, QObject
 
 class Player():
@@ -97,9 +98,9 @@ class StandardGameLogic(QObject):
   playerDead = Signal()
 
 class ClientServer():
-  PORT=7079
+  PORT=int(os.getenv("PORT", "7079"))
   #SERVER="192.168.1.116"
   #SERVER="192.168.3.199"
   #SERVER="192.168.0.58"
-  SERVER="192.168.1.151"
+  SERVER=os.getenv("SERVER", "192.168.1.151")
   #SERVER="127.0.0.1"
