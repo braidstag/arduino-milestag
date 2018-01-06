@@ -8,3 +8,36 @@ The arduino interacts with some bespoke electronics and defers to the pi for any
 The electronics have become significantly more complex than I first imagined but there is very little which I think could be removed without loosing a lot of functionality,
 
 The circuit and board layout for the elctronics is included in "fritzing" files.
+
+== Gun software
+This is written in C and runs on the arduino. Currently, it has to be compiled and uploaded using the arduino IDE and the reset button has to be physically pressed manually.
+Once connected to the Game software via a serial link, all this does is handle the hardware, letting the game software handle the higher order logic.
+
+== Game software
+This is written in pythin nd runs on the pi. It is responsible for communicating with the arduino, deciding what the incoming events mean and how to respond. It also communicates with the server.
+
+This is deployed using resin. A good quickstart is https://docs.resin.io/raspberrypi/nodejs/getting-started/ when it comes time to deploy the code, use the clone of this repo, instead of the simple-server-node sample project
+
+
+Currently, I have only done this by pushing to their servers and having them do the building. However, it should be possible to build locally by enabling the cross-build-start and end lines in Dockerfile.template and using:
+
+{{{
+resin build --deviceType raspberry-pi -a BraidsTag -v
+}}}
+
+it is also possible to synchronise all of the local files with a container running on your network using:
+
+{{{
+resin sync <deviceId> --source . --destination /usr/src/app -vp
+}}}
+
+== Server software
+Written in python, this keeps tracks of all of the guns and allows administration of the game.
+It can be deployed in a docker container and exposes a rich client via vnc on port 5900.
+
+it can be build and executed using:
+
+{{{
+docker build . -f Dockerfile.server -t braidstag-server
+docker run -it --rm -e SERVER=0.0.0.0 -p7079:7079 -p5900:5900 braidstag-server
+}}}
