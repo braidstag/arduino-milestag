@@ -143,14 +143,17 @@ class Main():
 
       @h.handles(proto.TRIGGER)
       def trigger():
-        if (self.logic.trigger(self.gameState, self.player)):
+        if (self.player and self.logic.trigger(self.gameState, self.player)):
           self.serialWrite(proto.FIRE.create(self.player.teamID, self.player.playerID, self.player.gunDamage))
         return True
 
       #TODO be more discerning about unparseable input here.
       h.handle(line)
 
-      msg = proto.RECV.create(self.player.teamID, self.player.playerID, line)
+      if (self.player):
+        msg = proto.RECV.create(self.player.teamID, self.player.playerID, line)
+      else:
+        msg = proto.RECV.create('', '', line)
       self._sendToServer(msg)
 
   def _stringToPlayerID(self, inp):
