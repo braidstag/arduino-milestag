@@ -64,8 +64,8 @@ class ClientServerConnection():
       self.sock = None
 
   def onDisconnect(self):
+    "Called when this connection is disconnected. Should be overridden in subclasses"
     raise RuntimeError("onDisconnectCalled")
-    #TODO: support this
     
   def stop(self):
     self.writeThread.stop()
@@ -98,11 +98,13 @@ class ReadThread(Thread):
           return
         print e
         self.parent.onDisconnect()
+        break
       if chunk == '':
         if self.shouldStop:
           #this is expected
           return
         self.parent.onDisconnect()
+        break
       recieved = recieved + chunk
 
       (partial, complete) = self._takeCompleteResponses(recieved)

@@ -13,6 +13,7 @@ class Client(ClientServerConnection):
   def __init__(self, main):
     ClientServerConnection.__init__(self)
     self.main = main
+    self.retryCount = 0;
     
     self._openConnection()
   
@@ -64,6 +65,18 @@ class Client(ClientServerConnection):
 
     self.setSocket(self.sock)
 
+  def onDisconnect(self):
+    self.retryCount = self.retryCount + 1
+
+    # retry with an exponential backoff, starting at 2 seconds and
+    # stopping after waiting 128s (total time 4m14s) 
+    if (this.retryCount >= 5):
+      super.onDisconnect()
+      return
+    
+    time.sleep(2 * 2 ** (self.retryCount - 1))
+
+    self._openConnection()
 
 class ArgumentError(Exception):
   pass

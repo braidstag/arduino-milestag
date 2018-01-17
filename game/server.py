@@ -85,7 +85,7 @@ class ServerMsgHandler():
       clientId = event.id
       existingIds = self.listeningThread.isConnected(clientId)
       if existingIds:
-        #TODO maintain the state of this client by sending it an update (taking our send queu into account).
+        #TODO maintain the state of this client by sending it an update (taking our send queue into account).
         #For now, simply remove the ghost player from the game.
         self.gameState.deletePlayer(existingIds[0], existingIds[1])
 
@@ -101,6 +101,10 @@ class ServerMsgHandler():
 
     return h1.handle(msgStr)
 
+  def onDisconnect(self, connection):
+    print "a client disconnected"
+    self.listeningThread.lostConnection(connection)
+
 
 class Server(ClientServerConnection):
   """A connection from a client to the server. There are many instaces of this class, 1 for each connection"""
@@ -114,8 +118,8 @@ class Server(ClientServerConnection):
     return self.msgHandler.handleMsg(fullLine, self)
 
   def onDisconnect(self):
-    #not much we can do until they reconnect
-    pass
+    #not much we can do until they reconnect apart from note the disconnection
+     self.msgHandler.onDisconnect(self)
 
 
 class ListeningThread(Thread):
@@ -161,6 +165,29 @@ class ListeningThread(Thread):
     self.unestablishedConnections.remove(server)
     self.connections[(player.teamID, player.playerID)] = server
     self.connectedClients[clientId] = (player.teamID, player.playerID)
+
+  def lostConnection(self, server):
+    """ Register that a connection has been lost"""
+    #remove from here just in case
+    try:
+      self.unestablishedConnections.remove(server)
+    except KeyError:
+      pass
+    #look the connection up, it isn't worth storing the reverse mapping as this shouldn't happen very often, I hope!
+    foundKey = None
+    for key in self.connections:
+      if self.connections[key] == server:
+        foundKey = key
+        del self.connections[key]
+        break
+
+    if (foundKey):
+      for clientID in self.connectedClients:
+        if self.connectedClients[clientID] == foundKey:
+          del self.connectedClients[clientID]
+          break
+
+      self.gameState.lostContact(foundKey[0], foundKey[1])
 
   def isConnected(self, clientId):
     """Check is a client is alredy connected. If so, return the (team, player) tuple otherwise return None"""
@@ -340,6 +367,9 @@ class ServerGameState(GameState):
   def terminate(self):
     self.stopGame()
     self.oocUpdater.terminate()
+
+  def lostContact(self, teamID, playerID):
+    self.players[(teamID, playerID)].lastContact = -1;
 
   def _updateLastContactWarning(self, player):
     if (player.teamID, player.playerID) not in self._triggeredOOCWarning:
