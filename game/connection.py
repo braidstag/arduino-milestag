@@ -18,6 +18,7 @@ class PiSerialIdProvider():
       for line in f:
         if line[0:6]=='Serial':
           self.clientId = long(line[10:26], 16)
+          print "Found client Id from CPU serial number: ", self.clientId
       f.close()
     except:
       pass
@@ -26,6 +27,8 @@ class PiSerialIdProvider():
     if not self.clientId:
       import random
       self.clientId = random.getrandbits(64)
+      print "Falling back to a random client Id (instead of CPU serial number): ", self.clientId
+
 
   def __call__(self):
     return self.clientId

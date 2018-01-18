@@ -46,6 +46,8 @@ class Client(ClientServerConnection):
     def deleted():
       #just treat this as the game stopping for us.
       self.main.gameState.stopGame()
+      #then shutdown as the server won't want us back.
+      self.main.shutdown()
       return True
     
     @h.handles(proto.RESETGAME)
@@ -187,6 +189,9 @@ class Main():
 
     if not proto.CLIENT_CONNECTED.parse(line):
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
+
+  def shutdown(self):
+    self.serialWrite(proto.CLIENTCONNECT.create())
 
 
 main = Main()

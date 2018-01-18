@@ -28,10 +28,10 @@ class ServerMsgHandler():
     
   def handleMsg(self, fullLine, connection):
     with self.eventLock:
-      if mainWindow: # This should only be None in tests.
-        mainWindow.lineReceived(fullLine)
-
       event = proto.parseEvent(fullLine)
+
+      if mainWindow: # This should only be None in tests.
+        mainWindow.lineReceived(event)
 
       self.__handleEvent(event, self.gameState, connection)
 
@@ -88,8 +88,9 @@ class ServerMsgHandler():
         #TODO maintain the state of this client by sending it an update (taking our send queue into account).
         #For now, simply remove the ghost player from the game.
         self.gameState.deletePlayer(existingIds[0], existingIds[1])
-
-      player = gameState.createNewPlayer()
+        player = gameState.getOrCreatePlayer(existingIds[0], existingIds[1])
+      else:
+        player = gameState.createNewPlayer()
       connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
 
       self.listeningThread.establishConnection(connection, player, clientId)
@@ -174,20 +175,11 @@ class ListeningThread(Thread):
     except KeyError:
       pass
     #look the connection up, it isn't worth storing the reverse mapping as this shouldn't happen very often, I hope!
-    foundKey = None
     for key in self.connections:
       if self.connections[key] == server:
-        foundKey = key
         del self.connections[key]
+        self.gameState.lostContact(key[0], key[1])
         break
-
-    if (foundKey):
-      for clientID in self.connectedClients:
-        if self.connectedClients[clientID] == foundKey:
-          del self.connectedClients[clientID]
-          break
-
-      self.gameState.lostContact(foundKey[0], foundKey[1])
 
   def isConnected(self, clientId):
     """Check is a client is alredy connected. If so, return the (team, player) tuple otherwise return None"""
@@ -212,6 +204,13 @@ class ListeningThread(Thread):
     self.queueMessage(teamID, playerID, proto.DELETED.create())
     if (teamID, playerID) in self.connections:
       del self.connections[(teamID, playerID)]
+
+    #Forget about the client Id too. Don't remember that we deleted it, we rely on the client not reconnecting
+    for key in self.connectedClients:
+      if self.connectedClients[key] == (teamID, playerID):
+        del self.connectedClients[key]
+        break
+
 
   def stop(self):
     self.shouldStop = True

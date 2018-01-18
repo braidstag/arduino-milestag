@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+from datetime import date
 
 class Event():
   """ An event is a message from a particular client (or the server if id == 0) at a particular time."""
@@ -11,6 +12,11 @@ class Event():
 
   def toStr(self):
     return "E(%x,%f,%s)" % (self.id, self.time, self.msgStr)
+
+  def __str__(self):
+    return "E(%x,%f(%s),%s)" % (self.id, self.time, date.fromtimestamp(self.time).isoformat(), self.msgStr)
+
+  __repr__ = toStr
 
 
 def parseEvent(line):
@@ -101,4 +107,5 @@ BATTERY =             Message(r"B(\d)", None)
 CLIENTCONNECT = Message(None, "c")
 CLIENTDISCONNECT = Message(None, "d")
 FIRE = Message(None, "Fire(%d,%d,%d)")
+SHUTDOWN = Message(None, "Shutdown")
 

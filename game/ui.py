@@ -421,7 +421,7 @@ class MainWindow(QWidget):
     self.setLayout(layout)
 
   def lineReceived(self, line):
-    self.log.append(line.strip())
+    self.log.append(str(line).strip())
     #TODO: auto-scroll to the bottom
     #sb = self.log.verticalScrollBar()
     #sb.setValue(sb.maximum())
