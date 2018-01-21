@@ -10,8 +10,8 @@ from connection import ClientServerConnection
 import proto
 
 class Client(ClientServerConnection):
-  def __init__(self, main):
-    ClientServerConnection.__init__(self)
+  def __init__(self, main, *args, **kwargs):
+    ClientServerConnection.__init__(self, *args, **kwargs)
     self.main = main
     self.retryCount = 0;
     
@@ -29,18 +29,15 @@ class Client(ClientServerConnection):
     @h.handles(proto.TEAMPLAYER)
     def teamPlayer(teamID, playerID):
       self.main.player = Player(teamID, playerID)
-      return True
       
     @h.handles(proto.STARTGAME)
     def startGame(duration):
       self.main.gameState.setGameTime(int(duration))
       self.main.gameState.startGame()
-      return True
     
     @h.handles(proto.STOPGAME)
     def stopGame():
       self.main.gameState.stopGame()
-      return True
     
     @h.handles(proto.DELETED)
     def deleted():
@@ -48,12 +45,21 @@ class Client(ClientServerConnection):
       self.main.gameState.stopGame()
       #then shutdown as the server won't want us back.
       self.main.shutdown()
-      return True
     
     @h.handles(proto.RESETGAME)
     def resetGame():
       self.main.player.reset()
-      return True
+    
+    @h.handles(proto.PING)
+    def ping():
+      self.queueMessage(proto.PONG.create(event.time, 1))
+          
+    @h.handles(proto.PONG)
+    def pong(startTime, reply):
+      now = self.timeProvider()
+      latency = (int(startTime) - now) / 2 #TODO, do something with this.
+      if reply:
+        self.queueMessage(proto.PONG.create(event.time, 0))
     
     return h.handle(msgStr)
 
@@ -193,13 +199,13 @@ class Main():
   def shutdown(self):
     self.serialWrite(proto.CLIENTCONNECT.create())
 
-
-main = Main()
-try:
+if __name__ == "__main__":
+  main = Main()
+  try:
+    print main.player
+  except:
+    pass
+  main.eventLoop()
   print main.player
-except:
-  pass
-main.eventLoop()
-print main.player
-main.serverConnection.stop()
-main.serial.close()
+  main.serverConnection.stop()
+  main.serial.close()

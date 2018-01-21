@@ -44,8 +44,8 @@ class Message():
   def parse(self, line, action=lambda: True):
     m = self.regex.match(line)
     if(m):
-      #TODO: Can we make return True optional in the action function?
-      return action(*m.groups())
+      actionResult = action(*m.groups())
+      return actionResult or actionResult == None #If the action doesn't return anything, assume all went well!
     else:
       return False
 
@@ -79,6 +79,8 @@ class MessageHandler():
     return False
 
 # both client <--> server
+PING = Message(r"Ping\(\)", "Ping()")
+PONG = Message(r"Pong\((\d*),(\d)\)", "Pong(%d,%s)")
 
 #client -> server only
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)", "Recv(%d,%d,%s)")

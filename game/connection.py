@@ -38,6 +38,7 @@ class ClientServerConnection():
   def __init__(self, idProvider = PiSerialIdProvider(), timeProvider = time.time):
     self.sock = None
     self.readThread = None
+    self.timeProvider = timeProvider
     self.writeThread = WriteThread(idProvider, timeProvider)
     self.writeThread.start()
 
@@ -74,6 +75,9 @@ class ClientServerConnection():
     self.writeThread.stop()
     self.readThread.stop()
     self._closeConnection()
+
+  def startLatencyCheck(self):
+    self.queueMessage(proto.PING.create())
 
 class ReadThread(Thread):
   def __init__(self, sock, parent):

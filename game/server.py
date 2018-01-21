@@ -49,7 +49,7 @@ class ServerMsgHandler():
       recvTeam = int(recvTeamStr)
       recvPlayer = int(recvPlayerStr)
       player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-      player.lastContact = time.time()
+      player.lastContact = connection.timeProvider()
 
       h2 = proto.MessageHandler()
 
@@ -62,21 +62,15 @@ class ServerMsgHandler():
         self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
         gameState.playerUpdated.emit(recvTeam, recvPlayer)
 
-        return True
-
       @h2.handles(proto.TRIGGER)
       def trigger():
         if (self.logic.trigger(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
 
-        return True
-
       @h2.handles(proto.FULL_AMMO)
       def fullAmmo():
         if (self.logic.fullAmmo(gameState, player)):
           gameState.playerUpdated.emit(recvTeam, recvPlayer)
-
-        return True
 
       return h2.handle(line)
 
@@ -98,8 +92,17 @@ class ServerMsgHandler():
       if self.gameState.isGameStarted():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
 
-      return True
-
+    @h1.handles(proto.PING)
+    def ping():
+      connection.queueMessage(proto.PONG.create(event.time, 1))
+          
+    @h1.handles(proto.PONG)
+    def pong(startTime, reply):
+      now = connection.timeProvider()
+      latency = (startTime - now) / 2 #TODO, do something with this.
+      if reply:
+        connection.queueMessage(proto.PONG.create(event.time, 0))
+    
     return h1.handle(msgStr)
 
   def onDisconnect(self, connection):
@@ -108,7 +111,7 @@ class ServerMsgHandler():
 
 
 class Server(ClientServerConnection):
-  """A connection from a client to the server. There are many instaces of this class, 1 for each connection"""
+  """A connection from a client to the server. There are many instances of this class, 1 for each connection"""
   def __init__(self, sock, msgHandler):
     ClientServerConnection.__init__(self)
     self.msgHandler = msgHandler
@@ -121,6 +124,10 @@ class Server(ClientServerConnection):
   def onDisconnect(self):
     #not much we can do until they reconnect apart from note the disconnection
      self.msgHandler.onDisconnect(self)
+
+  def setSocket(self, sock):
+    super(Server, self).setSocket(sock)
+    self.startLatencyCheck()
 
 
 class ListeningThread(Thread):
