@@ -21,9 +21,6 @@ class Client(ClientServerConnection):
     event = proto.parseEvent(fullLine)
     msgStr = event.msgStr
 
-    if self.main.player:
-      self.main.player.lastContact = time.time()
-    
     h = proto.MessageHandler()
 
     @h.handles(proto.TEAMPLAYER)

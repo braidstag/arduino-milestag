@@ -49,7 +49,6 @@ class ServerMsgHandler():
       recvTeam = int(recvTeamStr)
       recvPlayer = int(recvPlayerStr)
       player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
-      player.lastContact = connection.timeProvider()
 
       h2 = proto.MessageHandler()
 
@@ -112,29 +111,37 @@ class ServerMsgHandler():
 
 class Server(ClientServerConnection):
   """A connection from a client to the server. There are many instances of this class, 1 for each connection"""
+  outOfContactTime = 120
+
   def __init__(self, sock, msgHandler):
     ClientServerConnection.__init__(self)
     self.msgHandler = msgHandler
+    self.lastContact = time.time()
 
     self.setSocket(sock)
   
   def handleMsg(self, fullLine):
+    self.lastContact = self.timeProvider()
+
     return self.msgHandler.handleMsg(fullLine, self)
 
   def onDisconnect(self):
     #not much we can do until they reconnect apart from note the disconnection
-     self.msgHandler.onDisconnect(self)
+    self.msgHandler.onDisconnect(self)
+    self.lastContact = -1
 
   def setSocket(self, sock):
     super(Server, self).setSocket(sock)
     self.startLatencyCheck()
+
+  def isOutOfContact(self):
+    return self.lastContact < time.time() - self.outOfContactTime
 
 
 class ListeningThread(Thread):
   """A thread which listens for new connections from a client. 
      Spawns a Server instance to handle the ongoing communication and stores them all to enable sending broadcast messages
   """
-
   def __init__(self, gameState):
     super(ListeningThread, self).__init__(group=None)
     self.name = "Server Listening Thread"
@@ -155,6 +162,10 @@ class ListeningThread(Thread):
     self.shouldStop = False
 
   def run(self):
+    #Launch an OOC Check Thread too
+    self.oocUpdater = self.OOCUpdater(self)
+    self.oocUpdater.start()
+
     #start serving
     while True:
       if self.shouldStop:
@@ -185,7 +196,6 @@ class ListeningThread(Thread):
     for key in self.connections:
       if self.connections[key] == server:
         del self.connections[key]
-        self.gameState.lostContact(key[0], key[1])
         break
 
   def isConnected(self, clientId):
@@ -218,10 +228,45 @@ class ListeningThread(Thread):
         del self.connectedClients[key]
         break
 
+  def lookupPlayerAndTeam(self, server):
+    for key in self.connections:
+      if self.connections[key] == server:
+        return key
 
   def stop(self):
     self.shouldStop = True
     self.serversocket.close()
+    self.oocUpdater.stop()
+
+  class OOCUpdater(Thread):
+    def __init__(self, listeningThread):
+      Thread.__init__(self)
+      self.listeningThread = listeningThread
+      self.connections = listeningThread.connections
+      self.shouldStop = False
+      self._triggeredOOCWarning = {}
+    
+    def stop(self):
+      self.shouldStop = True
+
+    def run(self):
+      while not self.shouldStop:
+        time.sleep(3)
+
+        for server in self.connections:
+          if server not in self._triggeredOOCWarning:
+            self._triggeredOOCWarning[server] = False
+
+          if (not self._triggeredOOCWarning[server]) and server.isOutOfContact():
+            self._triggeredOOCWarning[server] = True
+            (teamID, playerID) = self.listeningThread.lookupPlayerAndTeam(server)
+            self.gameState.playerOutOfContactUpdated.emit(teamID, playerID, True)
+
+          if self._triggeredOOCWarning[server] and (not server.isOutOfContact()):
+            (teamID, playerID) = self.listeningThread.lookupPlayerAndTeam(server)
+            self._triggeredOOCWarning[server] = False
+            self.gameState.playerOutOfContactUpdated.emit(teamID, playerID, False)
+
 
 #initial game settings, these are told to the clients and can be changed in the UI. 
 GAME_TIME=1200 #20 mins
@@ -238,9 +283,6 @@ class ServerGameState(GameState):
     self.stopGameTimer = None
     self.targetTeamCount = TEAM_COUNT
     self.setGameTime(GAME_TIME)
-    self.oocUpdater = self.OOCUpdater(self)
-    self.oocUpdater.start()
-    self._triggeredOOCWarning = {}
   
   def setListeningThread(self, lt):
     self.listeningThread = lt
@@ -372,40 +414,6 @@ class ServerGameState(GameState):
 
   def terminate(self):
     self.stopGame()
-    self.oocUpdater.terminate()
-
-  def lostContact(self, teamID, playerID):
-    self.players[(teamID, playerID)].lastContact = -1;
-
-  def _updateLastContactWarning(self, player):
-    if (player.teamID, player.playerID) not in self._triggeredOOCWarning:
-      self._triggeredOOCWarning[(player.teamID, player.playerID)] = False
-
-    if (not self._triggeredOOCWarning[(player.teamID, player.playerID)]) and player.isOutOfContact():
-      self._triggeredOOCWarning[(player.teamID, player.playerID)] = True
-      self.playerOutOfContactUpdated.emit(player.teamID, player.playerID, True)
-
-    if self._triggeredOOCWarning[(player.teamID, player.playerID)] and (not player.isOutOfContact()):
-      self._triggeredOOCWarning[(player.teamID, player.playerID)] = False
-      self.playerOutOfContactUpdated.emit(player.teamID, player.playerID, False)
-
-  class OOCUpdater(Thread):
-    def __init__(self, gameState):
-      Thread.__init__(self)
-      self.gameState = gameState
-      self.shouldTerminate = False
-    
-    def terminate(self):
-      self.shouldTerminate = True
-
-    def run(self):
-      while not self.shouldTerminate:
-        time.sleep(3)
-
-        for playerID in range(gameState.largestTeam, 0, -1):
-          for teamID in range(gameState.teamCount, 0, -1):
-            if (teamID, playerID) in gameState.players:
-              gameState._updateLastContactWarning(gameState.players[(teamID, playerID)])
 
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)
