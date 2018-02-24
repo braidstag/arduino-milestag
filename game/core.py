@@ -4,7 +4,7 @@ import time
 import os
 from PySide.QtCore import Signal, QObject
 
-class Player():
+class Player(QObject):
   outOfContactTimeStr = "2 mins"
   outOfContactTime = 120
 
@@ -27,6 +27,18 @@ class Player():
 
   def isOutOfContact(self):
     return self.lastContact < time.time() - self.outOfContactTime
+
+  def reduceHealth(self, damage):
+    if (self.health > int(damage)):
+      self.health -= int(damage)
+    elif (self.health > 0):
+      self.playerDead.emit()
+      self.health = 0
+    else:
+      #already have 0 health
+      pass
+
+  playerDead = Signal()
 
 
 class GameState(QObject):
@@ -72,14 +84,7 @@ class StandardGameLogic(QObject):
       #self shot, ignore this
       pass
     else:
-      if (toPlayer.health > int(damage)):
-        toPlayer.health -= int(damage)
-      elif (toPlayer.health > 0):
-        self.playerDead.emit()
-        toPlayer.health = 0
-      else:
-        #already have 0 health
-        pass
+      toPlayer.reduceHealth(damage)
 
   def trigger(self, gameState, player):
     if not gameState.isGameStarted():
@@ -94,8 +99,6 @@ class StandardGameLogic(QObject):
     retval = player.ammo != player.maxAmmo
     player.ammo = player.maxAmmo
     return retval
-
-  playerDead = Signal()
 
 class ClientServer():
   PORT=int(os.getenv("PORT", "7079"))

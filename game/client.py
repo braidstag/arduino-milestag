@@ -28,7 +28,7 @@ class Client(ClientServerConnection):
 
     @h.handles(proto.TEAMPLAYER)
     def teamPlayer(teamID, playerID):
-      self.main.player = Player(teamID, playerID)
+      self.main.setPlayer(Player(teamID, playerID))
       
     @h.handles(proto.STARTGAME)
     def startGame(duration):
@@ -128,14 +128,18 @@ class Main():
         self.serial = open(self.args.serial)
         self.responsiveSerial = False
 
-    def playerDead():
-      print "Out of lives!"
-
     self.logic = StandardGameLogic()
-    self.logic.playerDead.connect(playerDead)
     self.gameState = GameState()
 
     self.connectToArduino()
+
+  def setPlayer(self, player):
+    self.player = player
+    
+    def playerDead():
+      print "Out of lives!"
+
+    self.player.playerDead.connect(playerDead)
 
   def serialWrite(self, line):
     if (self.responsiveSerial):
