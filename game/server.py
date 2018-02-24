@@ -104,17 +104,14 @@ class ServerMsgHandler():
     
     return h1.handle(msgStr)
 
-  def onDisconnect(self, connection):
-    print "a client disconnected"
-    self.listeningThread.lostConnection(connection)
-
 
 class Server(ClientServerConnection):
   """A connection from a client to the server. There are many instances of this class, 1 for each connection"""
   outOfContactTime = 120
 
-  def __init__(self, sock, msgHandler):
+  def __init__(self, sock, listeningThread, msgHandler):
     ClientServerConnection.__init__(self)
+    self.listeningThread = listeningThread
     self.msgHandler = msgHandler
     self.lastContact = time.time()
 
@@ -127,7 +124,8 @@ class Server(ClientServerConnection):
 
   def onDisconnect(self):
     #not much we can do until they reconnect apart from note the disconnection
-    self.msgHandler.onDisconnect(self)
+    print "a client disconnected"
+    self.listeningThread.lostConnection(connection)
     self.lastContact = -1
 
   def setSocket(self, sock):
@@ -173,7 +171,7 @@ class ListeningThread(Thread):
 
       try:
         (clientsocket, address) = self.serversocket.accept();
-        self.unestablishedConnections.add(Server(clientsocket, self.msgHandler))
+        self.unestablishedConnections.add(Server(clientsocket, self, self.msgHandler))
       except KeyboardInterrupt:
         break
       except socket.timeout:
