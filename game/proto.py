@@ -20,7 +20,7 @@ class Event():
 
 
 def parseEvent(line):
-  regex = re.compile("^E\(([0-9a-f]+),([0-9.]+),(.*)\)$")
+  regex = re.compile(r"^E\(([0-9a-f]+),([0-9.]+),(.*)\)$")
   m = regex.match(line)
   if(not m):
     raise MessageParseException("Couldn't parse an event from '%s'" % line)

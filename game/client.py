@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import argparse
 import socket
 import sys
@@ -13,7 +15,7 @@ class Client(ClientServerConnection):
   def __init__(self, main, *args, **kwargs):
     ClientServerConnection.__init__(self, *args, **kwargs)
     self.main = main
-    self.retryCount = 0;
+    self.retryCount = 0
     
     self._openConnection()
   
@@ -24,35 +26,35 @@ class Client(ClientServerConnection):
     h = proto.MessageHandler()
 
     @h.handles(proto.TEAMPLAYER)
-    def teamPlayer(teamID, playerID):
+    def teamPlayer(teamID, playerID): # pylint: disable=W0612
       self.main.setPlayer(Player(teamID, playerID))
       
     @h.handles(proto.STARTGAME)
-    def startGame(duration):
+    def startGame(duration): # pylint: disable=W0612
       self.main.gameState.setGameTime(int(duration))
       self.main.gameState.startGame()
     
     @h.handles(proto.STOPGAME)
-    def stopGame():
+    def stopGame(): # pylint: disable=W0612
       self.main.gameState.stopGame()
     
     @h.handles(proto.DELETED)
-    def deleted():
+    def deleted(): # pylint: disable=W0612
       #just treat this as the game stopping for us.
       self.main.gameState.stopGame()
       #then shutdown as the server won't want us back.
       self.main.shutdown()
     
     @h.handles(proto.RESETGAME)
-    def resetGame():
+    def resetGame(): # pylint: disable=W0612
       self.main.player.reset()
     
     @h.handles(proto.PING)
-    def ping():
+    def ping(): # pylint: disable=W0612
       self.queueMessage(proto.PONG.create(event.time, 1))
           
     @h.handles(proto.PONG)
-    def pong(startTime, reply):
+    def pong(startTime, reply): # pylint: disable=W0612
       now = self.timeProvider()
       latency = (int(startTime) - now) / 2 #TODO, do something with this.
       if reply:
@@ -65,7 +67,7 @@ class Client(ClientServerConnection):
     #reduce the timeout while we are testing on a good network.
     #This will want increasing dramatically when we are on the wireless mesh.
     self.sock.settimeout(1)
-    print "Connecting to " + ClientServer.SERVER + ":" + str(ClientServer.PORT)
+    print("Connecting to " + ClientServer.SERVER + ":" + str(ClientServer.PORT))
     self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
 
     self.setSocket(self.sock)
@@ -75,7 +77,7 @@ class Client(ClientServerConnection):
 
     # retry with an exponential backoff, starting at 2 seconds and
     # stopping after waiting 128s (total time 4m14s) 
-    if (this.retryCount >= 5):
+    if (self.retryCount >= 5):
       super.onDisconnect()
       return
     
@@ -117,7 +119,7 @@ class Main():
         self.responsiveSerial = True
       except ImportError:
         #We'll have to open this as a file
-        print "WARNING: No serial module, assuming the serial argument is a normal file for testing"
+        print("WARNING: No serial module, assuming the serial argument is a normal file for testing")
         self.serial = open(self.args.serial)
         self.responsiveSerial = False
       except serial.serialutil.SerialException:
@@ -137,29 +139,29 @@ class Main():
     if (self.responsiveSerial):
       self.serial.write(line + "\n")
 
-    print "-a>", repr(line + "\n")
+    print("-a>", repr(line + "\n"))
     sys.stdout.flush()
 
   def eventLoop(self):
     for line in self.serial:
       line = line.rstrip()
-      print "<a-", repr(line)
+      print("<a-", repr(line))
       sys.stdout.flush()
 
       h = proto.MessageHandler()
 
       @h.handles(proto.HIT)
-      def hit(sentTeam, sentPlayer, damage):
-        self.logic.hit(self.gameState, self.player, sentTeam, sentPlayer, damage)
+      def hit(sentTeam, sentPlayer, damage): # pylint: disable=W0612
+        self.logic.hit(self.gameState, self.player, Player(sentTeam, sentPlayer), damage)
         return True
 
       @h.handles(proto.FULL_AMMO)
-      def fullAmmo():
+      def fullAmmo(): # pylint: disable=W0612
         self.logic.fullAmmo(self.gameState, self.player)
         return True
 
       @h.handles(proto.TRIGGER)
-      def trigger():
+      def trigger(): # pylint: disable=W0612
         if (self.player and self.logic.trigger(self.gameState, self.player)):
           self.serialWrite(proto.FIRE.create(self.player.teamID, self.player.playerID, self.player.gunDamage))
         return True
@@ -177,7 +179,7 @@ class Main():
     out = int(inp)
     if out < 1 or out > 32:
       raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
-    return out;
+    return out
 
   def _sendToServer(self, msg):
     "queue this packet to be sent to the server"
@@ -186,7 +188,7 @@ class Main():
   def connectToArduino(self):
     self.serialWrite(proto.CLIENTCONNECT.create())
     line = self.serial.readline()
-    print "<a-", repr(line)
+    print("<a-", repr(line))
     sys.stdout.flush()
 
     if not proto.CLIENT_CONNECTED.parse(line):
@@ -198,10 +200,10 @@ class Main():
 if __name__ == "__main__":
   main = Main()
   try:
-    print main.player
+    print(main.player)
   except:
     pass
   main.eventLoop()
-  print main.player
+  print(main.player)
   main.serverConnection.stop()
   main.serial.close()

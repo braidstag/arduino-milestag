@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import socket
 import sys
 import time
@@ -5,7 +7,7 @@ from threading import Thread, Lock
 import Queue
 
 from core import ClientServer
-from proto import Event
+from proto import Event, PING
 
 class PiSerialIdProvider():
   """ An IdProvider which uses the serial number of the CPU (i.e. of the Pi) or, failing that, a random number"""
@@ -18,7 +20,7 @@ class PiSerialIdProvider():
       for line in f:
         if line[0:6]=='Serial':
           self.clientId = long(line[10:26], 16)
-          print "Found client Id from CPU serial number: ", self.clientId
+          print("Found client Id from CPU serial number: ", self.clientId)
       f.close()
     except:
       pass
@@ -27,7 +29,7 @@ class PiSerialIdProvider():
     if not self.clientId:
       import random
       self.clientId = random.getrandbits(64)
-      print "Falling back to a random client Id (instead of CPU serial number): ", self.clientId
+      print("Falling back to a random client Id (instead of CPU serial number): ", self.clientId)
 
 
   def __call__(self):
@@ -43,7 +45,7 @@ class ClientServerConnection(object):
     self.writeThread.start()
 
   def queueMessage(self, msg):
-    print "-->", repr(msg)
+    print("-->", repr(msg))
     sys.stdout.flush()
 
     self.writeThread.queueMessage(msg)
@@ -77,7 +79,7 @@ class ClientServerConnection(object):
     self._closeConnection()
 
   def startLatencyCheck(self):
-    self.queueMessage(proto.PING.create())
+    self.queueMessage(PING.create())
 
 class ReadThread(Thread):
   def __init__(self, sock, parent):
@@ -99,11 +101,10 @@ class ReadThread(Thread):
           #this is expected
           return
         continue
-      except socket.error as e:
+      except socket.error:
         if self.shouldStop:
           #this is expected
           return
-        print e
         self.parent.onDisconnect()
         break
       if chunk == '':
@@ -118,7 +119,7 @@ class ReadThread(Thread):
       recieved = partial
 
       for i in complete:
-        print "<--", repr(i)
+        print("<--", repr(i))
         sys.stdout.flush()
 
         if self.parent.handleMsg(i):
@@ -167,7 +168,7 @@ class WriteThread(Thread):
             raise RuntimeError("socket connection broken")
           totalsent = totalsent + sent
       except:
-        print "Unexpected error:", sys.exc_info()[0]
+        print("Unexpected error:", sys.exc_info()[0])
         raise
         #TODO retry sending the packet 
 

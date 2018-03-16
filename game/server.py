@@ -1,4 +1,7 @@
 #!/usr/bin/python
+
+from __future__ import print_function
+
 import argparse
 import socket
 import sys
@@ -45,14 +48,14 @@ class ServerMsgHandler():
     h1 = proto.MessageHandler()
 
     @h1.handles(proto.RECV)
-    def recv(recvTeamStr, recvPlayerStr, line):
+    def recv(recvTeamStr, recvPlayerStr, line): # pylint: disable=W0612
       recvTeam = int(recvTeamStr)
       recvPlayer = int(recvPlayerStr)
 
       h2 = proto.MessageHandler()
 
       @h2.handles(proto.HIT)
-      def hit(sentTeamStr, sentPlayerStr, damage):
+      def hit(sentTeamStr, sentPlayerStr, damage): # pylint: disable=W0612
         sentTeam = int(sentTeamStr)
         sentPlayer = int(sentPlayerStr)
 
@@ -63,27 +66,27 @@ class ServerMsgHandler():
         gameState.addEvent(gameEvent)
 
       @h2.handles(proto.TRIGGER)
-      def trigger():
+      def trigger(): # pylint: disable=W0612
         #TODO: change this to Fire consistently.
         
         #TODO: convert this client time into server time
-        serverTime = event.time;
+        serverTime = event.time
 
-        gameEvent = FireEvent(serverTime, recvTeam, recvPlayer);
+        gameEvent = FireEvent(serverTime, recvTeam, recvPlayer)
         gameState.addEvent(gameEvent)
 
       @h2.handles(proto.FULL_AMMO)
-      def fullAmmo():
+      def fullAmmo(): # pylint: disable=W0612
         #TODO: convert this client time into server time
-        serverTime = event.time;
+        serverTime = event.time
 
-        gameEvent = FullAmmoEvent(serverTime, recvTeam, recvPlayer);
+        gameEvent = FullAmmoEvent(serverTime, recvTeam, recvPlayer)
         gameState.addEvent(gameEvent)
 
       return h2.handle(line)
 
     @h1.handles(proto.HELLO)
-    def hello():
+    def hello(): # pylint: disable=W0612
       clientId = event.id
       existingIds = self.listeningThread.isConnected(clientId)
       if existingIds:
@@ -101,11 +104,11 @@ class ServerMsgHandler():
         connection.queueMessage(proto.STARTGAME.create(self.gameState.gameTimeRemaining()))
 
     @h1.handles(proto.PING)
-    def ping():
+    def ping(): # pylint: disable=W0612
       connection.queueMessage(proto.PONG.create(event.time, 1))
           
     @h1.handles(proto.PONG)
-    def pong(startTime, reply):
+    def pong(startTime, reply): # pylint: disable=W0612
       now = connection.timeProvider()
       latency = (startTime - now) / 2 #TODO, do something with this.
       if reply:
@@ -136,7 +139,7 @@ class Server(ClientServerConnection):
 
   def onDisconnect(self):
     #not much we can do until they reconnect apart from note the disconnection
-    print "a client disconnected"
+    print("a client disconnected")
     self.listeningThread.lostConnection(self)
     self.lastContact = -1
 
@@ -182,7 +185,7 @@ class ListeningThread(Thread):
         return
 
       try:
-        (clientsocket, address) = self.serversocket.accept();
+        (clientsocket, dummy_address) = self.serversocket.accept()
         self.unestablishedConnections.add(Server(clientsocket, self, self.msgHandler))
       except KeyboardInterrupt:
         break
@@ -516,7 +519,7 @@ if __name__ == '__main__':
   retval = app.exec_()
 
   for i in gameState.players.values():
-    print i
+    print(i)
 
   main.stop()
   gameState.terminate()
