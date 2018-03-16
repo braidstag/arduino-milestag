@@ -132,11 +132,6 @@ class Main():
 
   def setPlayer(self, player):
     self.player = player
-    
-    def playerDead():
-      print "Out of lives!"
-
-    self.player.playerDead.connect(playerDead)
 
   def serialWrite(self, line):
     if (self.responsiveSerial):

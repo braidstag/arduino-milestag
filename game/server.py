@@ -1,17 +1,17 @@
 #!/usr/bin/python
-
 import argparse
 import socket
 import sys
 import time
 import traceback
 from threading import Thread, Lock, Timer
-from bisect import insort
+from copy import deepcopy
 
 from core import Player, StandardGameLogic, ClientServer, GameState
 from ui import MainWindow
 from connection import ClientServerConnection
 import proto
+from gameEvents import HitEvent, FireEvent, FullAmmoEvent
 
 from PySide.QtGui import QApplication
 from PySide.QtCore import Signal
@@ -48,7 +48,6 @@ class ServerMsgHandler():
     def recv(recvTeamStr, recvPlayerStr, line):
       recvTeam = int(recvTeamStr)
       recvPlayer = int(recvPlayerStr)
-      player = gameState.getOrCreatePlayer(recvTeam, recvPlayer)
 
       h2 = proto.MessageHandler()
 
@@ -57,19 +56,29 @@ class ServerMsgHandler():
         sentTeam = int(sentTeamStr)
         sentPlayer = int(sentPlayerStr)
 
-        #TODO: add some sanity checks in here. The shooting player shouldn't be dead at this point 
-        self.logic.hit(gameState, player, sentTeam, sentPlayer, damage)
-        gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        #TODO: convert this client time into server time
+        serverTime = event.time
+
+        gameEvent = HitEvent(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
+        gameState.addEvent(gameEvent)
 
       @h2.handles(proto.TRIGGER)
       def trigger():
-        if (self.logic.trigger(gameState, player)):
-          gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        #TODO: change this to Fire consistently.
+        
+        #TODO: convert this client time into server time
+        serverTime = event.time;
+
+        gameEvent = FireEvent(serverTime, recvTeam, recvPlayer);
+        gameState.addEvent(gameEvent)
 
       @h2.handles(proto.FULL_AMMO)
       def fullAmmo():
-        if (self.logic.fullAmmo(gameState, player)):
-          gameState.playerUpdated.emit(recvTeam, recvPlayer)
+        #TODO: convert this client time into server time
+        serverTime = event.time;
+
+        gameEvent = FullAmmoEvent(serverTime, recvTeam, recvPlayer);
+        gameState.addEvent(gameEvent)
 
       return h2.handle(line)
 
@@ -113,19 +122,22 @@ class Server(ClientServerConnection):
     ClientServerConnection.__init__(self)
     self.listeningThread = listeningThread
     self.msgHandler = msgHandler
-    self.lastContact = time.time()
+    self.lastContact = self.timeProvider()
 
     self.setSocket(sock)
   
   def handleMsg(self, fullLine):
-    self.lastContact = self.timeProvider()
+    handled = self.msgHandler.handleMsg(fullLine, self)
 
-    return self.msgHandler.handleMsg(fullLine, self)
+    self.lastContact = self.timeProvider()
+    self.listeningThread.considerMovingConfidencePoint(self.lastContact)
+
+    return handled
 
   def onDisconnect(self):
     #not much we can do until they reconnect apart from note the disconnection
     print "a client disconnected"
-    self.listeningThread.lostConnection(connection)
+    self.listeningThread.lostConnection(self)
     self.lastContact = -1
 
   def setSocket(self, sock):
@@ -133,7 +145,7 @@ class Server(ClientServerConnection):
     self.startLatencyCheck()
 
   def isOutOfContact(self):
-    return self.lastContact < time.time() - self.outOfContactTime
+    return self.lastContact < self.timeProvider() - self.outOfContactTime
 
 
 class ListeningThread(Thread):
@@ -231,6 +243,14 @@ class ListeningThread(Thread):
       if self.connections[key] == server:
         return key
 
+  def considerMovingConfidencePoint(self, changedTime):
+    """Check if the message we just recieved at the given time moves the confidence point
+     and, if so. Tell the GameState about it"""
+    earliestLastContact = min([x.lastContact for x in self.connections])
+    if (earliestLastContact == changedTime):
+      #This has bumped up the confidence point
+      self.gameState.adjustConfidencePoint(earliestLastContact)
+
   def stop(self):
     self.shouldStop = True
     self.serversocket.close()
@@ -272,16 +292,26 @@ GAME_TIME=1200 #20 mins
 TEAM_COUNT=2
 
 class ServerGameState(GameState):
-  """A store of all of the gamestate which the server knows about. There is only one instance of this class on the server."""
+  """A store of all of the gamestate which the server knows about. There is only one instance of this class on the server.
+
+  This keeps a baseline state which contains events from all sources as well as
+  a potentially incomplete list of events which have happened since.
+  We periodically re-baseline when we are confident that we have recieved 
+  all events up to a point (the confidence point)
+  """
   def __init__(self):
     GameState.__init__(self)
     self.players = {}
+    self.baselinePlayers = {}
     self.teamCount = 0
     self.largestTeam = 0
     self.stopGameTimer = None
     self.targetTeamCount = TEAM_COUNT
     self.setGameTime(GAME_TIME)
-  
+
+    self.confidencePoint = time.time()
+    self.uncertainEvents = []
+
   def setListeningThread(self, lt):
     self.listeningThread = lt
 
@@ -412,6 +442,50 @@ class ServerGameState(GameState):
 
   def terminate(self):
     self.stopGame()
+
+  def addEvent(self, event):
+    if (len(self.uncertainEvents) == 0 or (event.serverTime > self.uncertainEvents[len(self.uncertainEvents) - 1].serverTime)):
+      #This is later than anything we have seen so far, just apply it now.
+      event.apply(self)
+      self.uncertainEvents.append(event)
+    else:
+      #This needs to be inserted in the appropriate position in the uncertain events list and we need to recalculate our latest state by applying all uncertainEvents to the baseline
+      newIndex = 0
+      for e in self.uncertainEvents:
+        if (event.serverTime > e.serverTime):
+          newIndex = newIndex + 1
+        else:
+          break
+      self.uncertainEvents.insert(newIndex, event)
+      self.players = deepcopy(self.baselinePlayers)
+      for e in self.uncertainEvents:
+        e.apply(self)
+
+  def adjustConfidencePoint(self, newConfidencePoint):
+    #TODO - take baseline state, apply and remove uncertainEvents up to the confidence point and assign to baseline
+    if (len(self.uncertainEvents) == 0):
+      #Nothing to do
+      pass
+    elif newConfidencePoint > self.uncertainEvents[len(self.uncertainEvents) - 1].serverTime:
+      #new confidence point is later than all recieved events, just use the latest state as the baseline one.
+      self.baselinePlayers = deepcopy(self.players)
+      self.uncertainEvents = []
+    else:
+      latestPlayers = self.players
+      self.players = self.baselinePlayers
+      confidencePointIndex = 0
+      for e in self.uncertainEvents:
+        if (e.serverTime > newConfidencePoint):
+          #too far into the future
+          break
+        else:
+          confidencePointIndex = confidencePointIndex + 1
+          e.apply(self)
+
+      if confidencePointIndex > 0:
+        self.uncertainEvents = self.uncertainEvents[confidencePointIndex:]
+      self.baselinePlayers = self.players
+      self.players = latestPlayers
 
   playerAdded = Signal(int, int)
   playerUpdated = Signal(int, int)

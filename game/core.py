@@ -10,7 +10,6 @@ class Player(QObject):
     self.teamID = int(teamID)
     self.playerID = int(playerID)
     self.reset()
-    self.__triggeredOOCWarning = False
 
   def reset(self):
     self.ammo = 100
@@ -26,13 +25,10 @@ class Player(QObject):
     if (self.health > int(damage)):
       self.health -= int(damage)
     elif (self.health > 0):
-      self.playerDead.emit()
       self.health = 0
     else:
       #already have 0 health
       pass
-
-  playerDead = Signal()
 
 
 class GameState(QObject):
@@ -69,13 +65,16 @@ class GameState(QObject):
 
 class StandardGameLogic(QObject):
 
-  def hit(self, gameState, toPlayer, fromTeam, fromPlayer, damage):
+  def hit(self, gameState, toPlayer, fromPlayer, damage):
     if not gameState.isGameStarted():
       print("hit before game started")
       pass
       #TODO how does this happen, log this? client->server lag will trigger this
-    elif (fromPlayer == toPlayer.playerID and fromTeam == toPlayer.teamID):
+    elif (fromPlayer.playerID == toPlayer.playerID and fromPlayer.teamID == toPlayer.teamID):
       #self shot, ignore this
+      pass
+    elif fromPlayer.health <= 0:
+      #shooting player is already dead, don't count this.
       pass
     else:
       toPlayer.reduceHealth(damage)

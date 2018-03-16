@@ -34,7 +34,7 @@ class PiSerialIdProvider():
     return self.clientId
 
 
-class ClientServerConnection():
+class ClientServerConnection(object):
   def __init__(self, idProvider = PiSerialIdProvider(), timeProvider = time.time):
     self.sock = None
     self.readThread = None

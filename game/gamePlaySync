@@ -2,9 +2,10 @@ Notes about how to keep the gameplay in sync between the client and the server
 
 h2. Principles
 
-* Client trumps server.
+* We suffer large and inconsistent lag but fortunatley the server doesn't need to have a consistent view of all clients to decide, for example, whether a shot hits.
+* Client trumps server when it comes to having taken a shot and being hit. Server trumps client as to the damage and health of the player.
 ** A malicious client is far less likely than a comms failure.
-** I'm not aware of any existing system which protects against mailicous clients.
+** I'm not aware of any existing lasertag system which protects against mailicous clients.
 * Each client has a uniqueId (taken from the pi's serial number)
 * Each client has a synchronised clock with the server which doesn't drift much.
 * Client memory may be limited but we assume that the server has plenty.
@@ -15,12 +16,15 @@ Clients collect a list of //event// objects which describe something happening.
 This might be a player initiated thing (like firing) or a reactive thing (like being hit).
 These are sent to the server along with the client's id and the time at which the event happened.
 
-Clients keep track of the current state of their stats and update it as they become aware of events. 
-This should ialways be accurate (by definition, they have primacy).
+Clients keep track of the current state of their stats and update it as they become aware of events (form their own gun/sensors. 
+As global or team effects can affect health, ammo and damage, the server must send snapshops of the correct client state to the client.
 Clients should "check in" or "ping" the server so that the server can know they are still active and that it is up-to-date.
 Clients mustn't do anything (or have anything done to them) until the server has acknowledged their existence.
+ - TODO: why?
 
-The Server keeps a list of events, from which the current state of everyone's attributes can be estimated.
+h2. implementation
+
+The Server keeps a list of events, from which the current state of everyone's stats can be estimated.
 As it recieves events from clients, it updates the list (keeping it in chronological order) and recalculates the state.
 
 As the client will send (and recieve Acks for) one event at a time, and because the client has primacy over it's own stats, the server can be confident of each clients stats as of a particular time (the "confidence point" for that player).
@@ -29,3 +33,48 @@ This can be used to detect known inconsistencies as the match is progressing.
 As an optimisation, the server can cache game state information. 
 The most obvious example would be for the earliest confidence point. This cached state would never need to be discarded (except to be replaced as confidence progresses).
 By allowing some values to be discarded, you could also cache states //after// the earliest confidence point.
+
+h2. examples
+
+p(1,2,3) mens player 1 has health 2 and ammo 3
+
+h3. simple
+p(1,9,9) shoots p(2,2,9) for 1 damage. p(2,1,9) now shoots p(3,9,9) for 1 damage. 
+Result is p(1,9,8), p(2,1,8), p(3,8,9)
+p1 sends a fire event which reduces the ammo
+p2 sends a hit event which reduces the health
+p2 sends a fire event which reduces the ammo
+p3 sends a hit evnt which reduces the health
+None of the events have a sequencing concern and the server never has to update a client's view of the state.
+
+h3. global effect complicates above scenario.
+A global effect doubles everyones damage but p1 hasn't yet got the message.
+
+p(1,9,9) shoots p(2,2,9) for 1 damage (should have been 2). p(2,1,9) now shoots p(3,9,9) for 2 damage.
+Result is p(1,9,8), p(2,0,9), p(3,9,9)
+
+time 0:
+p2 and p3 recieve the global effect, changing their damage stat
+
+time 1:
+p1 sends a fire event which reduces the ammo
+p2 sends a hit event which reduces the health (by 1 not 2)
+
+time 2:
+p2 sends a fire event which reduces the ammo
+p3 sends a hit event which reduces the health
+
+server tells p2 that as of time 1, it should be p(2,0,9) (because p2 said it was hit for 1 but was actually 2). p2 recalculates whether it could fire at time 3 (it couldn't, so doesn't spend the ammo)
+
+server tells p2 that as of time 2, it should be p(2,0,9) (because it shouldn't have fired)
+server tells p3 that as of time 2, it should be p(3,9,9) (because p2 shouldn't have fired as p2 had zero health at time 2)
+
+h3.
+
+Adding/removing/moving players
+start/stop/reset game
+
+h2. monitoring
+We should show individual lag values per player
+We should show a graph for confidence point lag (and which player is causing it) or perhaps just overlay all of the lags onto of each other
+Log when we have had to tell a client to change health from what they think, particularly if that is from or to 0.
