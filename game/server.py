@@ -59,8 +59,7 @@ class ServerMsgHandler():
         sentTeam = int(sentTeamStr)
         sentPlayer = int(sentPlayerStr)
 
-        #TODO: convert this client time into server time
-        serverTime = event.time
+        serverTime = connection.clientTimeToServer(event.time)
 
         gameEvent = HitEvent(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
         gameState.addEvent(gameEvent)
@@ -69,16 +68,14 @@ class ServerMsgHandler():
       def trigger(): # pylint: disable=W0612
         #TODO: change this to Fire consistently.
         
-        #TODO: convert this client time into server time
-        serverTime = event.time
+        serverTime = connection.clientTimeToServer(event.time)
 
         gameEvent = FireEvent(serverTime, recvTeam, recvPlayer)
         gameState.addEvent(gameEvent)
 
       @h2.handles(proto.FULL_AMMO)
       def fullAmmo(): # pylint: disable=W0612
-        #TODO: convert this client time into server time
-        serverTime = event.time
+        serverTime = connection.clientTimeToServer(event.time)
 
         gameEvent = FullAmmoEvent(serverTime, recvTeam, recvPlayer)
         gameState.addEvent(gameEvent)
@@ -110,7 +107,10 @@ class ServerMsgHandler():
     @h1.handles(proto.PONG)
     def pong(startTime, reply): # pylint: disable=W0612
       now = connection.timeProvider()
-      latency = (startTime - now) / 2 #TODO, do something with this.
+      latency = (now - int(startTime)) / 2
+      connection.setLatency(latency)
+      connection.setClientClockDrift(event.time - (now - latency))
+
       if reply:
         connection.queueMessage(proto.PONG.create(event.time, 0))
     
@@ -126,6 +126,8 @@ class Server(ClientServerConnection):
     self.listeningThread = listeningThread
     self.msgHandler = msgHandler
     self.lastContact = self.timeProvider()
+    self.latency = 0
+    self.clientClockDrift = 0
 
     self.setSocket(sock)
   
@@ -149,6 +151,17 @@ class Server(ClientServerConnection):
 
   def isOutOfContact(self):
     return self.lastContact < self.timeProvider() - self.outOfContactTime
+
+  def setLatency(self, latency):
+    self.latency = latency
+
+  def setClientClockDrift(self, drift):
+    """Set the difference between the client and server clocks.
+       A positive drift means the client is ahead of the server"""
+    self.clientClockDrift = drift
+
+  def clientTimeToServer(self, clientTime):
+    return clientTime
 
 
 class ListeningThread(Thread):
@@ -465,7 +478,6 @@ class ServerGameState(GameState):
         e.apply(self)
 
   def adjustConfidencePoint(self, newConfidencePoint):
-    #TODO - take baseline state, apply and remove uncertainEvents up to the confidence point and assign to baseline
     if (len(self.uncertainEvents) == 0):
       #Nothing to do
       pass

@@ -21,7 +21,6 @@ def test_simple_pong(mocker):
     client_obj = Client(mocker.MagicMock(), timeProvider=lambda: 1516566052)
     mocker.patch.object(client_obj, 'queueMessage', autospec=True)
     assert client_obj.handleMsg("E(123def,1516565852,Pong(1516565652,0))")
-    #TODO: assert that we think the lag is 400/2
 
 def test_reply_pong(mocker):
     "Test handling of PONG message which requests a response"

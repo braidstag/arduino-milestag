@@ -21,8 +21,10 @@ def test_ping(msg_handler, mocker):
 def test_simple_pong(msg_handler, mocker):
     "Test handling of PONG message which doesn't need a response"
     server = mocker.MagicMock()
-    assert msg_handler.handleMsg("E(123def,1516565852,Pong(1516565652,0))", server)
-    #TODO: assert that we think the lag is 400/2
+    server.timeProvider.return_value = 300
+    assert msg_handler.handleMsg("E(123def,1200,Pong(100,0))", server)
+    server.setLatency.assert_called_once_with(100)
+    server.setClientClockDrift.assert_called_once_with(1000)
 
 def test_reply_pong(msg_handler, mocker):
     "Test handling of PONG message which requests a response"

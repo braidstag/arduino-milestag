@@ -1,8 +1,12 @@
+== ops
+permission problem
+RUN lines with line-continuation
+Avahi from server even though it is running in docker?
+
 == comms
 why does server take over 100% CPU? - it is to do with the table code but it is hard to profile as it is all in callbacks :-(
 exit the Read and Write threads cleanly.
 shut down clients
-Better support for clients disconnecting and reconnecting.
 adjust game start etc. for lag.
 client -> server should be Fire... not T/t
 add a protocol verson check into the HELLO
@@ -18,6 +22,7 @@ Ping clients periodically.
 auto fire when you hold down the trigger
 persist team and player across restarts?
 assign (and persist) a name for each gun.
+Hide emitting player changed signals from the GamePlay classes
 
 == system features
 battery checker

@@ -32,7 +32,7 @@ def test_addEvent_latest(game_state, mocker):
     game_state.uncertainEvents = [event1]
     game_state.addEvent(event2)
 
-    event2.apply.assert_called_once_with(game_state)
+    event2.apply.assert_called_once_with(game_state) # pylint:disable=E1101
     assert game_state.uncertainEvents == [event1, event2]
 
 def test_addEvent_outOfOrder(game_state, mocker):
@@ -46,8 +46,8 @@ def test_addEvent_outOfOrder(game_state, mocker):
     oldPlayers = game_state.players
     game_state.addEvent(event1)
     
-    event1.apply.assert_called_once_with(game_state)
-    event2.apply.assert_called_once_with(game_state)
+    event1.apply.assert_called_once_with(game_state) # pylint:disable=E1101
+    event2.apply.assert_called_once_with(game_state) # pylint:disable=E1101
     assert game_state.uncertainEvents == [event1, event2]
     assert id(oldPlayers) != id(game_state.players)
 
@@ -64,8 +64,8 @@ def test_adjustConfidencePoint_latest(game_state, mocker):
     game_state.adjustConfidencePoint(300)
 
     #assert we just baseline onto the latest without re-applying.
-    assert event1.apply.call_count == 0
-    assert event2.apply.call_count == 0
+    assert event1.apply.call_count == 0 # pylint:disable=E1101
+    assert event2.apply.call_count == 0 # pylint:disable=E1101
     assert game_state.uncertainEvents == []
     assert originalPlayers == game_state.baselinePlayers
 
@@ -80,8 +80,8 @@ def test_adjustConfidencePoint_earliest(game_state, mocker):
     game_state.adjustConfidencePoint(50)
 
     #assert we don't do anything.
-    assert event1.apply.call_count == 0
-    assert event2.apply.call_count == 0
+    assert event1.apply.call_count == 0 # pylint:disable=E1101
+    assert event2.apply.call_count == 0 # pylint:disable=E1101
     assert game_state.uncertainEvents == [event1, event2]
 
 def test_adjustConfidencePoint_middle(game_state, mocker):
@@ -94,6 +94,6 @@ def test_adjustConfidencePoint_middle(game_state, mocker):
     game_state.uncertainEvents = [event1, event2]
     game_state.adjustConfidencePoint(150)
 
-    assert event1.apply.call_count == 1 # This is re-applied to find the new baseline
-    assert event2.apply.call_count == 0 # We don't need to re-apply this though
+    assert event1.apply.call_count == 1 # This is re-applied to find the new baseline  # pylint:disable=E1101
+    assert event2.apply.call_count == 0 # We don't need to re-apply this though  # pylint:disable=E1101
     assert game_state.uncertainEvents == [event2]

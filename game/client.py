@@ -51,15 +51,13 @@ class Client(ClientServerConnection):
     
     @h.handles(proto.PING)
     def ping(): # pylint: disable=W0612
-      self.queueMessage(proto.PONG.create(event.time, 1))
+      self.queueMessage(proto.PONG.create(event.time, 0))
           
     @h.handles(proto.PONG)
     def pong(startTime, reply): # pylint: disable=W0612
-      now = self.timeProvider()
-      latency = (int(startTime) - now) / 2 #TODO, do something with this.
       if reply:
         self.queueMessage(proto.PONG.create(event.time, 0))
-    
+
     return h.handle(msgStr)
 
   def _openConnection(self):
