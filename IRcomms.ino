@@ -29,6 +29,9 @@
 #define power_monitor_pin A0
 // I2c uses A4 and A5
 
+//variable to tell the arduino to start constant battery life testing
+int batterytestmode = 0;
+
 // some timings
 unsigned int headerDuration = 2400;
 unsigned int intervalDuration = 600;
