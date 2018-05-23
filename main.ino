@@ -52,6 +52,7 @@ void loop() {
 #ifdef DEBUG_MAIN_LOOP
   timeDebug();
 #endif
+  lifetest();
   checkTrigger();
   checkAltfire();
   signal_send();
@@ -116,4 +117,11 @@ void checkBattery() {
 void shutdown() {
   delay(50000);
   digitalWrite(power_relay_pin, LOW);
+}
+
+void lifetest() {
+	if (batterytestmode == 1) {
+	checkBattery();
+	delay(1000);
+		}
 }

@@ -56,6 +56,10 @@ void checkSerial() {
     else if (numBytesRead > 8 && strncmp("Shutdown", serialReadBuffer, 8) == 0) {
       shutdown();
     }
+//some more for battery testing
+    else if (strncmp("test", serialReadBuffer, 4) == 0) {
+      batterytestmode = 1;
+    }
 //temporary crap code for team select
     else if (numBytesRead > 3 && strncmp("red", serialReadBuffer, 3) == 0) {
       preConnectedTeamId = 1;
