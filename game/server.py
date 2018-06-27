@@ -152,6 +152,9 @@ class Server(ClientServerConnection):
   def isOutOfContact(self):
     return self.lastContact < self.timeProvider() - self.outOfContactTime
 
+  def outOfContactTimeStr(self):
+    return "{:,}s".format((self.timeProvider() - self.lastContact))
+
   def setLatency(self, latency):
     self.latency = latency
 
@@ -291,7 +294,7 @@ class ListeningThread(Thread):
           if key not in self._triggeredOOCWarning:
             self._triggeredOOCWarning[key] = False
 
-          if (not self._triggeredOOCWarning[key]) and server.isOutOfContact():
+          if server.isOutOfContact():
             self._triggeredOOCWarning[key] = True
             (teamID, playerID) = key
             self.listeningThread.gameState.playerOutOfContactUpdated.emit(teamID, playerID, True)

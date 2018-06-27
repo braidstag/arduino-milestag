@@ -283,9 +283,10 @@ class GameControl(QWidget):
 
 
 class PlayerDetailsWidget(QWidget):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameState, listeningThread, parent=None):
     super(PlayerDetailsWidget, self).__init__(parent)
 
+    self.listeningThread = listeningThread
     self.gameState = gameState
     self.gameState.playerAdded.connect(self.playerUpdated)
     self.gameState.playerDeleted.connect(self.playerUpdated)
@@ -320,10 +321,13 @@ class PlayerDetailsWidget(QWidget):
       self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
       self.healthLabel.setText("%d / %d" % (player.health, player.maxHealth))
-      if player.isOutOfContact():
-        self.warningLabel.setText("WARNING: This player has been out\nof contact for at least %s" % player.outOfContactTimeStr)
-      else:
-        self.warningLabel.setText("")
+      try:
+        if self.listeningThread.connections[(player.teamID, player.playerID)].isOutOfContact():
+          self.warningLabel.setText("WARNING: This player has been out\nof contact for at least %s" % self.listeningThread.connections[(player.teamID, player.playerID)].outOfContactTimeStr())
+        else:
+          self.warningLabel.setText("xxx")
+      except KeyError:
+        self.warningLabel.setText("WARNING: This player is disconnected")
     else:
       self.idLabel.setText("None")
       self.ammoLabel.setText("0")
@@ -357,7 +361,7 @@ class TrashDropTarget(QLabel):
 
 
 class PlayersView(QWidget):
-  def __init__(self, model, gameState, parent=None):
+  def __init__(self, model, gameState, listeningThread, parent=None):
     super(PlayersView, self).__init__(parent)
     self.model = model
 
@@ -388,7 +392,7 @@ class PlayersView(QWidget):
 
     tableLayout.addWidget(tableView)
 
-    self.detailWidget = PlayerDetailsWidget(gameState)
+    self.detailWidget = PlayerDetailsWidget(gameState, listeningThread)
     splitter.addWidget(self.detailWidget)
 
     sm = tableView.selectionModel() #This line is needed on windows (and possibly others). I have no idea why!
@@ -398,7 +402,7 @@ class PlayersView(QWidget):
 
 
 class MainWindow(QWidget):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameState, listeningThread, parent=None):
     super(MainWindow, self).__init__(parent)
     self.model = GameStateModel(gameState)
 
@@ -409,7 +413,7 @@ class MainWindow(QWidget):
     gameControl = GameControl(gameState)
     tabs.addTab(gameControl, "&1. Control")
 
-    players = PlayersView(self.model, gameState)
+    players = PlayersView(self.model, gameState, listeningThread)
     tabs.addTab(players, "&2. Players")
 
     self.log = QTextEdit()
