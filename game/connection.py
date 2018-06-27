@@ -152,7 +152,7 @@ class WriteThread(Thread):
     self.timeProvider = timeProvider
 
   def run(self):
-    while not (self.shouldStop and self.queue.empty()):
+    while not self.shouldStop:
       try:
         msg = self.queue.get(True, 5).toStr() + "\n"
       except Queue.Empty:
@@ -171,6 +171,7 @@ class WriteThread(Thread):
         print("Unexpected error:", sys.exc_info()[0])
         raise
         #TODO retry sending the packet 
+    print ("Write Thread exiting")
 
   def stop(self):
     "shut the client server connection down nicely. This blocks until shutdown is finished."

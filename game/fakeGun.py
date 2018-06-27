@@ -103,23 +103,11 @@ class SerialAdapter():
   def close(self):
     pass
 
-class UIThread(Thread):
+def showUI():
   serial = SerialAdapter()
 
-  def run(self):
-    # Create Qt application
-    app = QApplication(sys.argv)
+  global fakeGunWindow
+  fakeGunWindow = MainWindow(serial)
+  fakeGunWindow.show()
 
-    mainWindow = MainWindow(self.serial)
-    mainWindow.show()
-
-    app.exec_()
-
-    self.serial.stop()
-
-
-def showUI():
-  # Enter Qt main loop in a UI Thread
-  uiThread = UIThread()
-  uiThread.start()
-  return uiThread.serial
+  return serial

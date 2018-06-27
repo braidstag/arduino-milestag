@@ -111,7 +111,7 @@ class ServerMsgHandler():
       connection.setLatency(latency)
       connection.setClientClockDrift(event.time - (now - latency))
 
-      if reply:
+      if int(reply):
         connection.queueMessage(proto.PONG.create(event.time, 0))
     
     return h1.handle(msgStr)
@@ -180,9 +180,11 @@ class ListeningThread(Thread):
     self.unestablishedConnections = set()
     self.connectedClients = {}
 
+    print ("Starting server on ", ClientServer.SERVER, ":", ClientServer.PORT)
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #self.serversocket.bind((socket.gethostname(), ClientServer.PORT))
     self.serversocket.bind((ClientServer.SERVER, ClientServer.PORT))
+    #self.serversocket.bind(("127.0.0.1", ClientServer.PORT))
     self.serversocket.settimeout(1)
     self.serversocket.listen(5)
     self.shouldStop = False
@@ -199,6 +201,7 @@ class ListeningThread(Thread):
 
       try:
         (clientsocket, dummy_address) = self.serversocket.accept()
+        clientsocket.setblocking(1);
         self.unestablishedConnections.add(Server(clientsocket, self, self.msgHandler))
       except KeyboardInterrupt:
         break
@@ -254,15 +257,12 @@ class ListeningThread(Thread):
         del self.connectedClients[key]
         break
 
-  def lookupPlayerAndTeam(self, server):
-    for key in self.connections:
-      if self.connections[key] == server:
-        return key
-
   def considerMovingConfidencePoint(self, changedTime):
     """Check if the message we just recieved at the given time moves the confidence point
      and, if so. Tell the GameState about it"""
-    earliestLastContact = min([x.lastContact for x in self.connections])
+    if (len(self.connections) == 0):
+      return
+    earliestLastContact = min([x.lastContact for x in self.connections.values()])
     if (earliestLastContact == changedTime):
       #This has bumped up the confidence point
       self.gameState.adjustConfidencePoint(earliestLastContact)
@@ -287,19 +287,19 @@ class ListeningThread(Thread):
       while not self.shouldStop:
         time.sleep(3)
 
-        for server in self.connections:
-          if server not in self._triggeredOOCWarning:
-            self._triggeredOOCWarning[server] = False
+        for key, server in self.connections.items():
+          if key not in self._triggeredOOCWarning:
+            self._triggeredOOCWarning[key] = False
 
-          if (not self._triggeredOOCWarning[server]) and server.isOutOfContact():
-            self._triggeredOOCWarning[server] = True
-            (teamID, playerID) = self.listeningThread.lookupPlayerAndTeam(server)
-            self.gameState.playerOutOfContactUpdated.emit(teamID, playerID, True)
+          if (not self._triggeredOOCWarning[key]) and server.isOutOfContact():
+            self._triggeredOOCWarning[key] = True
+            (teamID, playerID) = key
+            self.listeningThread.gameState.playerOutOfContactUpdated.emit(teamID, playerID, True)
 
-          if self._triggeredOOCWarning[server] and (not server.isOutOfContact()):
-            (teamID, playerID) = self.listeningThread.lookupPlayerAndTeam(server)
-            self._triggeredOOCWarning[server] = False
-            self.gameState.playerOutOfContactUpdated.emit(teamID, playerID, False)
+          if self._triggeredOOCWarning[key] and (not server.isOutOfContact()):
+            (teamID, playerID) = key
+            self._triggeredOOCWarning[key] = False
+            self.listeningThread.gameState.playerOutOfContactUpdated.emit(teamID, playerID, False)
 
 
 #initial game settings, these are told to the clients and can be changed in the UI. 
@@ -524,7 +524,7 @@ if __name__ == '__main__':
 
   # Create Qt application
   app = QApplication(sys.argv)
-  mainWindow = MainWindow(gameState)
+  mainWindow = MainWindow(gameState, main)
   mainWindow.show()
 
   # Enter Qt main loop

@@ -6,10 +6,15 @@ import argparse
 import socket
 import sys
 import time
+from threading import Thread
 
 from core import Player, StandardGameLogic, ClientServer, GameState
 from connection import ClientServerConnection
 import proto
+
+from PySide.QtCore import *
+from PySide.QtGui import *
+
 
 class Client(ClientServerConnection):
   def __init__(self, main, *args, **kwargs):
@@ -55,7 +60,7 @@ class Client(ClientServerConnection):
           
     @h.handles(proto.PONG)
     def pong(startTime, reply): # pylint: disable=W0612
-      if reply:
+      if int(reply):
         self.queueMessage(proto.PONG.create(event.time, 0))
 
     return h.handle(msgStr)
@@ -87,9 +92,11 @@ class ArgumentError(Exception):
   pass
 
 
-class Main():
+class Main(Thread):
 
   def __init__(self):
+    super(Main, self).__init__(group=None)
+
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
     parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected')
     #parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
@@ -140,7 +147,7 @@ class Main():
     print("-a>", repr(line + "\n"))
     sys.stdout.flush()
 
-  def eventLoop(self):
+  def run(self):
     for line in self.serial:
       line = line.rstrip()
       print("<a-", repr(line))
@@ -170,7 +177,7 @@ class Main():
       if (self.player):
         msg = proto.RECV.create(self.player.teamID, self.player.playerID, line)
       else:
-        msg = proto.RECV.create('', '', line)
+        msg = proto.RECV.create(0, 0, line)
       self._sendToServer(msg)
 
   def _stringToPlayerID(self, inp):
@@ -193,15 +200,17 @@ class Main():
       raise RuntimeError("incorrect ack to ClientConnect(): %s" % (line))
 
   def shutdown(self):
+    #TODO: is this the right message for this?
     self.serialWrite(proto.CLIENTCONNECT.create())
 
 if __name__ == "__main__":
+  # Create Qt application
+  app = QApplication(sys.argv)
+
   main = Main()
-  try:
-    print(main.player)
-  except:
-    pass
-  main.eventLoop()
+  main.start()
+
+  app.exec_()
   print(main.player)
   main.serverConnection.stop()
   main.serial.close()

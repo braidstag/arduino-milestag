@@ -13,7 +13,7 @@ def test_ping(mocker):
     client_obj = Client(mocker.MagicMock())
     mocker.patch.object(client_obj, 'queueMessage', autospec=True)
     assert client_obj.handleMsg("E(123def,1516565652,Ping())")
-    client_obj.queueMessage.assert_called_once_with("Pong(1516565652,1)")
+    client_obj.queueMessage.assert_called_once_with("Pong(1516565652,0)")
 
 def test_simple_pong(mocker):
     "Test handling of PONG message which doesn't need a response"
