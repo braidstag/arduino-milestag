@@ -12,6 +12,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 
 import proto
+import client
 
 class TriggerButton(QPushButton):
   def __init__(self, serial, label, triggerDown, triggerUp, parent=None):
@@ -103,11 +104,25 @@ class SerialAdapter():
   def close(self):
     pass
 
-def showUI():
+class MainClientThread(Thread):
+  def __init__(self, serial):
+    super(MainClientThread, self).__init__(group=None)
+    self.serial = serial
+
+  def run(self):
+    main = client.Main(self.serial)
+    main.eventLoop()
+
+if __name__ == "__main__":
+  #load main in another thread, start the Qt event loop in this one.
+  app = QApplication([])
+
   serial = SerialAdapter()
 
-  global fakeGunWindow
   fakeGunWindow = MainWindow(serial)
   fakeGunWindow.show()
 
-  return serial
+  t = MainClientThread(serial)
+  t.start()
+
+  app.exec_()

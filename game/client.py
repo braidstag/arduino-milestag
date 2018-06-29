@@ -12,9 +12,6 @@ from core import Player, StandardGameLogic, ClientServer, GameState
 from connection import ClientServerConnection
 import proto
 
-from PySide.QtCore import *
-from PySide.QtGui import *
-
 
 class Client(ClientServerConnection):
   def __init__(self, main, *args, **kwargs):
@@ -92,16 +89,11 @@ class ArgumentError(Exception):
   pass
 
 
-class Main(Thread):
+class Main():
 
-  def __init__(self):
-    super(Main, self).__init__(group=None)
-
+  def __init__(self, serial = None):
     parser = argparse.ArgumentParser(description='BraidsTag gun logic.')
     parser.add_argument('-s', '--serial', type=str, help='serial device to which the arduino is connected')
-    #parser.add_argument('-p', '--playerID', type=self._stringToPlayerID, help='player id', default=1)
-    #parser.add_argument('-t', '--teamID', type=int, choices=xrange(1, 8), help='team id', default=1)
-    parser.add_argument('-d', '--debugGun', help='use the debuggin gun UI', default=False, action='store_true')
 
     self.args = parser.parse_args()
 
@@ -110,13 +102,12 @@ class Main(Thread):
     self.serverConnection = Client(self)
     self._sendToServer(proto.HELLO.create())
 
-    if self.args.debugGun:
-      import fakeGun
-      self.serial = fakeGun.showUI()
+    if serial:
+      self.serial = serial
       self.responsiveSerial = True
     else:
       if not self.args.serial:
-        raise ArgumentError("You must specify -s if you do not specify -d")
+        raise ArgumentError("You must specify -s if you do not start in fakeGun mode")
 
       try:
         import serial
@@ -147,7 +138,7 @@ class Main(Thread):
     print("-a>", repr(line + "\n"))
     sys.stdout.flush()
 
-  def run(self):
+  def eventLoop(self):
     for line in self.serial:
       line = line.rstrip()
       print("<a-", repr(line))
@@ -180,12 +171,6 @@ class Main(Thread):
         msg = proto.RECV.create(0, 0, line)
       self._sendToServer(msg)
 
-  def _stringToPlayerID(self, inp):
-    out = int(inp)
-    if out < 1 or out > 32:
-      raise argparse.ArgumentTypeError("playerId must be between 1 and 32.")
-    return out
-
   def _sendToServer(self, msg):
     "queue this packet to be sent to the server"
     self.serverConnection.queueMessage(msg)
@@ -204,13 +189,9 @@ class Main(Thread):
     self.serialWrite(proto.CLIENTCONNECT.create())
 
 if __name__ == "__main__":
-  # Create Qt application
-  app = QApplication(sys.argv)
-
   main = Main()
-  main.start()
+  main.eventLoop()
 
-  app.exec_()
   print(main.player)
   main.serverConnection.stop()
   main.serial.close()
