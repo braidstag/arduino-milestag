@@ -6,7 +6,7 @@ import time
 import os
 from PySide.QtCore import Signal, QObject
 
-class Player(QObject):
+class Player():
 
   def __init__(self, teamID, playerID):
     self.teamID = int(teamID)
