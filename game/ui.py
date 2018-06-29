@@ -42,7 +42,7 @@ class GameStateModel(QAbstractTableModel):
     if not index.isValid():
       return None
 
-    if role == Qt.DisplayRole:
+    if role == Qt.DisplayRole or role == Qt.EditRole:
       indexTuple = (index.column() + 1, index.row() + 1)
       if indexTuple not in self.gameState.players:
         return None
@@ -82,7 +82,7 @@ class GameStateModel(QAbstractTableModel):
     if value == None:
       self.gameState.deletePlayer(index.column() + 1, index.row() + 1)
       return True
-    
+
     #move all the other players down
     lowestBlank = self.gameState.largestTeam
 
@@ -100,10 +100,14 @@ class GameStateModel(QAbstractTableModel):
     return True
 
   def flags(self, index):
-    return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+    indexTuple = (index.column() + 1, index.row() + 1)
+    if index.isValid() and indexTuple in self.gameState.players:
+      return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+    else:
+      return Qt.ItemIsEnabled | Qt.ItemIsDropEnabled
 
   def supportedDropActions(self):
-     return Qt.CopyAction | Qt.MoveAction
+     return Qt.MoveAction
 
 
 class GameStartToggleButton(QPushButton):
@@ -325,7 +329,7 @@ class PlayerDetailsWidget(QWidget):
         if self.listeningThread.connections[(player.teamID, player.playerID)].isOutOfContact():
           self.warningLabel.setText("WARNING: This player has been out\nof contact for at least %s" % self.listeningThread.connections[(player.teamID, player.playerID)].outOfContactTimeStr())
         else:
-          self.warningLabel.setText("xxx")
+          self.warningLabel.setText("")
       except KeyError:
         self.warningLabel.setText("WARNING: This player is disconnected")
     else:
