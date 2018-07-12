@@ -1,11 +1,8 @@
 Notes from first revision PCB assembly
 
 1. Wirewound resistors are proving to be too big - change the part in the shopping list to include a smaller form factor resistor
-2. Capacitors on charger are also too large - can these caps be bought smaller or does PCB need resizing?
 3. Receiver board is laid out incorrectly - this can be fixed with a cut trace and a jumper for now, but board needs revising.
 4. Add a hot 5v output to the board for development
-5. RJ45 connectors short pins 4+5 together - find out why and can this be fixed safely?
-6. RJ45 connectors are too large - charger PCB needs enlarging slightly to accommodate both ports. 
 7. Do we flip the IR receiver so that it can be mounted on the underside of its PCB? This might increase its range.
 8. We're already seeing some issues with the solid core wire used in this revision. Should use stranded wire in future. - While this may be the case, there are similar problems with using stranded wire. Crimping process may need to be improved.
 9. Consider ways to ensure the raspi GPIO connector can only be connected correctly.
@@ -20,26 +17,24 @@ Issues and problems
 
 PCB Production version 1 has been delivered!
 
-Moved charging circuit to its own board. This allows us to use one charger for more than one gun.
 
 The PCB has been laid out successfully for the first time! The big 26 pin connector had to be replaced with smaller, modular headers. Thanks to I. Stanley for offering to lay out PCB, but we may not need his help in the end. Still to do:
 
 	Some grounding issues remain - use resistors on arduino pins to protect them? - Out of laziness i decided not to bother with protection. Following the traces, both high power devices drain to ground without going through the arduino - we should be ok.
-	
+
 
 RGBLEDs even in low power packages seem to be common cathode. PCB has been retraced.
 
 Add 5v out to PCB
 
-How far can signals travel on untwisted pair? Loading rj45 ports onto PCB is extra hassle we don't need. - Decision made, risk taken.
 
 Make the IR comms more selective about what is and isn’t a real packet
 
-After moving relay - change of plan: Arduino to be powered by VIN pin taking 12 (count em - 12) v in. On board regulator takes this to 5v in a much more efficient way than anything else tried so far, and this option can also be traved on the PCB to save tricky wiring. 
+After moving relay - change of plan: Arduino to be powered by VIN pin taking 12 (count em - 12) v in. On board regulator takes this to 5v in a much more efficient way than anything else tried so far, and this option can also be traved on the PCB to save tricky wiring.
 For peace of mind, we may want to consider stripping the 5v line in the USB cable, but at the moment, there's no downside to leaving it in (yet).
 Above setup makes arduino and RPI independant of each other for power, although arduino will be responsible for keeping the relay closed.
 
-Powering the RPi over GPIO may be more efficient than using the USB port - this connection is behind the on board protection circuit, though it has been suspected that this circuit causes a voltage drop. Powering by GPIO may increase our battery life (we must be sure to cut the power before the voltage dips too low to avoid overcurrent) as the voltage drop will not be as significant. It will also be a more secure and lower form factor connection than the microUSB. 
+Powering the RPi over GPIO may be more efficient than using the USB port - this connection is behind the on board protection circuit, though it has been suspected that this circuit causes a voltage drop. Powering by GPIO may increase our battery life (we must be sure to cut the power before the voltage dips too low to avoid overcurrent) as the voltage drop will not be as significant. It will also be a more secure and lower form factor connection than the microUSB.
 
 BATTERY TESTING - SInce most of the electronics are now present, some battery life testing can be done. Starting from an ARBLV (arduino read battery level - vin) of 4.8v. Until a method of timestamping the serial communications is found the time will have to be monitored manually, but the last serial communication received can be taken as a "Battery Failure Level". Tests use the named branch of the repo.
 	24 Minutes into test - 		4.56v
@@ -66,7 +61,7 @@ Current plan is that this will be a single package RGBLED (using 3 diff LEDs wil
 Possibility of making the switching for this electronic to save using our last arduino pin. - We can use Apins instead, leaving this trigger controllable for 'lights out' games.
 
 Muzzle Flash
-Current plan - another RGBLED mounted in such a way that it either: Has no way of focusing down the tube to produce a beam OR illuminates some other part of the gun to indicate that it is being fired. 
+Current plan - another RGBLED mounted in such a way that it either: Has no way of focusing down the tube to produce a beam OR illuminates some other part of the gun to indicate that it is being fired.
 This will be in a colour of our choice.
 
 
@@ -91,14 +86,14 @@ Momentary sighting laser
 Ensure it cannot be held on for safety reasons
 
 Battery level monitoring / Warning
-DONE! 
+DONE!
 Due to voltage difference in current battery pack, each 1.4v AA cell can drop to approx 50% of its target voltage (not capacity) before any systems are affected. Since the batteries should register about 0.8v when completely flat, this should give us a decent resolution/warning time on the charge level.
 Currently the circuit to achieve this drains a small current to ground over time, even when the gun is off. Moving the relay to the other side of the UBEC should solve this.
 Only on request to avoid wasting time on the arduino?
 Needs voltage divider to drop vdc down to readable level
 
 Wireless control
-DONE! Standard 8 quid dongle works well. 
+DONE! Standard 8 quid dongle works well.
 Pi requires some fiddling to automatically use it.
 Do we need a smaller form factor adapter?
 
