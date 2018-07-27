@@ -1,16 +1,16 @@
 "Test how the client handles messages from the server"
 
 import pytest
-from server import ServerMsgHandler
+from msgHandler import ServerMsgHandler
 
 # pylint:disable=redefined-outer-name
 
 @pytest.fixture
 def msg_handler(mocker):
     "Fixture for a message handler being tested"
-    game_state = mocker.MagicMock()
+    game_logic = mocker.MagicMock()
     listening_thread = mocker.MagicMock()
-    return ServerMsgHandler(listening_thread, game_state)
+    return ServerMsgHandler(listening_thread, game_logic)
 
 def test_ping(msg_handler, mocker):
     "Test handling of PING message"
@@ -18,13 +18,14 @@ def test_ping(msg_handler, mocker):
     assert msg_handler.handleMsg("E(123def,1516565652,Ping())", server)
     server.queueMessage.assert_called_once_with("Pong(1516565652,1)")
 
-def test_simple_pong(msg_handler, mocker):
+def test_simple_pong(msg_handler, monkeypatch, mocker):
     "Test handling of PONG message which doesn't need a response"
     server = mocker.MagicMock()
-    server.timeProvider.return_value = 300
+    monkeypatch.setattr('time.time', lambda:300)
     assert msg_handler.handleMsg("E(123def,1200,Pong(100,0))", server)
     server.setLatency.assert_called_once_with(100)
     server.setClientClockDrift.assert_called_once_with(1000)
+    assert server.queueMessage.call_count == 0
 
 def test_reply_pong(msg_handler, mocker):
     "Test handling of PONG message which requests a response"
@@ -35,7 +36,9 @@ def test_reply_pong(msg_handler, mocker):
 def test_hello_new(msg_handler, mocker):
     "Test handling of HELLO message from new client"
     server = mocker.MagicMock()
+    msg_handler.listeningThread.isConnected.return_value = None
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
+    msg_handler.gameLogic.gameState.createNewPlayer.assert_called_once_with()
     server.queueMessage.assert_has_calls([
         mocker.call("TeamPlayer(1,1)"),
         mocker.call("StartGame(1)")
@@ -45,8 +48,8 @@ def test_hello_existing(msg_handler, mocker):
     "Test handling of HELLO message from existing client"
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = (3, 4)
-    msg_handler.gameState.getOrCreatePlayer().teamID = 3
-    msg_handler.gameState.getOrCreatePlayer().playerID = 4
+    msg_handler.gameLogic.gameState.getOrCreatePlayer().teamID = 3
+    msg_handler.gameLogic.gameState.getOrCreatePlayer().playerID = 4
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
     server.queueMessage.assert_has_calls([
         mocker.call("TeamPlayer(3,4)"),
@@ -56,6 +59,36 @@ def test_hello_existing(msg_handler, mocker):
 def test_hello_unstarted(msg_handler, mocker):
     "Test handling of HELLO message from new client"
     server = mocker.MagicMock()
-    msg_handler.gameState.isGameStarted.return_value = False
+    msg_handler.gameLogic.gameState.isGameStarted.return_value = False
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
     server.queueMessage.assert_called_once_with("TeamPlayer(1,1)")
+
+def test_recv_hit(msg_handler, mocker):
+    "Test handling of HELLO message from new client"
+    server = mocker.MagicMock()
+    server.clientTimeToServer.return_value = 200
+
+    assert msg_handler.handleMsg("E(123def,100,Recv(1,1,H2,1,3))", server)
+
+    server.clientTimeToServer.assert_called_once_with(100)
+    msg_handler.gameLogic.hit.assert_called_once_with(200, 1, 1, 2, 1, 3)
+
+def test_recv_trigger(msg_handler, mocker):
+    "Test handling of HELLO message from new client"
+    server = mocker.MagicMock()
+    server.clientTimeToServer.return_value = 200
+
+    assert msg_handler.handleMsg("E(123def,100,Recv(1,1,T))", server)
+
+    server.clientTimeToServer.assert_called_once_with(100)
+    msg_handler.gameLogic.trigger.assert_called_once_with(200, 1, 1)
+
+def test_recv_triggerRelease(msg_handler, mocker):
+    "Test handling of HELLO message from new client"
+    server = mocker.MagicMock()
+    server.clientTimeToServer.return_value = 200
+
+    assert msg_handler.handleMsg("E(123def,100,Recv(1,1,t))", server)
+
+    server.clientTimeToServer.assert_called_once_with(100)
+    msg_handler.gameLogic.triggerRelease.assert_called_once_with(200, 1, 1)

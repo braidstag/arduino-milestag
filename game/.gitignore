@@ -1,1 +1,4 @@
-*.pyc
+.coverage
+.pytest_cache
+.vscode/.ropeproject
+htmlcov

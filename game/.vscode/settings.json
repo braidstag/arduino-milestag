@@ -1,0 +1,17 @@
+{
+    "python.pythonPath": "C:\\Python27\\python.exe",
+    "python.unitTest.pyTestArgs": [
+        "--no-cov", //for debugging
+        "--cov-report",
+        "html",
+        "--cov=.",
+        "."
+    ],
+    "python.unitTest.unittestEnabled": false,
+    "python.unitTest.nosetestsEnabled": false,
+    "python.unitTest.pyTestEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "files.exclude": {
+        "**/*.pyc": true
+    }
+}

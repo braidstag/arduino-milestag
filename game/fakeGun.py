@@ -8,8 +8,12 @@ from threading import Thread, Lock
 from time import time
 import Queue
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PySide import QtGui
+QPushButton = QtGui.QPushButton
+QWidget = QtGui.QWidget
+QVBoxLayout = QtGui.QVBoxLayout
+QHBoxLayout = QtGui.QHBoxLayout
+QApplication = QtGui.QApplication
 
 import proto
 import client
@@ -110,8 +114,8 @@ class MainClientThread(Thread):
     self.serial = serial
 
   def run(self):
-    main = client.Main(self.serial)
-    main.eventLoop()
+    main = client.Client(self.serial)
+    main.serialReadLoop()
 
 if __name__ == "__main__":
   #load main in another thread, start the Qt event loop in this one.

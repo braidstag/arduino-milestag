@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Client",
+            "type": "pythonExperimental",
+            "request": "launch",
+            "program": "${workspaceFolder}\\fakeGun.py",
+            "console": "integratedTerminal",
+            "env": {
+                "SERVER": "127.0.0.1"
+            }
+        },
+
+        {
+            "name": "Server",
+            "type": "pythonExperimental",
+            "request": "launch",
+            "program": "${workspaceFolder}\\server.py",
+            "console": "integratedTerminal",
+            "env": {
+                "SERVER": "127.0.0.1"
+            }
+        }
+    ],
+    "compounds": []
+}

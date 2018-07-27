@@ -1,52 +1,64 @@
 #!/usr/bin/python
 
-import argparse
 import re
-import socket
-import sys
-from threading import Thread, Lock
 from time import time
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+#from PySide.QtCore import Qt #Why does pylint not like this?!
+from PySide import QtCore
+Qt = QtCore.Qt
+QAbstractTableModel = QtCore.QAbstractTableModel
+QModelIndex = QtCore.QModelIndex
+QPoint = QtCore.QPoint
+QSize = QtCore.QSize
+QTimer = QtCore.QTimer
+Signal = QtCore.Signal
+
+#from PySide.QtGui import QAbstractTableModel, QModelIndex, QPushButton, QLabel, QTimer, QStyledItemDelegate, QWidget, QVBoxLayout, QSplitter, QFontMetrics, QPoint
+from PySide import QtGui
+
+QAbstractItemView = QtGui.QAbstractItemView
+QFontMetrics = QtGui.QFontMetrics
+QHBoxLayout = QtGui.QHBoxLayout
+QLabel = QtGui.QLabel
+QPushButton = QtGui.QPushButton
+QSlider = QtGui.QSlider
+QSplitter = QtGui.QSplitter
+QStyledItemDelegate = QtGui.QStyledItemDelegate
+QTableView = QtGui.QTableView
+QTabWidget = QtGui.QTabWidget
+QTextEdit = QtGui.QTextEdit
+QVBoxLayout = QtGui.QVBoxLayout
+QWidget = QtGui.QWidget
 
 class GameStateModel(QAbstractTableModel):
   """
-  A Model which represents the players' gameState. The team is the column and the player is the row.
+  A Model which represents the current gameState. The team is the column and the player is the row.
   """
 
   def __init__(self, gameState):
     super(GameStateModel, self).__init__()
     self.gameState = gameState
-    self.gameState.playerUpdated.connect(self.playerChanged)
-    self.gameState.playerAdded.connect(self.playerChanged)
-    self.gameState.playerDeleted.connect(self.playerChanged)
 
-    self.gameState.playerMoved.connect(self.playerMoved)
-    
-    self.gameState.playerOutOfContactUpdated.connect(self.playerChanged)
-
-    self.gameState.largestTeamChanged.connect(self.playerLayoutChanged)
-    self.gameState.teamCountChanged.connect(self.playerLayoutChanged)
+    self.gameState.addListener(currentStateChanged = self.gameStateChanged)
 
   #
   # Getters
   #
   def rowCount(self, index):
-    return self.gameState.largestTeam + 1
+    return self.gameState.withCurrGameState(lambda s: s.largestTeam + 1)
 
   def columnCount(self, index):
-    return self.gameState.teamCount + 1
+    return self.gameState.withCurrGameState(lambda s: s.teamCount + 1)
 
-  def data(self, index, role = Qt.DisplayRole):
+  def data(self, index, role = QtCore.Qt.DisplayRole):
     if not index.isValid():
       return None
 
     if role == Qt.DisplayRole or role == Qt.EditRole:
       indexTuple = (index.column() + 1, index.row() + 1)
-      if indexTuple not in self.gameState.players:
+      if indexTuple not in self.gameState.withCurrGameState(lambda s: s.players.keys()):
         return None
-      return self.gameState.players[indexTuple]
+      return self.gameState.withCurrGameState(lambda s: s.players[indexTuple])
 
     return None
 
@@ -59,17 +71,8 @@ class GameStateModel(QAbstractTableModel):
 
     return None
 
-  #
-  # Slots
-  #
-  def playerChanged(self, teamID, playerID):
-    self.dataChanged.emit(self.index(playerID - 1, teamID - 1, QModelIndex()), self.index(playerID - 1, teamID - 1, QModelIndex()))
-
-  def playerMoved(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
-    self.playerChanged(srcTeamID, srcPlayerID)
-    self.playerChanged(dstTeamID, dstPlayerID)
-
-  def playerLayoutChanged(self, _):
+  def gameStateChanged(self):
+    self.dataChanged.emit(self.index(0, 0, QModelIndex()), self.index(self.gameState.withCurrGameState(lambda s: s.largestTeam), self.gameState.withCurrGameState(lambda s: s.teamCount), QModelIndex()))
     self.layoutChanged.emit()
 
   #
@@ -80,28 +83,34 @@ class GameStateModel(QAbstractTableModel):
       return False
 
     if value == None:
+      #TODO: do we call this on gameState or listeningThread
       self.gameState.deletePlayer(index.column() + 1, index.row() + 1)
       return True
 
     #move all the other players down
-    lowestBlank = self.gameState.largestTeam
+    def findLowestBlank(currGameState):
+      lowestBlank = currGameState.largestTeam
 
-    for playerID in range(index.row(), self.gameState.largestTeam + 1):
-      if (index.column() + 1, playerID + 1) not in self.gameState.players:
-        lowestBlank = playerID
-        break
+      for playerID in range(index.row(), currGameState.largestTeam + 1):
+        if (index.column() + 1, playerID + 1) not in currGameState.players:
+          lowestBlank = playerID
+          break
+      return lowestBlank
+    lowestBlank = self.gameState.withCurrGameState(findLowestBlank)
 
     for playerID in range(lowestBlank, index.row(), -1):
+      #TODO: do we call this on gameState or listeningThread
       self.gameState.movePlayer(index.column() + 1, playerID, index.column() + 1, playerID + 1)
 
     oldTeamID = value.teamID
     oldPlayerID = value.playerID
+    #TODO: do we call this on gameState or listeningThread
     self.gameState.movePlayer(oldTeamID, oldPlayerID, index.column() + 1, index.row() + 1)
     return True
 
   def flags(self, index):
     indexTuple = (index.column() + 1, index.row() + 1)
-    if index.isValid() and indexTuple in self.gameState.players:
+    if index.isValid() and indexTuple in self.gameState.withCurrGameState(lambda s: s.players.keys()):
       return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
     else:
       return Qt.ItemIsEnabled | Qt.ItemIsDropEnabled
@@ -111,18 +120,18 @@ class GameStateModel(QAbstractTableModel):
 
 
 class GameStartToggleButton(QPushButton):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameLogic, gameState, parent=None):
     super(GameStartToggleButton, self).__init__("Start Game", parent)
+    self.gameLogic = gameLogic
     self.gameState = gameState
     self.clicked.connect(self.toggleGameStarted)
-    self.gameState.gameStarted.connect(self.gameStarted)
-    self.gameState.gameStopped.connect(self.gameStopped)
+    self.gameState.addListener(gameStarted = self.gameStarted, gameStopped = self.gameStopped)
 
   def toggleGameStarted(self):
     if not self.gameState.isGameStarted():
-      self.gameState.startGame()
+      self.gameLogic.startGame(time())
     else:
-      self.gameState.stopGame()
+      self.gameLogic.stopGame(time())
 
   def gameStarted(self):
     self.setText("End Game")
@@ -135,37 +144,48 @@ class GameTimeLabel(QLabel):
   def __init__(self, gameState, parent=None):
     super(GameTimeLabel, self).__init__("--:--", parent)
     self.gameState = gameState
-    self.gameState.gameStarted.connect(self.gameStarted)
-    self.gameState.gameStopped.connect(self.gameStopped)
+    self.gameState.addListener(gameStarted = self.gameStarted, gameStopped = self.gameStopped)
     self.gameTimeLabelTimer = None
+    self.startTimer.connect(self.startTimerSlot)
+    self.stopTimer.connect(self.stopTimerSlot)
 
   def gameStarted(self):
-    self.gameTimeLabelTimer = QTimer()
-    self.gameTimeLabelTimer.timeout.connect(self.updateGameTimeLabel)
-    self.gameTimeLabelTimer.start(1000)
+    self.startTimer.emit()
     self.updateGameTimeLabel()
 
   def gameStopped(self):
     self.setText("--:--")
+    self.stopTimer.emit()
+
+  def updateGameTimeLabel(self):
+    toGo = max(0, self.gameState.gameTimeRemaining())
+    self.setText("%02d:%02d" % ((toGo // 60),  (toGo % 60)))
+
+  #Make sure timers are started and stopped on the same thread.
+  startTimer = Signal()
+  stopTimer = Signal()
+
+  def stopTimerSlot(self):
     if self.gameTimeLabelTimer:
       self.gameTimeLabelTimer.stop()
     self.gameTimeLabelTimer = None
 
-  def updateGameTimeLabel(self):
-    toGo = max(0, self.gameState.gameEndTime - time())
-    self.setText("%02d:%02d" % ((toGo // 60),  (toGo % 60)))
+  def startTimerSlot(self):
+    self.gameTimeLabelTimer = QTimer()
+    self.gameTimeLabelTimer.timeout.connect(self.updateGameTimeLabel)
+    self.gameTimeLabelTimer.start(1000)
 
 
 class GameResetButton(QPushButton):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameLogic, gameState, parent=None):
     super(GameResetButton, self).__init__("Reset", parent)
     self.gameState = gameState
+    self.gameLogic = gameLogic
     self.clicked.connect(self.reset)
-    self.gameState.gameStarted.connect(self.gameStarted)
-    self.gameState.gameStopped.connect(self.gameStopped)
+    self.gameState.addListener(gameStarted = self.gameStarted, gameStopped = self.gameStopped)
 
   def reset(self):
-    self.gameState.resetGame()
+    self.gameLogic.resetGame(time())
 
   def gameStarted(self):
     self.setEnabled(False)
@@ -175,14 +195,19 @@ class GameResetButton(QPushButton):
 
 
 class PlayerDelegate(QStyledItemDelegate):
+  def __init__(self, listeningThread):
+    super(PlayerDelegate, self).__init__()
+    self.listeningThread = listeningThread
+
   def paint(self, painter, option, index):
-    if index.data() == None:
+    player = index.data()
+    if player == None:
       QStyledItemDelegate.paint(self, painter, option, index)
     else:
       painter.save()
       painter.setClipRect(option.rect)
 
-      ammoStr = str(index.data().ammo)
+      ammoStr = str(player.ammo)
       painter.drawText(option.rect, ammoStr)
 
       painter.translate(option.rect.topLeft())
@@ -190,14 +215,15 @@ class PlayerDelegate(QStyledItemDelegate):
       ammoWidth = QFontMetrics(option.font).width("000") # allow space for 3 big digits
       ammoHeight = QFontMetrics(option.font).height()
       painter.setBrush(Qt.SolidPattern)
-      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * index.data().health / index.data().maxHealth, ammoHeight - 4, 5, 5)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * player.health / player.maxHealth, ammoHeight - 4, 5, 5)
       painter.setBrush(Qt.NoBrush)
       painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
 
-      if index.data().isOutOfContact():
-        triangleStart = ammoWidth + 5 + 100 + 5
-        painter.drawConvexPolygon([QPoint(triangleStart, ammoHeight - 4), QPoint(triangleStart + (ammoHeight // 2), 2), QPoint(triangleStart + ammoHeight, ammoHeight - 4),])
-        painter.drawText(triangleStart + (ammoHeight // 2) - 2, ammoHeight - 4, "!")
+      # TODO
+      # if self.listeningThread.connections[(player.teamID, player.playerID)].isOutOfContact():
+      #   triangleStart = ammoWidth + 5 + 100 + 5
+      #   painter.drawConvexPolygon([QPoint(triangleStart, ammoHeight - 4), QPoint(triangleStart + (ammoHeight // 2), 2), QPoint(triangleStart + ammoHeight, ammoHeight - 4),])
+      #   painter.drawText(triangleStart + (ammoHeight // 2) - 2, ammoHeight - 4, "!")
 
       painter.restore()
 
@@ -238,7 +264,7 @@ class TeamCountSlider(LabelledSlider):
     self.slider.setPageStep(1)
     self.slider.setTickPosition(QSlider.TicksAbove)
     self.slider.setTickInterval(1)
-    self.slider.setValue(gameState.targetTeamCount)
+    self.slider.setValue(gameState.withCurrGameState(lambda s: s.targetTeamCount))
     self.slider.valueChanged.connect(gameState.setTargetTeamCount)
 
 
@@ -252,14 +278,14 @@ class GameTimeSlider(LabelledSlider):
     self.slider.setPageStep(300) # 5 minutes
     self.slider.setTickPosition(QSlider.TicksAbove)
     self.slider.setTickInterval(300)
-    self.slider.setValue(gameState.gameTime)
+    self.slider.setValue(gameState.withCurrGameState(lambda s: s.gameTime))
     self.slider.valueChanged.connect(gameState.setGameTime)
 
   def formatValue(self, value):
     return "%02d:%02d" % ((value // 60),  (value % 60))
 
 class GameControl(QWidget):
-  def __init__(self, gameState, parent=None):
+  def __init__(self, gameLogic, gameState, parent=None):
     super(GameControl, self).__init__(parent)
     self.gameState = gameState
 
@@ -269,10 +295,10 @@ class GameControl(QWidget):
     gameTimeLabel = GameTimeLabel(gameState)
     hLayout.addWidget(gameTimeLabel)
 
-    gameStart = GameStartToggleButton(gameState)
+    gameStart = GameStartToggleButton(gameLogic, gameState)
     hLayout.addWidget(gameStart)
 
-    gameReset = GameResetButton(gameState)
+    gameReset = GameResetButton(gameLogic, gameState)
     hLayout.addWidget(gameReset)
 
     layout.addLayout(hLayout)
@@ -292,11 +318,7 @@ class PlayerDetailsWidget(QWidget):
 
     self.listeningThread = listeningThread
     self.gameState = gameState
-    self.gameState.playerAdded.connect(self.playerUpdated)
-    self.gameState.playerDeleted.connect(self.playerUpdated)
-    self.gameState.playerUpdated.connect(self.playerUpdated)
-    self.gameState.playerMoved.connect(self.playerMoved)
-    self.gameState.playerOutOfContactUpdated.connect(self.playerUpdated)
+    self.gameState.addListener(self.gameStateChanged)
 
     layout = QVBoxLayout()
 
@@ -320,7 +342,7 @@ class PlayerDetailsWidget(QWidget):
     self.setLayout(layout)
 
   def __updateFromPlayer(self):
-    if (self.teamID, self.playerID) in self.gameState.players:
+    if (self.teamID, self.playerID) in self.gameState.withCurrGameState(lambda s: s.players.keys()):
       player = self.gameState.getOrCreatePlayer(self.teamID, self.playerID)
       self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
@@ -338,13 +360,8 @@ class PlayerDetailsWidget(QWidget):
       self.healthLabel.setText("0 / 0")
       self.warningLabel.setText("")
 
-  def playerUpdated(self, teamID, playerID):
-    if self.teamID and self.teamID == teamID and self.playerID == playerID:
-      #update our display
-      self.__updateFromPlayer()
-
-  def playerMoved(self, fromTeam, fromPlayer, toeam, toPlayer):
-    self.playerUpdated(fromTeam, fromPlayer)
+  def gameStateChanged(self):
+    self.__updateFromPlayer()
 
   def currentChanged(self, selected, deselected):
     self.teamID = selected.column() + 1
@@ -384,7 +401,7 @@ class PlayersView(QWidget):
 
     tableView = QTableView()
     tableView.setModel(self.model)
-    tableView.setItemDelegate(PlayerDelegate())
+    tableView.setItemDelegate(PlayerDelegate(listeningThread))
     tableView.setSelectionMode(QAbstractItemView.SingleSelection)
     tableView.setDragEnabled(True)
     tableView.setAcceptDrops(True)
@@ -399,14 +416,15 @@ class PlayersView(QWidget):
     self.detailWidget = PlayerDetailsWidget(gameState, listeningThread)
     splitter.addWidget(self.detailWidget)
 
-    sm = tableView.selectionModel() #This line is needed on windows (and possibly others). I have no idea why!
+    #This line is needed on windows (and possibly others). I have no idea why!
+    sm = tableView.selectionModel() #pylint:disable=W0612
     tableView.selectionModel().currentChanged.connect(self.detailWidget.currentChanged)
 
     self.setLayout(layout)
 
 
 class MainWindow(QWidget):
-  def __init__(self, gameState, listeningThread, parent=None):
+  def __init__(self, gameLogic, gameState, listeningThread, parent=None):
     super(MainWindow, self).__init__(parent)
     self.model = GameStateModel(gameState)
 
@@ -414,7 +432,7 @@ class MainWindow(QWidget):
     layout = QVBoxLayout()
     tabs = QTabWidget(self)
 
-    gameControl = GameControl(gameState)
+    gameControl = GameControl(gameLogic, gameState)
     tabs.addTab(gameControl, "&1. Control")
 
     players = PlayersView(self.model, gameState, listeningThread)

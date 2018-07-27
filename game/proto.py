@@ -86,12 +86,12 @@ PONG = Message(r"Pong\((\d*),(\d)\)", "Pong(%d,%s)")
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)", "Recv(%d,%d,%s)")
 SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
 HELLO = Message(r"Hello\(\)", "Hello()")
+
 #server -> client only
 TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
 STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
-
 DELETED = Message(r"Deleted\(\)", "Deleted()")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)

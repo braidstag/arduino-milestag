@@ -6,7 +6,6 @@ import time
 from threading import Thread, Lock
 import Queue
 
-from core import ClientServer
 from proto import Event, PING
 
 class PiSerialIdProvider():
@@ -72,7 +71,7 @@ class ClientServerConnection(object):
   def onDisconnect(self):
     "Called when this connection is disconnected. Should be overridden in subclasses"
     raise RuntimeError("onDisconnectCalled")
-    
+
   def stop(self):
     self.writeThread.stop()
     self.readThread.stop()
@@ -170,14 +169,14 @@ class WriteThread(Thread):
       except:
         print("Unexpected error:", sys.exc_info()[0])
         raise
-        #TODO retry sending the packet 
+        #TODO retry sending the packet
     print ("Write Thread exiting")
 
   def stop(self):
     "shut the client server connection down nicely. This blocks until shutdown is finished."
     self.shouldStop = True
     self.join()
-  
+
   def queueMessage(self, msg):
     self.queue.put(Event(msg, self.idProvider(), self.timeProvider()))
 
