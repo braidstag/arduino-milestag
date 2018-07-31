@@ -71,7 +71,10 @@ unsigned long readFallTime = 0;
   char debugLine[22] = "                     ";
 #endif
 
-//read the IR receiver and if applicable add to the readBuffer. This will return 1 if the transmission appears to be complete. Subsequent reads will return 0.
+/*
+ * read the IR receiver and if applicable add to the readBuffer.
+ * This will return the number of bits read if the transmission appears to be complete otherwise will return 0.
+ */
 int signal_recieve() {
   boolean pinValue = ! digitalRead(pin_ir_reciever);
 
@@ -171,7 +174,7 @@ int signal_recieve() {
       Serial.println("xx");
 #endif
 #endif
-      return 1;
+      return bitsRead;
     }
     else {
       //still low, waiting for the interval
