@@ -98,6 +98,8 @@ class Main():
     self.args = parser.parse_args()
 
     self.player = None
+    self.logic = StandardGameLogic()
+    self.gameState = GameState()
 
     self.serverConnection = Client(self)
     self._sendToServer(proto.HELLO.create())
@@ -122,9 +124,6 @@ class Main():
         #Try just opening this as a file
         self.serial = open(self.args.serial)
         self.responsiveSerial = False
-
-    self.logic = StandardGameLogic()
-    self.gameState = GameState()
 
     self.connectToArduino()
 
