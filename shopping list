@@ -1,39 +1,42 @@
-Updated for revision 3 PCB
+
 
 
 PROCESSING / Completed boards
 
-Raspberry Pi Zero W with presoldered GPIO header (PINS)		x1
-MicroSD card x1
+Arduino Uno			x1
+Raspberry Pi			x1
+Wifi Dongle			x1
 
-Atmega328 MCU chip x1		1972087
-18pF Ceramic Cap x2			2218633		(These are dependant on the crystal used)
-16 MHz crystal x1				1842217
 
-LM1084IT-5.0/NOPB 5V Voltage regulator x1		2383023
-10 uF Smoothing Capacitor x2								9693548
 
 RESISTORS
-		RGBLED:
-							100R 			x2 (+1 for each sensor)
-							56R 			x4
-		IRLED:		1.8R 			x1
-		LOGIC: 		R10K 			x2
-		DIV:			R6K			x1
-							R3K			x1
 
-0.1uF Decoupling Capacitor x2 (1 per sensor board)		2901330
-Standard Recovery Diode 1N4004 x5											9556109
+RGBLED:	100R 			x2 (+1 for each sensor)
+	56R 			x4
+IRLED:	1.8R 			x1
+LOGIC: 	R10K 			x2
+DIV:	R6K			x1
+	R3K			x1
+CHARGE:	10R 			x1
+	1R5K			x1
+
+CAPACITORS
+
+SENSOR:	0.1uF			x1 per sensor
+CHARGE:	470uF			x2
+
+DIODES:	1N4001 			x5
 
 FETS/TRANSISTORS
 
-Logic Level N-Channel MOSFET x7 											1739424
+LEDs:	LOGIC FET 1739424	x7
+CHARGE:	TIP127 DT		x1
 
 SPECIAL COMPONENTS
 
-5A Logic Relay [5v ~200mW max coil power]	x1					1175088
-38kHZ IR Receiver x1 (+optionals)											4913073
-IRLED TSAL6100			x1																1328299
+RELAY
+TSOP 4913073			x1 per sensor
+IRLED TSAL6100			x1
 RGBLED				x2
 
 HIDs
@@ -43,12 +46,38 @@ KEYSWITCH			x1
 
 CABLES
 
+USB A-PRINTER (B?)		x1
 SOME ASSORTED WIRE		xSOME
+CAT5 'UMBILICAL CORD'		x1 (2 required for 'interactive charging')
 
 CONNECTORS AND HEADERS (All 2.54mm pitch)
 
+RJ45				x3 (2 per charger, one per gun)
 Screw terminal 2 way		x3
 Screw terminal 4 way		x1
+Header, Board to board pins 8	x3
+Header, Board to board pins 6	x1
 Smaller header pins
-64 Pin Header x1 																			1654369
-40 Pin 2 row Header x1																2847248
+	2 way			x5 (7 including diag jumpers)
+	3 way			x3 (+1 for extra sensor, or +2 for every sensor after that)
+	4 way			x2
+	5 way			x2
+Farnell search 2226A:
+	2 way			x5 (7 including diag jumpers)
+	3 way			x2 (+2 per additional sensor)
+	4 way			x2
+	5 way			x2
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
