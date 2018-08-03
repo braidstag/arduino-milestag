@@ -24,7 +24,7 @@ RESISTORS
 							R3K			x1
 
 0.1uF Decoupling Capacitor x2 (1 per sensor board)		2901330
-Standard Recovery Diode 1N4004 x5											9556109
+Standard Recovery Diode 1N4004 x1											9556109
 
 FETS/TRANSISTORS
 
