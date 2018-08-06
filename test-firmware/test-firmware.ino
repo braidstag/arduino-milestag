@@ -37,37 +37,37 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   digitalWrite(muzzlered_pin, HIGH);              // turn the LED on
-  Serial.print("Muzzle Red");
+  Serial.println("Muzzle Red");
   delay(1000);                       // wait for a second
   digitalWrite(muzzlered_pin, LOW);
   delay(1000);                       // wait for a second
 
   digitalWrite(muzzlegreen_pin, HIGH);              // turn the LED on
-  Serial.print("Muzzle Green");
+  Serial.println("Muzzle Green");
   delay(1000);                       // wait for a second
   digitalWrite(muzzlegreen_pin, LOW);
   delay(1000);                       // wait for a second
 
   digitalWrite(muzzleblue_pin, HIGH);              // turn the LED on
-  Serial.print("Muzzle blue");
+  Serial.println("Muzzle blue");
   delay(1000);                       // wait for a second
   digitalWrite(muzzleblue_pin, LOW);
   delay(1000);                       // wait for a second
 //Shoot board
   digitalWrite(torchred_pin, HIGH);              // turn the LED on
-  Serial.print("Torch Red");
+  Serial.println("Torch Red");
   delay(1000);                       // wait for a second
   digitalWrite(torchred_pin, LOW);
   delay(1000);                       // wait for a second
 
   digitalWrite(torchgreen_pin, HIGH);              // turn the LED on
-  Serial.print("Torch Green");
+  Serial.println("Torch Green");
   delay(1000);                       // wait for a second
   digitalWrite(torchgreen_pin, LOW);
   delay(1000);                       // wait for a second
 
   digitalWrite(torchblue_pin, HIGH);              // turn the LED on
-  Serial.print("Torch blue");
+  Serial.println("Torch blue");
   delay(1000);                       // wait for a second
   digitalWrite(torchblue_pin, LOW);
   delay(1000);                       // wait for a second
