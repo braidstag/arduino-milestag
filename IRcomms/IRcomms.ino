@@ -114,8 +114,10 @@ int signal_recieve() {
     }
     else if (within_tolerance(duration, oneDuration, timingTolerance)) {
       //we are within tolerance of 1200 us - a one
-      readBuffer = (readBuffer << 1) + 1;
-      bitsRead++;
+      if (bitsRead > -1) {
+        readBuffer = (readBuffer << 1) + 1;
+        bitsRead++;
+      }
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
 #else
@@ -125,8 +127,10 @@ int signal_recieve() {
     }
     else if (within_tolerance(duration, zeroDuration, timingTolerance)) {
       //we are within tolerance of 600 us - a zero
-      readBuffer = readBuffer << 1;
-      bitsRead++;
+      if (bitsRead > -1) {
+        readBuffer = readBuffer << 1;
+        bitsRead++;
+      }
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
 #else
@@ -135,6 +139,9 @@ int signal_recieve() {
 #endif
     }
     else {
+      // Not really much we can do with this packet anymore.
+      // Lets just wait for the next header.
+      bitsRead = -1;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
       sprintf(debugLine, "timing error %lu", duration);
@@ -174,6 +181,7 @@ int signal_recieve() {
       Serial.println("xx");
 #endif
 #endif
+      //Once we're done decoding, we'll wait for another header by setting bitsRead to -1
       return bitsRead;
     }
     else {
