@@ -14,7 +14,7 @@ void serialQueue(int size, const char * fmt, ...) {
   va_end (ap);
 }
 
-void mt_parseIRMessage(unsigned long recvBuffer) {
+void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
     if (!isEvenParity(recvBuffer)) {
         serialQueue_s("C\n");
         return;
@@ -75,7 +75,7 @@ void mt_parseIRMessage(unsigned long recvBuffer) {
             case SYSTEM_MESSAGE_SCORE_DATA_HEADER:
             case SYSTEM_MESSAGE_SCORE_REQUEST:
             default:
-                serialQueue(29, "Shot(UnknownSM(%lu))\n", recvBuffer);
+                serialQueue(29, "Shot(UnknownSM(%lu, %d))\n", recvBuffer, bitsRead);
                 break;
         }
     } else {

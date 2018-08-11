@@ -47,6 +47,26 @@ void setup() {
   #ifdef SCREEN_DEBUG
   screen_setup();
   #endif
+
+  flashDigit(__TIME__[0]);
+  flashDigit(__TIME__[1]);
+  flashDigit(__TIME__[3]);
+  flashDigit(__TIME__[4]);
+}
+
+void flashDigit(char c) {
+  char d = c - 0x30; //ASCII to numbers
+  digitalWrite(muzzleblue_pin, HIGH);
+  delay(200);
+  digitalWrite(muzzleblue_pin, LOW);
+  delay(300);
+  for (int i = 0; i < d; i++) {
+    digitalWrite(muzzlered_pin, HIGH);
+    delay(100);
+    digitalWrite(muzzlered_pin, LOW);
+    delay(300);
+  }
+  delay(1000);
 }
 
 boolean clientConnected = false;
@@ -60,9 +80,9 @@ void loop() {
   checkTrigger();
   checkAltfire();
   signal_send();
-  if (signal_recieve()) {
+  if (signal_recieve() > 0) {
     decode_signal();
-    mt_parseIRMessage(readBuffer);
+    mt_parseIRMessage(readBuffer, bitsRead);
     finished_signal_decode();
   }
 
@@ -125,7 +145,7 @@ void shutdown() {
 
 void lifetest() {
 	if (batterytestmode == 1) {
-	checkBattery();
-	delay(1000);
-		}
+    checkBattery();
+    delay(1000);
+  }
 }
