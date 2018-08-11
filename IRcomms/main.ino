@@ -145,7 +145,7 @@ void shutdown() {
 
 void lifetest() {
 	if (batterytestmode == 1) {
-	checkBattery();
-	delay(1000);
-		}
+    checkBattery();
+    delay(1000);
+  }
 }

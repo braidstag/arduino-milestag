@@ -172,7 +172,7 @@ int signal_recieve() {
       return 0;
     }
     else if (micros() - readFallTime > intervalDuration + timingTolerance * 2) {
-      readFallTime = 0; //cache this result
+      readFallTime = 0;
 #ifdef DEBUG_RECV
 #ifdef SCREEN_DEBUG
       sprintf(debugLine, "rx %lx(%d)", readBuffer, bitsRead);
