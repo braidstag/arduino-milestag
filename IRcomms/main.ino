@@ -80,9 +80,9 @@ void loop() {
   checkTrigger();
   checkAltfire();
   signal_send();
-  if (signal_recieve()) {
+  if (signal_recieve() > 0) {
     decode_signal();
-    mt_parseIRMessage(readBuffer);
+    mt_parseIRMessage(readBuffer, bitsRead);
     finished_signal_decode();
   }
 
