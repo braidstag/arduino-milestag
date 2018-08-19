@@ -89,6 +89,7 @@ class Client(ClientServerConnection):
     else:
       waitTime = 2 * 2 ** (self.retryCount - 1)
     print("Disconnected from server, waiting " + str(waitTime) + " seconds to try again")
+    sys.stdout.flush()
     time.sleep(waitTime)
 
     self._openConnection()
