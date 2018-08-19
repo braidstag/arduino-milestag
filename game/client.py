@@ -63,25 +63,33 @@ class Client(ClientServerConnection):
     return h.handle(msgStr)
 
   def _openConnection(self):
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #reduce the timeout while we are testing on a good network.
-    #This will want increasing dramatically when we are on the wireless mesh.
-    self.sock.settimeout(1)
-    print("Connecting to " + ClientServer.SERVER + ":" + str(ClientServer.PORT))
-    self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
+    try:
+      self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      #reduce the timeout while we are testing on a good network.
+      #This will want increasing dramatically when we are on the wireless mesh.
+      self.sock.settimeout(1)
+      print("Connecting to " + ClientServer.SERVER + ":" + str(ClientServer.PORT))
+      self.sock.connect((ClientServer.SERVER, ClientServer.PORT))
 
-    self.setSocket(self.sock)
+      self.setSocket(self.sock)
+    except socket.error:
+      self.onDisconnect()
 
   def onDisconnect(self):
     self.retryCount = self.retryCount + 1
 
-    # retry with an exponential backoff, starting at 2 seconds and
-    # stopping after waiting 128s (total time 4m14s) 
-    if (self.retryCount >= 5):
+    # retry with an exponential backoff, from 2 seconds to 32s
+    # 2, 4, 8, 16, 32 = 62 + 60 * 32 = 33:02
+    if (self.retryCount >= 65):
       super.onDisconnect()
       return
-    
-    time.sleep(2 * 2 ** (self.retryCount - 1))
+
+    if self.retryCount > 6 :
+      waitTime = 64 + 32 * (self.retryCount - 6)
+    else:
+      waitTime = 2 * 2 ** (self.retryCount - 1)
+    print("Disconnected from server, waiting " + str(waitTime) + " seconds to try again")
+    time.sleep(waitTime)
 
     self._openConnection()
 
