@@ -217,3 +217,45 @@ def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
 
 #     assert game_state.addEvent.call_count == 1
 #     assert game_state.addEvent.call_args[0][0].serverTime == 300
+
+
+def test_set_main_player_after_hit(client_game_state, client_game_logic, monkeypatch, mocker):
+    monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
+    client_game_logic.startGame(50)
+
+    player1 = client_game_state.getMainPlayer()
+    client_game_logic.setMainPlayer(20, player1)
+
+    player2 = client_game_state.getOrCreatePlayer(1, 2)
+    client_game_logic.setMainPlayer(120, player2)
+
+    initialHealth = player1.health
+
+    damage = 2
+
+    client_game_logic.hit(100, 1, 1, 2, 1, damage)
+    client_game_logic.hit(100, 1, 2, 2, 1, damage)
+
+    assert initialHealth > player1.health
+    assert initialHealth == player2.health
+
+def test_set_main_player_before_hit(client_game_state, client_game_logic, monkeypatch, mocker):
+    monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
+    client_game_logic.startGame(50)
+
+    player1 = client_game_state.getMainPlayer()
+
+    player2 = client_game_state.getOrCreatePlayer(1, 2)
+    client_game_logic.setMainPlayer(80, player2)
+
+    initialHealth = player1.health
+
+    damage = 2
+
+    client_game_logic.hit(100, 1, 1, 2, 1, damage)
+    client_game_logic.hit(100, 1, 2, 2, 1, damage)
+
+    assert initialHealth == player1.health
+    assert initialHealth > player2.health
