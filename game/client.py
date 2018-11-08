@@ -26,6 +26,8 @@ class Client():
     self.gameState = GameState(isClient=True)
     self.logic = GameLogic(self.gameState)
 
+    self.gameState.addListener(fired = self.handleFire)
+
     if serial:
       self.serial = serial
       self.responsiveSerial = True
@@ -85,8 +87,6 @@ class Client():
       def trigger(): # pylint: disable=W0612
         if mainPlayer:
           self.logic.trigger(time.time(), None, None)
-          #TODO: What is responsible for calling this?
-          #self.serialWrite(proto.FIRE.create(mainPlayer.teamID, mainPlayer.playerID, mainPlayer.gunDamage))
         return True
 
       #TODO be more discerning about unparseable input here.
@@ -114,6 +114,10 @@ class Client():
   def shutdown(self):
     #TODO: is this the right message for this?
     self.serialWrite(proto.CLIENTCONNECT.create())
+
+  def handleFire(self):
+    mainPlayer = self.gameState.getMainPlayer()
+    self.serialWrite(proto.FIRE.create(mainPlayer.teamID, mainPlayer.playerID, mainPlayer.gunDamage))
 
 if __name__ == "__main__":
   client = Client()

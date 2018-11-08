@@ -57,7 +57,7 @@ class FireEvent(ClientGameEvent):
 
     def __init__(self, serverTime, recvTeam, recvPlayerId):
         super(FireEvent, self).__init__(serverTime, recvTeam, recvPlayerId)
-        self.createdNextEvent = False
+        self.firstApplication = True
 
     def apply(self, gameState):
         if not gameState.isGameStarted():
@@ -72,9 +72,11 @@ class FireEvent(ClientGameEvent):
         if player.ammo > 0 and player.health > 0:
             player.ammo = player.ammo - 1
             #TODO: lookup repeatRate from the player and what their gun does.
-            if self.repeatRate > 0 and not self.createdNextEvent:
+            if self.repeatRate > 0 and self.firstApplication:
+                #Let listeners know this has just been processed
+                gameState.notifyFiredListeners()
                 #Add the next event
-                self.createdNextEvent = True
+                self.firstApplication = False
                 return FireEvent(self.serverTime + self.repeatRate, self.recvTeam, self.recvPlayerId)
 
 class HitEvent(ClientGameEvent):

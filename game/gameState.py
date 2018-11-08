@@ -72,6 +72,7 @@ class GameState(object):
         self.stateChangedListeners = []
         self.gameStartedListeners = []
         self.gameStoppedListeners = []
+        self.firedListeners = []
 
     ####################
     ## Players and teams
@@ -419,14 +420,25 @@ class GameState(object):
                 self.currGameState = latestGameState
                 self.confidencePoint = newConfidencePoint
 
-    def addListener(self, currentStateChanged = None, gameStarted = None, gameStopped = None):
+    def addListener(self,
+        currentStateChanged = None,
+        gameStarted = None,
+        gameStopped = None,
+        fired = None
+    ):
         if currentStateChanged:
             self.stateChangedListeners.append(currentStateChanged)
         if gameStarted:
             self.gameStartedListeners.append(gameStarted)
         if gameStopped:
             self.gameStoppedListeners.append(gameStopped)
+        if fired:
+            self.firedListeners.append(fired)
 
     def _notifyStateChangedListeners(self):
         for l in self.stateChangedListeners:
+            l()
+
+    def notifyFiredListeners(self):
+        for l in self.firedListeners:
             l()
