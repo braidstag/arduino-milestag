@@ -69,6 +69,7 @@ class GameState(object):
         self.futureEvents = []
         self.nextFutureEventTimer = None
 
+        self.pauseListeners = False
         self.stateChangedListeners = []
         self.gameStartedListeners = []
         self.gameStoppedListeners = []
@@ -223,16 +224,14 @@ class GameState(object):
             self.currGameState.gameStarted = True
             self.currGameState.gameEndTime = gameEndTime
 
-        for l in self.gameStartedListeners:
-            l()
+        self._notifyGameStartedListeners()
 
     def endGame(self):
         with self.stateLock:
             self.currGameState.gameStarted = False
             self.currGameState.gameEndTime = None
 
-        for l in self.gameStoppedListeners:
-            l()
+        self._notifyGameStoppedListeners()
 
     def isGameStarted(self):
         with self.stateLock:
@@ -256,6 +255,7 @@ class GameState(object):
         self._notifyStateChangedListeners()
 
     def getMainPlayer(self):
+        #TODO: player is mutable, there is nothing preventing this being changed by our events system. We should do this as withMainPlayer(func)
         with self.stateLock:
             try:
                 return self.currGameState.players[self.currGameState.mainPlayer]
@@ -320,12 +320,12 @@ class GameState(object):
             if (nextEvent.serverTime > time.time()):
                 print("Timer woke us up before it was due. trying again")
             else:
-                # print("Handling " + str(nextEvent)  +" due to timer")
+                # print("Handling " + str(nextEvent) + " due to timer")
                 #We are done with this timer now
                 self.nextFutureEventTimer = None
                 #Check whether we still want this event.
                 if nextEvent in self.futureEvents:
-                    # remove from futureEvents then apply immedietely
+                    # remove from futureEvents then apply immediately
                     # Note this must be this way round as addEvent calls this
                     self.futureEvents.remove(nextEvent)
                     self.addEvent(nextEvent)
@@ -351,21 +351,26 @@ class GameState(object):
             self.uncertainEvents.insert(newIndex, event)
             self._reapplyEvents()
 
+        #TODO: Do we need this? Won't applying the new event cause this (or something more specific) to have been called already?
         self._notifyStateChangedListeners()
 
     def _reapplyEvents(self):
         """ reapply all uncertain events on top of the baseline.
             This should be the last thing which is done as part of adding an event as it may recurse into addEvent at the end.
         """
+        self.pauseListeners = True
         self.currGameState = deepcopy(self.baselineGameState)
         newEvents = []
         for event in self.uncertainEvents:
             newEvent = event.apply(self)
             if newEvent:
                 # We need to add a new event but we are in the middle of reapplying.
-                # If this is a fututre event, it doesn't affect the reapply
+                # If this is a future event, it doesn't affect the reapply
                 # If it is a past event, it will do its own re-applying so must be added once we are done.
                 newEvents.append(newEvent)
+
+        #unpause listeners as we want to be told about changes due to these new events.
+        self.pauseListeners = False
         for newEvent in newEvents:
             self.addEvent(newEvent)
 
@@ -396,12 +401,13 @@ class GameState(object):
                 # Nothing to do
                 self.confidencePoint = newConfidencePoint
             elif newConfidencePoint > self.uncertainEvents[len(self.uncertainEvents) - 1].serverTime:
-                # new confidence point is later than all recieved events, just use the latest state as the baseline one.
+                # new confidence point is later than all received events, just use the latest state as the baseline one.
                 self.baselineGameState = deepcopy(self.currGameState)
                 self.uncertainEvents = []
                 self.confidencePoint = newConfidencePoint
             else:
                 # new confidence point in the middle of our uncertain events. Rewind to our old confidence point, apply forward to our new confidence point and save that as baseline.
+                self.pauseListeners = True
                 latestGameState = self.currGameState
                 self.currGameState = self.baselineGameState
                 confidencePointIndex = 0
@@ -420,12 +426,18 @@ class GameState(object):
                 self.currGameState = latestGameState
                 self.confidencePoint = newConfidencePoint
 
+                self.pauseListeners = False
+
     def addListener(self,
         currentStateChanged = None,
         gameStarted = None,
         gameStopped = None,
         fired = None
     ):
+        """
+        Add listeners which get notified about changes to gameState
+        These won't get notified if a change happens just because we're reapplying past events.
+        """
         if currentStateChanged:
             self.stateChangedListeners.append(currentStateChanged)
         if gameStarted:
@@ -436,9 +448,21 @@ class GameState(object):
             self.firedListeners.append(fired)
 
     def _notifyStateChangedListeners(self):
-        for l in self.stateChangedListeners:
-            l()
+        if not self.pauseListeners:
+            for l in self.stateChangedListeners:
+                l()
+
+    def _notifyGameStartedListeners(self):
+        if not self.pauseListeners:
+            for l in self.gameStartedListeners:
+                l()
+
+    def _notifyGameStoppedListeners(self):
+        if not self.pauseListeners:
+            for l in self.gameStoppedListeners:
+                l()
 
     def notifyFiredListeners(self):
-        for l in self.firedListeners:
-            l()
+        if not self.pauseListeners:
+            for l in self.firedListeners:
+                l()

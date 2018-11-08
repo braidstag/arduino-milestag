@@ -71,10 +71,10 @@ class FireEvent(ClientGameEvent):
 
         if player.ammo > 0 and player.health > 0:
             player.ammo = player.ammo - 1
+            #Let listeners know this has just been processed
+            gameState.notifyFiredListeners()
             #TODO: lookup repeatRate from the player and what their gun does.
             if self.repeatRate > 0 and self.firstApplication:
-                #Let listeners know this has just been processed
-                gameState.notifyFiredListeners()
                 #Add the next event
                 self.firstApplication = False
                 return FireEvent(self.serverTime + self.repeatRate, self.recvTeam, self.recvPlayerId)
