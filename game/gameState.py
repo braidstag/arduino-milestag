@@ -218,7 +218,10 @@ class GameState(object):
 
     def gameTimeRemaining(self):
         with self.stateLock:
-            return self.currGameState.gameEndTime - time.time()
+            if self.currGameState.gameEndTime:
+                return self.currGameState.gameEndTime - time.time()
+            else:
+                return None
 
     #############################
     # Starting and stopping game
