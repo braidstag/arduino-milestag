@@ -1,4 +1,5 @@
 {
+    //"python.pythonPath": "/usr/bin/python",
     "python.pythonPath": "C:\\Python27\\python.exe",
     "python.unitTest.pyTestArgs": [
         "--no-cov", //for debugging
@@ -13,5 +14,12 @@
     "python.linting.pylintEnabled": true,
     "files.exclude": {
         "**/*.pyc": true
-    }
+    },
+    "cSpell.words": [
+        "Arduino",
+        "lasertag",
+        "pi",
+        "pi's",
+        "unestablished"
+    ]
 }

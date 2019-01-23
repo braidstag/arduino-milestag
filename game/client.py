@@ -54,6 +54,7 @@ class Client():
     #This blocks until a connection is established so do it after connecting to the hardware
     self.connection = ClientConnection(self, self.logic)
     self._sendToServer(proto.HELLO.create())
+    #TODO: have a registration process
 
   def serialWrite(self, line):
     if (self.responsiveSerial):

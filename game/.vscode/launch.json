@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Client",
-            "type": "pythonExperimental",
+            "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\fakeGun.py",
             "console": "integratedTerminal",
@@ -14,7 +14,7 @@
 
         {
             "name": "Server",
-            "type": "pythonExperimental",
+            "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}\\server.py",
             "console": "integratedTerminal",

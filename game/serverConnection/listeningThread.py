@@ -19,7 +19,6 @@ class ListeningThread(Thread):
     super(ListeningThread, self).__init__(group=None)
     self.name = "Server Listening Thread"
     self.gameLogic = gameLogic
-    #gameState.setListeningThread(self)
 
     self.msgHandler = ServerMsgHandler(self, gameLogic)
 
@@ -74,7 +73,7 @@ class ListeningThread(Thread):
         break
 
   def isConnected(self, clientId):
-    """Check is a client is alredy connected. If so, return the (team, player) tuple otherwise return None"""
+    """Check is a client is already connected. If so, return the (team, player) tuple otherwise return None"""
     return self.connectedClients.get(clientId)
 
   def queueMessageToAll(self, msg):

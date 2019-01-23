@@ -69,6 +69,8 @@ class FireEvent(ClientGameEvent):
         else:
             player = gameState.getOrCreatePlayer(self.recvTeam, self.recvPlayerId)
 
+        #print("Applying FireEvent to", player)
+
         if player.ammo > 0 and player.health > 0:
             player.ammo = player.ammo - 1
             #Let listeners know this has just been processed
@@ -92,6 +94,8 @@ class HitEvent(ClientGameEvent):
         else:
             toPlayer = gameState.getOrCreatePlayer(self.recvTeam, self.recvPlayerId)
             fromPlayer = gameState.getOrCreatePlayer(self.sentTeam, self.sentPlayerId)
+
+        #print("Applying HitEvent to", toPlayer)
 
         if not gameState.isGameStarted():
             print("hit before game started")
