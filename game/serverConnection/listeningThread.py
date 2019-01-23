@@ -139,6 +139,7 @@ class ListeningThread(Thread):
 
         #ping to test latency.
         if (time.time() > lastTriggeredLatencyCheck + latencyCheckInterval):
+          lastTriggeredLatencyCheck = time.time()
           for key, server in self.connections.items():
             server.startLatencyCheck()
 
