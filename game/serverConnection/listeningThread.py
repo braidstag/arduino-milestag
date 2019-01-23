@@ -24,7 +24,7 @@ class ListeningThread(Thread):
 
     self.msgHandler = ServerMsgHandler(self, gameLogic)
 
-    gameLogic.gameState.addListeners(playerMoved = self.movePlayer)
+    gameLogic.gameState.addListener(playerMoved = self.movePlayer)
 
     self.connections = {}
     self.unestablishedConnections = set()
