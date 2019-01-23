@@ -1,6 +1,7 @@
 # pylint:disable=redefined-outer-name
 import pytest
 import time
+from copy import deepcopy
 
 from gameLogic import GameLogic
 from gameState import GameState
@@ -97,6 +98,7 @@ def test_historic_hit_from_live_player(game_state, game_logic, monkeypatch, mock
 
     game_logic.hit(50, 1, 1, 1, 2, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
 
 def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypatch, mocker):
@@ -136,6 +138,9 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
 
     monkeypatch.setattr('time.time', lambda: 300)
 
+    playerAdjustedListener = mocker.MagicMock()
+    game_state.addListener(playerAdjusted=playerAdjustedListener)
+
     game_state.getOrCreatePlayer(1, 1)
     game_state.getOrCreatePlayer(2, 1)
     game_logic.startGame(50)
@@ -149,6 +154,9 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
 
     assert game_state.currGameState.players[(1, 1)].health == 0
     assert game_state.currGameState.players[(2, 1)].health > 0
+
+    #at first we though 1,1 killed 2,1 @ 200 but it turns out that 2,1 killed 1,1 @ 100
+    assert playerAdjustedListener.call_count == 2
 
 def test_simple_fire(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -227,7 +235,7 @@ def test_set_main_player_after_hit(client_game_state, client_game_logic, monkeyp
     player1 = client_game_state.getMainPlayer()
     client_game_logic.setMainPlayer(20, player1)
 
-    player2 = client_game_state.getOrCreatePlayer(1, 2)
+    player2 = deepcopy(client_game_state.getOrCreatePlayer(1, 2))
     client_game_logic.setMainPlayer(120, player2)
 
     initialHealth = player1.health
@@ -237,7 +245,10 @@ def test_set_main_player_after_hit(client_game_state, client_game_logic, monkeyp
     client_game_logic.hit(100, 1, 1, 2, 1, damage)
     client_game_logic.hit(100, 1, 2, 2, 1, damage)
 
+    player1 = client_game_state.getOrCreatePlayer(1, 1)
     assert initialHealth > player1.health
+
+    player2 = client_game_state.getOrCreatePlayer(1, 2)
     assert initialHealth == player2.health
 
 def test_set_main_player_before_hit(client_game_state, client_game_logic, monkeypatch, mocker):
@@ -257,5 +268,57 @@ def test_set_main_player_before_hit(client_game_state, client_game_logic, monkey
     client_game_logic.hit(100, 1, 1, 2, 1, damage)
     client_game_logic.hit(100, 1, 2, 2, 1, damage)
 
+    player1 = client_game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player1.health
+
+    player2 = client_game_state.getOrCreatePlayer(1, 2)
     assert initialHealth > player2.health
+
+def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
+    "Test handling of a subsequent, earlier event"
+
+    monkeypatch.setattr('time.time', lambda: 300)
+
+    playerAdjustedListener = mocker.MagicMock()
+    game_state.addListener(playerAdjusted=playerAdjustedListener)
+
+    game_state.getOrCreatePlayer(1, 1)
+    game_state.getOrCreatePlayer(2, 1)
+    game_logic.startGame(50)
+
+    game_logic.hit(200, 2, 1, 1, 1, 999)
+
+    assert game_state.currGameState.players[(1, 1)].health > 0
+    assert game_state.currGameState.players[(2, 1)].health == 0
+
+    game_logic.hit(100, 1, 2, 2, 2, 999)
+
+    assert game_state.currGameState.players[(1, 2)].health == 0
+    assert game_state.currGameState.players[(2, 2)].health > 0
+
+    assert playerAdjustedListener.call_count == 0
+
+def test_detect_player_adjustment(game_state, game_logic, monkeypatch, mocker):
+    monkeypatch.setattr('time.time', lambda: 50)
+    mocker.patch("gameState.Timer", autospec=True)
+
+    playerAdjustedListener = mocker.MagicMock()
+    game_state.addListener(playerAdjusted=playerAdjustedListener)
+
+    game_logic.startGame(30)
+    player = game_state.getOrCreatePlayer(1, 1)
+    initialAmmo = player.ammo
+
+    #Receive trigger events from player
+    game_logic.trigger(50, 1, 1)
+    game_logic.triggerRelease(51, 1, 1)
+
+    #Check we have fired a shot
+    player = game_state.getOrCreatePlayer(1, 1)
+    assert initialAmmo - 1 == player.ammo
+
+    #receive an out-of-order event which prevents the trigger above firing a shot
+    game_logic.stopGame(49)
+
+    #check we detected adjustment needed
+    assert playerAdjustedListener.call_count == 1

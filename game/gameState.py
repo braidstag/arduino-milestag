@@ -8,6 +8,7 @@ from player import Player
 # initial game settings, these are told to the clients and can be changed in the UI.
 TEAM_COUNT = 2
 
+#TODO: Can we make this (and Player) immutable and have events create a new one based on their changes?
 class MomentaryGameState(object):
     """The state of the game at any given moment in time.
     This is mutable and you should be careful that you only use instances of this
@@ -16,6 +17,7 @@ class MomentaryGameState(object):
     """
 
     def __init__(self):
+        #map from (team, player) to the Player instance
         self.players = {}
         self.teamCount = 0
         self.largestTeam = 0
@@ -71,6 +73,7 @@ class GameState(object):
 
         self.pauseListeners = False
         self.stateChangedListeners = []
+        self.playerAdjustedListeners = []
         self.gameStartedListeners = []
         self.gameStoppedListeners = []
         self.firedListeners = []
@@ -249,7 +252,7 @@ class GameState(object):
     def setMainPlayer(self, player):
         with self.stateLock:
             key = (player.teamID, player.playerID)
-            self.currGameState.players[key] = player
+            self.currGameState.players[key] = deepcopy(player)
             self.currGameState.mainPlayer = key
 
         self._notifyStateChangedListeners()
@@ -297,7 +300,7 @@ class GameState(object):
             # Process any overdue events and find the next future event
             for e in self.futureEvents[:]:
                 if (e.serverTime <= currTime):
-                    # remove from futureEvents then apply immedietely
+                    # remove from futureEvents then apply immediately
                     # Note this must be this way round as addEvent calls this
                     self.futureEvents.remove(e)
                     self.addEvent(e)
@@ -334,7 +337,7 @@ class GameState(object):
     def _addPastEvent(self, event):
         if (event.serverTime < self.confidencePoint):
             raise RuntimeError("Tried to add a new event which is prior to the current confidence point. This doesn't make sense as the confidence point is after all possible events.")
-        elif (len(self.uncertainEvents) == 0 or (event.serverTime >= self.uncertainEvents[len(self.uncertainEvents) - 1].serverTime)):
+        elif (len(self.uncertainEvents) == 0 or (event.serverTime >= self.uncertainEvents[-1].serverTime)):
             # This is later than anything we have seen so far, just apply it now.
             self.uncertainEvents.append(event)
             newEvent = event.apply(self)
@@ -349,6 +352,9 @@ class GameState(object):
                 else:
                     break
             self.uncertainEvents.insert(newIndex, event)
+
+            #Apply the event as if it happened last as a first approximation and the re-apply to see if anything changed.
+            event.apply(self)
             self._reapplyEvents()
 
         #TODO: Do we need this? Won't applying the new event cause this (or something more specific) to have been called already?
@@ -359,6 +365,7 @@ class GameState(object):
             This should be the last thing which is done as part of adding an event as it may recurse into addEvent at the end.
         """
         self.pauseListeners = True
+        oldGameState = self.currGameState
         self.currGameState = deepcopy(self.baselineGameState)
         newEvents = []
         for event in self.uncertainEvents:
@@ -369,8 +376,21 @@ class GameState(object):
                 # If it is a past event, it will do its own re-applying so must be added once we are done.
                 newEvents.append(newEvent)
 
-        #unpause listeners as we want to be told about changes due to these new events.
+        #un-pause listeners as we want to be told about changes due to these new events.
         self.pauseListeners = False
+
+        # Check if any players stats might have been corrected as a result of this reapplying.
+        # Send them a snapshot in case it has.
+
+        # detect changes
+        for oldPlayer in oldGameState.players.itervalues():
+            newPlayer = self.getOrCreatePlayer(oldPlayer.teamID, oldPlayer.playerID)
+            if (oldPlayer != newPlayer):
+                print("Detected a Player in need of adjusting: ", oldPlayer, "->", newPlayer)
+                snapshot = deepcopy(newPlayer)
+                self._notifyPlayerAdjustedListeners(oldPlayer.teamID, oldPlayer.playerID, snapshot)
+
+        #add the new events
         for newEvent in newEvents:
             self.addEvent(newEvent)
 
@@ -430,6 +450,7 @@ class GameState(object):
 
     def addListener(self,
         currentStateChanged = None,
+        playerAdjusted = None,
         gameStarted = None,
         gameStopped = None,
         fired = None
@@ -440,6 +461,8 @@ class GameState(object):
         """
         if currentStateChanged:
             self.stateChangedListeners.append(currentStateChanged)
+        if playerAdjusted:
+            self.playerAdjustedListeners.append(playerAdjusted)
         if gameStarted:
             self.gameStartedListeners.append(gameStarted)
         if gameStopped:
@@ -451,6 +474,11 @@ class GameState(object):
         if not self.pauseListeners:
             for l in self.stateChangedListeners:
                 l()
+
+    def _notifyPlayerAdjustedListeners(self, teamID, playerID, player):
+        if not self.pauseListeners:
+            for l in self.playerAdjustedListeners:
+                l(teamID, playerID, player)
 
     def _notifyGameStartedListeners(self):
         if not self.pauseListeners:

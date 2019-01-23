@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import json
 
 class Player():
 
@@ -38,3 +39,23 @@ class Player():
         else:
             # already have 0 health
             pass
+
+    class Encoder(json.JSONEncoder):
+        def default(self, obj): # https://github.com/PyCQA/pylint/issues/414 pylint: disable=E0202
+            """encode as JSON"""
+            return obj.__dict__
+
+    class Decoder(json.JSONDecoder):
+        def __init__(self, *args, **kwargs):
+            super(Player.Decoder, self).__init__(object_hook=self.dict_to_object, *args, **kwargs)
+
+        def dict_to_object(self, jsonObj):
+            """decode JSON"""
+            p = Player(jsonObj["teamID"], jsonObj["playerID"])
+            p.ammo = jsonObj["ammo"]
+            p.maxAmmo = jsonObj["maxAmmo"]
+            p.health = jsonObj["health"]
+            p.maxHealth = jsonObj["maxHealth"]
+            p.gunDamage = jsonObj["gunDamage"]
+
+            return p

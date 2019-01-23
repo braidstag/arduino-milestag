@@ -85,7 +85,7 @@ PONG = Message(r"Pong\((\d*),(\d)\)", "Pong(%d,%s)")
 #client -> server only
 RECV = Message(r"Recv\((\d*),(\d*),(.*)\)", "Recv(%d,%d,%s)")
 SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
-HELLO = Message(r"Hello\(\)", "Hello()")
+HELLO = Message(r"Hello\(\)", "Hello()") # TODO: Add a protocol version check here
 
 #server -> client only
 TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
@@ -93,6 +93,7 @@ STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
 DELETED = Message(r"Deleted\(\)", "Deleted()")
+SNAPSHOT = Message(r"Snapshot\((.*)\)", "Snapshot(%s)")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 # NB. If we can create these, it is for the fakeGun

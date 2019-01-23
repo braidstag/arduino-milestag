@@ -33,4 +33,5 @@ class GameLogic(object):
     def setMainPlayer(self, serverTime, player):
         self.gameState.addEvent(SetMainPlayerEvent(serverTime, player))
 
-
+    def setSnapshot(self, serverTime, player):
+        self.gameState.addEvent(SetMainPlayerEvent(serverTime, player))
