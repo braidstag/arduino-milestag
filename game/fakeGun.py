@@ -14,6 +14,7 @@ QWidget = QtGui.QWidget
 QVBoxLayout = QtGui.QVBoxLayout
 QHBoxLayout = QtGui.QHBoxLayout
 QApplication = QtGui.QApplication
+QLabel = QtGui.QLabel
 
 import proto
 import client
@@ -45,24 +46,68 @@ class ShotButton(QPushButton):
     self.serial.queueMessage(proto.HIT.create(self.teamID, self.playerID, 3))
 
 
+class PlayerDetailsWidget(QWidget):
+  def __init__(self, gameState, parent=None):
+    super(PlayerDetailsWidget, self).__init__(parent)
+
+    self.gameState = gameState
+    self.gameState.addListener(currentStateChanged = self.__updateFromPlayer)
+
+    layout = QHBoxLayout()
+
+    self.idLabel = QLabel("")
+    layout.addWidget(self.idLabel)
+
+    self.ammoLabel = QLabel("")
+    layout.addWidget(self.ammoLabel)
+
+    self.healthLabel = QLabel("")
+    layout.addWidget(self.healthLabel)
+
+    self.warningLabel = QLabel("")
+    layout.addWidget(self.warningLabel)
+
+    self.playerID = None
+    self.teamID = None
+
+    self.__updateFromPlayer()
+
+    self.setLayout(layout)
+
+  def __updateFromPlayer(self):
+    player = self.gameState.getMainPlayer()
+    if player:
+      self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
+      self.ammoLabel.setText("Ammo: %d" % player.ammo)
+      self.healthLabel.setText("Health: %d / %d" % (player.health, player.maxHealth))
+    else:
+      self.idLabel.setText("Team/Player: None")
+      self.ammoLabel.setText("Ammo: 0")
+      self.healthLabel.setText("Health: 0 / 0")
+
+
 class MainWindow(QWidget):
-  def __init__(self, serial, parent=None):
+  def __init__(self, serial, mainClient, parent=None):
     super(MainWindow, self).__init__(parent)
     self.serial = serial
+    self.mainClient = mainClient
 
     self.setWindowTitle("BraidsTag Debugging Gun")
     layout = QVBoxLayout()
-    hLayout = QHBoxLayout()
 
-    hLayout.addWidget(TriggerButton(self.serial, "trigger", True, True))
-    hLayout.addWidget(TriggerButton(self.serial, "trigger Down", True, False))
-    hLayout.addWidget(TriggerButton(self.serial, "trigger Up", False, True))
-    layout.addLayout(hLayout)
+    playerDetails = PlayerDetailsWidget(mainClient.gameState)
+    layout.addWidget(playerDetails)
+
+    triggerLayout = QHBoxLayout()
+    triggerLayout.addWidget(TriggerButton(self.serial, "trigger", True, True))
+    triggerLayout.addWidget(TriggerButton(self.serial, "trigger Down", True, False))
+    triggerLayout.addWidget(TriggerButton(self.serial, "trigger Up", False, True))
+    layout.addLayout(triggerLayout)
 
     for i in range(1,4):
       hLayout2 = QHBoxLayout()
       for j in range(1,4):
-        hLayout2.addWidget(ShotButton(self.serial, i, j))
+        hLayout2.addWidget(ShotButton(self.serial, j, i))
       layout.addLayout(hLayout2)
 
     self.setLayout(layout)
@@ -96,26 +141,25 @@ class SerialAdapter():
         return self.readQueue.get(True, 5)
       except Queue.Empty:
         continue
-    
+
     # Stop the iteration
     raise StopIteration()
 
   def readline(self):
     return self.next()
-    
+
   ## Misc
 
   def close(self):
     pass
 
 class MainClientThread(Thread):
-  def __init__(self, serial):
+  def __init__(self, mainClient):
     super(MainClientThread, self).__init__(group=None)
-    self.serial = serial
+    self.mainClient = mainClient
 
   def run(self):
-    main = client.Client(self.serial)
-    main.serialReadLoop()
+    mainClient.serialReadLoop()
 
 if __name__ == "__main__":
   #load main in another thread, start the Qt event loop in this one.
@@ -123,10 +167,12 @@ if __name__ == "__main__":
 
   serial = SerialAdapter()
 
-  fakeGunWindow = MainWindow(serial)
+  mainClient = client.Client(serial)
+
+  fakeGunWindow = MainWindow(serial, mainClient)
   fakeGunWindow.show()
 
-  t = MainClientThread(serial)
+  t = MainClientThread(mainClient)
   t.start()
 
   app.exec_()
