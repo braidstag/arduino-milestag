@@ -132,9 +132,17 @@ class ListeningThread(Thread):
       self.shouldStop = True
 
     def run(self):
+      latencyCheckInterval = 30
+      lastTriggeredLatencyCheck = 0
       while not self.shouldStop:
         time.sleep(3)
 
+        #ping to test latency.
+        if (time.time() > lastTriggeredLatencyCheck + latencyCheckInterval):
+          for key, server in self.connections.items():
+            server.startLatencyCheck()
+
+        #Check if we have gone out of contact
         for key, server in self.connections.items():
           if key not in self._triggeredOOCWarning:
             self._triggeredOOCWarning[key] = False
