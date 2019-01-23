@@ -90,6 +90,12 @@ class Client():
           self.logic.trigger(time.time(), None, None)
         return True
 
+      @h.handles(proto.TRIGGER_RELEASE)
+      def triggerRelease(): # pylint: disable=W0612
+        if mainPlayer:
+          self.logic.triggerRelease(time.time(), None, None)
+        return True
+
       #TODO be more discerning about unparseable input here.
       h.handle(line)
 
