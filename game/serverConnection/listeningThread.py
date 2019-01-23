@@ -5,11 +5,13 @@ from __future__ import print_function
 import socket
 import time
 from threading import Thread
+import json
 
 from core import ClientServer
 import proto
 from serverConnection import ServerConnection
 from msgHandler import ServerMsgHandler
+from player import Player
 
 class ListeningThread(Thread):
   """A thread which listens for new connections from a client.
@@ -21,6 +23,8 @@ class ListeningThread(Thread):
     self.gameLogic = gameLogic
 
     self.msgHandler = ServerMsgHandler(self, gameLogic)
+
+    gameLogic.gameState.addListeners(playerMoved = self.movePlayer)
 
     self.connections = {}
     self.unestablishedConnections = set()
@@ -84,12 +88,11 @@ class ListeningThread(Thread):
     if (teamID, playerID) in self.connections:
       self.connections[(teamID, playerID)].queueMessage(msg)
 
-  def movePlayer(self, srcTeamID, srcPlayerID, dstTeamID, dstPlayerID):
-    #TODO: we need to preserve the sendQueue when we do this
+  def movePlayer(self, srcTeamID, srcPlayerID, player):
     if (srcTeamID, srcPlayerID) in self.connections:
-      self.connections[(dstTeamID, dstPlayerID)] = self.connections[(srcTeamID, srcPlayerID)]
+      self.connections[(player.teamID, player.playerID)] = self.connections[(srcTeamID, srcPlayerID)]
       del self.connections[(srcTeamID, srcPlayerID)]
-      self.queueMessage(dstTeamID, dstPlayerID, proto.TEAMPLAYER.create(dstTeamID, dstPlayerID))
+      self.queueMessage(player.teamID, player.playerID, proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
 
   def deletePlayer(self, teamID, playerID):
     self.queueMessage(teamID, playerID, proto.DELETED.create())

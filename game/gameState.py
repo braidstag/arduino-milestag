@@ -74,6 +74,7 @@ class GameState(object):
         self.pauseListeners = False
         self.stateChangedListeners = []
         self.playerAdjustedListeners = []
+        self.playerMovedListeners = []
         self.gameStartedListeners = []
         self.gameStoppedListeners = []
         self.firedListeners = []
@@ -141,7 +142,7 @@ class GameState(object):
                 # check if this was the only player in this team
                 self._recalculateLargestTeam()
 
-            #self.listeningThread.movePlayer(srcTeamID, srcPlayerID, dstTeamID, dstPlayerID)
+            self._notifyPlayerMovedListeners(srcTeamID, srcPlayerID, player)
 
         self._notifyStateChangedListeners()
 
@@ -451,6 +452,7 @@ class GameState(object):
     def addListener(self,
         currentStateChanged = None,
         playerAdjusted = None,
+        playerMoved = None,
         gameStarted = None,
         gameStopped = None,
         fired = None
@@ -463,6 +465,8 @@ class GameState(object):
             self.stateChangedListeners.append(currentStateChanged)
         if playerAdjusted:
             self.playerAdjustedListeners.append(playerAdjusted)
+        if playerMoved:
+            self.playerMovedListeners.append(playerMoved)
         if gameStarted:
             self.gameStartedListeners.append(gameStarted)
         if gameStopped:
@@ -479,6 +483,11 @@ class GameState(object):
         if not self.pauseListeners:
             for l in self.playerAdjustedListeners:
                 l(teamID, playerID, player)
+
+    def _notifyPlayerMovedListeners(self, oldTeamID, oldPlayerID, player):
+        if not self.pauseListeners:
+            for l in self.playerMovedListeners:
+                l(oldTeamID, oldPlayerID, player)
 
     def _notifyGameStartedListeners(self):
         if not self.pauseListeners:

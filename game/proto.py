@@ -88,7 +88,6 @@ SENT = Message(r"Sent\((\d*),(\d*),(.*)\)", "Sent(%d,%d,%s)")
 HELLO = Message(r"Hello\(\)", "Hello()") # TODO: Add a protocol version check here
 
 #server -> client only
-TEAMPLAYER = Message(r"TeamPlayer\((\d),(\d+)\)", "TeamPlayer(%d,%d)")
 STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")

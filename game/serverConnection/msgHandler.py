@@ -4,8 +4,10 @@ from __future__ import print_function
 
 import time
 from threading import Lock
+import json
 
 import proto
+from player import Player
 
 class ServerMsgHandler():
   """A class to handle messages from clients to the server. There should only be one instance of this class""" 
@@ -76,14 +78,10 @@ class ServerMsgHandler():
       clientId = event.id
       existingIds = self.listeningThread.isConnected(clientId)
       if existingIds:
-        #TODO maintain the state of this client by sending it an update (taking our send queue into account).
-        #For now, simply remove the ghost player from the game.
-        # TODO: This will mess up the event system until this is fixed properly
-        self.gameLogic.gameState.deletePlayer(existingIds[0], existingIds[1])
         player = self.gameLogic.gameState.getOrCreatePlayer(existingIds[0], existingIds[1])
       else:
         player = self.gameLogic.gameState.createNewPlayer()
-      connection.queueMessage(proto.TEAMPLAYER.create(player.teamID, player.playerID))
+      connection.queueMessage(proto.SNAPSHOT.create(proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder))))
 
       self.listeningThread.establishConnection(connection, player, clientId)
 

@@ -26,11 +26,6 @@ class ClientConnection(ClientServerConnection):
 
     h = proto.MessageHandler()
 
-    #TODO: This message should come with a snapshot of the player object, currently it assumes it is a new, default, unmodified player
-    @h.handles(proto.TEAMPLAYER)
-    def teamPlayer(teamID, playerID): # pylint: disable=W0612
-      self.game_logic.setMainPlayer(time.time(), Player(teamID, playerID))
-
     @h.handles(proto.SNAPSHOT)
     def snapshot(jsonStr): # pylint: disable=W0612
       self.game_logic.setSnapshot(time.time(), json.loads(jsonStr, cls=Player.Decoder))
