@@ -29,7 +29,17 @@ if __name__ == '__main__':
     msg = proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder))
     main.queueMessage(teamID, playerID, msg)
 
-  gameState.addListener(playerAdjusted = playerAdjusted)
+  def gameStarted():
+    main.queueMessageToAll(proto.STARTGAME.create(gameState.gameTimeRemaining()))
+
+  def gameStopped():
+    main.queueMessageToAll(proto.STOPGAME.create())
+
+  gameState.addListener(
+    gameStarted = gameStarted,
+    gameStopped = gameStopped,
+    playerAdjusted = playerAdjusted
+  )
 
   # Create Qt application
   app = QtGui.QApplication(sys.argv)
