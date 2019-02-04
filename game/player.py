@@ -43,7 +43,15 @@ class Player():
     class Encoder(json.JSONEncoder):
         def default(self, obj): # https://github.com/PyCQA/pylint/issues/414 pylint: disable=E0202
             """encode as JSON"""
-            return obj.__dict__
+            return {
+                'teamID': obj.teamID,
+                'playerID': obj.playerID,
+                'ammo': obj.ammo,
+                'maxAmmo': obj.maxAmmo,
+                'health': obj.health,
+                'maxHealth': obj.maxHealth,
+                'gunDamage': obj.gunDamage,
+            }
 
     class Decoder(json.JSONDecoder):
         def __init__(self, *args, **kwargs):
