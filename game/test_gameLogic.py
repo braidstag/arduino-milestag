@@ -279,6 +279,7 @@ def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mock
     "Test handling of a subsequent, earlier event"
 
     monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
 
     playerAdjustedListener = mocker.MagicMock()
     game_state.addListener(playerAdjusted=playerAdjustedListener)

@@ -34,6 +34,7 @@ def test_reply_pong(client_connection, mocker):
 def test_snapshot(client_connection, mocker, monkeypatch):
     "Test handling of SNAPSHOT message"
     monkeypatch.setattr('time.time', lambda:300)
+    mocker.patch("gameState.Timer", autospec=True)
     assert client_connection.handleMsg('E(123def,1516565852,Snapshot({"playerID": 2, "maxHealth": 8, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100, "maxAmmo": 100}))')
 
     p = Player(1, 2)
