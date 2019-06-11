@@ -27,6 +27,7 @@ def test_adjust_no_events(game_state):
 
 def test_adjust_after_one_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
     game_state.getOrCreatePlayer(1,1)
     original_gameState = game_state.currGameState
 
@@ -45,6 +46,7 @@ def test_adjust_after_one_event(game_state, monkeypatch, mocker):
 
 def test_adjust_before_one_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
     game_state.getOrCreatePlayer(1,1)
     original_gameState = game_state.currGameState
     original_baselineGameState = game_state.baselineGameState
@@ -63,6 +65,7 @@ def test_adjust_before_one_event(game_state, monkeypatch, mocker):
 
 def test_adjust_between_events(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
     game_state.getOrCreatePlayer(1,1)
     original_gameState = game_state.currGameState
     original_baselineGameState = game_state.baselineGameState

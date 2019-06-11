@@ -16,6 +16,7 @@ def game_state():
 
 def test_add_event_before_confidence_point(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")
@@ -29,6 +30,7 @@ def test_add_event_before_confidence_point(game_state, monkeypatch, mocker):
 
 def test_add_past_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")
@@ -40,6 +42,7 @@ def test_add_past_event(game_state, monkeypatch, mocker):
 
 def test_add_2_past_events_in_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")
@@ -55,6 +58,7 @@ def test_add_2_past_events_in_order(game_state, monkeypatch, mocker):
 
 def test_add_3_past_events_out_of_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")
@@ -75,6 +79,7 @@ def test_add_3_past_events_out_of_order(game_state, monkeypatch, mocker):
 
 def test_add_events_reentrant_past_in_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     event2 = GameEvent(60)
@@ -94,6 +99,7 @@ def test_add_events_reentrant_past_in_order(game_state, monkeypatch, mocker):
 
 def test_add_past_events_reentrant_past_out_of_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     event2 = GameEvent(60)
@@ -114,6 +120,7 @@ def test_add_past_events_reentrant_past_out_of_order(game_state, monkeypatch, mo
 
 def test_add_events_reentrant_future(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     event2 = GameEvent(60)

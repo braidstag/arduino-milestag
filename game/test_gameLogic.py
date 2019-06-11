@@ -137,6 +137,7 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     "Test handling of a subsequent, earlier event"
 
     monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
 
     playerAdjustedListener = mocker.MagicMock()
     game_state.addListener(playerAdjusted=playerAdjustedListener)
