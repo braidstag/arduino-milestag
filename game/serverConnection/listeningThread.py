@@ -121,6 +121,7 @@ class ListeningThread(Thread):
   class OOCUpdater(Thread):
     def __init__(self, listeningThread):
       Thread.__init__(self)
+      self.name = "OOCUpdater"
       self.listeningThread = listeningThread
       self.connections = listeningThread.connections
       self.shouldStop = False

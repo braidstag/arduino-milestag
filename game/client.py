@@ -6,7 +6,6 @@ import argparse
 import socket
 import sys
 import time
-from threading import Thread
 
 from player import Player
 from gameLogic import GameLogic

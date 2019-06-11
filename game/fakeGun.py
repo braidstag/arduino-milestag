@@ -111,6 +111,7 @@ class SerialAdapter():
 class MainClientThread(Thread):
   def __init__(self, serial):
     super(MainClientThread, self).__init__(group=None)
+    self.name = "Main Gun Client"
     self.serial = serial
 
   def run(self):
