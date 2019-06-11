@@ -16,6 +16,7 @@ def game_state():
 
 def test_cancel_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")
@@ -43,6 +44,7 @@ def test_cancel_event(game_state, monkeypatch, mocker):
 
 def test_cancel_only_future_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
 
     event = GameEvent(50)
     mocker.spy(event, "apply")

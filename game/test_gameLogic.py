@@ -135,6 +135,7 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     "Test handling of a subsequent, earlier event"
 
     monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
 
     game_state.getOrCreatePlayer(1, 1)
     game_state.getOrCreatePlayer(2, 1)
