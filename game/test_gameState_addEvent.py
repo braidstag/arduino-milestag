@@ -56,7 +56,6 @@ def test_add_2_past_events_in_order(game_state, monkeypatch, mocker):
     assert event2.apply.call_count == 1
     assert game_state.uncertainEvents == [event, event2]
 
-@pytest.mark.skip(reason="TODO")
 def test_add_3_past_events_out_of_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
@@ -74,8 +73,10 @@ def test_add_3_past_events_out_of_order(game_state, monkeypatch, mocker):
 
     #Once when added, once when re-playing after each event is added.
     assert event3.apply.call_count == 3
-    assert event.apply.call_count == 2
-    assert event2.apply.call_count == 1
+    #Once when added, once when events are reapplied because this was added, once when events are reapplied due to event 2 being added
+    assert event.apply.call_count == 3
+    #Once when added, once when events are reapplied because this was added
+    assert event2.apply.call_count == 2
     assert game_state.uncertainEvents == [event, event2, event3]
 
 def test_add_events_reentrant_past_in_order(game_state, monkeypatch, mocker):
@@ -98,7 +99,6 @@ def test_add_events_reentrant_past_in_order(game_state, monkeypatch, mocker):
     assert game_state.uncertainEvents == [event, event2, event3]
     assert game_state.futureEvents == []
 
-@pytest.mark.skip(reason="TODO")
 def test_add_past_events_reentrant_past_out_of_order(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
@@ -106,7 +106,7 @@ def test_add_past_events_reentrant_past_out_of_order(game_state, monkeypatch, mo
     event = GameEvent(50)
     event2 = GameEvent(60)
     event3 = GameEvent(70)
-    mocker.patch.object(event, 'apply', autospec=True, side_effect=[event2, None])
+    mocker.patch.object(event, 'apply', autospec=True, side_effect=[event2, None, None])
     mocker.spy(event2, "apply")
     mocker.spy(event3, "apply")
 
@@ -115,12 +115,14 @@ def test_add_past_events_reentrant_past_out_of_order(game_state, monkeypatch, mo
 
     #Once when added, once when re-playing after each event is added.
     assert event3.apply.call_count == 3
-    assert event.apply.call_count == 2
-    assert event2.apply.call_count == 1
+    #Once when added, once when re-playing after this is added, once when replaying due to event2
+    assert event.apply.call_count == 3
+    #Once when added, once when re-playing after this is added
+    assert event2.apply.call_count == 2
+
     assert game_state.uncertainEvents == [event, event2, event3]
     assert game_state.futureEvents == []
 
-@pytest.mark.skip(reason="TODO")
 def test_add_events_reentrant_future(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
@@ -137,7 +139,8 @@ def test_add_events_reentrant_future(game_state, monkeypatch, mocker):
 
     #Once when added, once when re-playing after each event is added.
     assert event2.apply.call_count == 2
-    assert event.apply.call_count == 1
+    #Once when added, once when re-playing after adding this event
+    assert event.apply.call_count == 2
     assert event3.apply.call_count == 0
     assert game_state.uncertainEvents == [event, event2]
     assert game_state.futureEvents == [event3]

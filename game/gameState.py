@@ -358,20 +358,26 @@ class GameState(object):
             self.uncertainEvents.insert(newIndex, event)
 
             #Apply the event as if it happened last as a first approximation and the re-apply to see if anything changed.
-            event.apply(self)
-            self._reapplyEvents()
+            newEvents = []
+            newEvent = event.apply(self)
+            if newEvent:
+                # We need to add a new event but we are in the middle of reapplying.
+                # If this is a future event, it doesn't affect the reapply
+                # If it is a past event, it will do its own re-applying so must be added once we are done.
+                newEvents.append(newEvent)
+            self._reapplyEvents(newEvents)
 
         #TODO: Do we need this? Won't applying the new event cause this (or something more specific) to have been called already?
         self._notifyStateChangedListeners()
 
-    def _reapplyEvents(self):
+    def _reapplyEvents(self, newEvents = []):
         """ reapply all uncertain events on top of the baseline.
             This should be the last thing which is done as part of adding an event as it may recurse into addEvent at the end.
         """
         self.pauseListeners = True
         oldGameState = self.currGameState
         self.currGameState = deepcopy(self.baselineGameState)
-        newEvents = []
+
         for event in self.uncertainEvents:
             newEvent = event.apply(self)
             if newEvent:
