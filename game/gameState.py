@@ -4,6 +4,7 @@ from copy import deepcopy
 from threading import Timer, RLock
 
 from player import Player
+from parameters import Parameters
 
 # initial game settings, these are told to the clients and can be changed in the UI.
 TEAM_COUNT = 2
@@ -22,6 +23,8 @@ class MomentaryGameState(object):
         self.teamCount = 0
         self.largestTeam = 0
         self.targetTeamCount = TEAM_COUNT
+
+        self.parameters = Parameters()
 
         self.gameStarted = False
         self.gameTime = 1200 #20 mins
@@ -261,6 +264,16 @@ class GameState(object):
 
         self._notifyStateChangedListeners()
 
+    def setParameters(self, parameters):
+        with self.stateLock:
+            newParameters = deepcopy(parameters)
+            #First make sure this parameters object has listeners still
+            newParameters.listeners = self.currGameState.parameters.listeners
+
+            self.currGameState.parameters = newParameters
+
+        self._notifyStateChangedListeners()
+
     def getMainPlayer(self):
         #TODO: player is mutable, there is nothing preventing this being changed by our events system. We should do this as withMainPlayer(func)
         with self.stateLock:
@@ -276,6 +289,10 @@ class GameState(object):
         """
         with self.stateLock:
             return func(self.currGameState)
+
+    def getPlayerParameter(self, player, parameterName):
+        with self.stateLock:
+            return self.currGameState.parameters.getPlayerValue(parameterName, player.teamID, player.playerID)
 
 
     #########
@@ -397,8 +414,9 @@ class GameState(object):
             newPlayer = self.getOrCreatePlayer(oldPlayer.teamID, oldPlayer.playerID)
             if (oldPlayer != newPlayer):
                 print("Detected a Player in need of adjusting: ", oldPlayer, "->", newPlayer)
-                snapshot = deepcopy(newPlayer)
-                self._notifyPlayerAdjustedListeners(oldPlayer.teamID, oldPlayer.playerID, snapshot)
+                playerSnapshot = deepcopy(newPlayer)
+                parametersSnapshot = deepcopy(self.currGameState.parameters)
+                self._notifyPlayerAdjustedListeners(oldPlayer.teamID, oldPlayer.playerID, playerSnapshot, parametersSnapshot)
 
         #add the new events
         for newEvent in newEvents:
@@ -488,10 +506,10 @@ class GameState(object):
             for l in self.stateChangedListeners:
                 l()
 
-    def _notifyPlayerAdjustedListeners(self, teamID, playerID, player):
+    def _notifyPlayerAdjustedListeners(self, teamID, playerID, player, parameters):
         if not self.pauseListeners:
             for l in self.playerAdjustedListeners:
-                l(teamID, playerID, player)
+                l(teamID, playerID, player, parameters)
 
     def _notifyPlayerMovedListeners(self, oldTeamID, oldPlayerID, player):
         if not self.pauseListeners:

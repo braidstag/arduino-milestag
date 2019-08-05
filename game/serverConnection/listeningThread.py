@@ -92,7 +92,8 @@ class ListeningThread(Thread):
     if (srcTeamID, srcPlayerID) in self.connections:
       self.connections[(player.teamID, player.playerID)] = self.connections[(srcTeamID, srcPlayerID)]
       del self.connections[(srcTeamID, srcPlayerID)]
-      self.queueMessage(player.teamID, player.playerID, proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
+      self.queueMessage(player.teamID, player.playerID, proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
+      #TODO: should effects move as well?
 
   def deletePlayer(self, teamID, playerID):
     self.queueMessage(teamID, playerID, proto.DELETED.create())

@@ -3,6 +3,7 @@
 import pytest
 from msgHandler import ServerMsgHandler
 from player import Player
+from parameters import Parameters
 
 # pylint:disable=redefined-outer-name
 
@@ -40,10 +41,14 @@ def test_hello_new(msg_handler, mocker):
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = None
     msg_handler.gameLogic.gameState.createNewPlayer.return_value = Player(1, 1)
+    cgs = mocker.MagicMock()
+    cgs.parameters = Parameters()
+    msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
     msg_handler.gameLogic.gameState.createNewPlayer.assert_called_once_with()
     server.queueMessage.assert_has_calls([
-        mocker.call("Snapshot({\"playerID\": 1, \"maxHealth\": 8, \"teamID\": 1, \"health\": 5, \"gunDamage\": 1, \"ammo\": 100, \"maxAmmo\": 100})"),
+        mocker.call("PlayerSnapshot({\"playerID\": 1, \"gunDamage\": 1, \"teamID\": 1, \"health\": 5, \"ammo\": 100})"),
+        mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
         mocker.call("StartGame(1)")
     ])
 
@@ -52,11 +57,15 @@ def test_hello_existing(msg_handler, mocker):
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = (3, 4)
     msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = Player(3, 4)
+    cgs = mocker.MagicMock()
+    cgs.parameters = Parameters()
+    msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
 
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
     msg_handler.gameLogic.gameState.getOrCreatePlayer.assert_called_once_with(3, 4)
     server.queueMessage.assert_has_calls([
-        mocker.call("Snapshot({\"playerID\": 4, \"maxHealth\": 8, \"teamID\": 3, \"health\": 5, \"gunDamage\": 1, \"ammo\": 100, \"maxAmmo\": 100})"),
+        mocker.call("PlayerSnapshot({\"playerID\": 4, \"gunDamage\": 1, \"teamID\": 3, \"health\": 5, \"ammo\": 100})"),
+        mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
         mocker.call("StartGame(1)")
     ])
 
@@ -65,9 +74,15 @@ def test_hello_unstarted(msg_handler, mocker):
     server = mocker.MagicMock()
     msg_handler.gameLogic.gameState.isGameStarted.return_value = False
     msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = Player(1, 1)
+    cgs = mocker.MagicMock()
+    cgs.parameters = Parameters()
+    msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
 
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
-    server.queueMessage.assert_called_once_with("Snapshot({\"playerID\": 1, \"maxHealth\": 8, \"teamID\": 1, \"health\": 5, \"gunDamage\": 1, \"ammo\": 100, \"maxAmmo\": 100})")
+    server.queueMessage.assert_has_calls([
+        mocker.call("PlayerSnapshot({\"playerID\": 1, \"gunDamage\": 1, \"teamID\": 1, \"health\": 5, \"ammo\": 100})"),
+        mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
+    ])
 
 def test_recv_hit(msg_handler, mocker):
     "Test handling of HELLO message from new client"

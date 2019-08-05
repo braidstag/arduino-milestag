@@ -9,6 +9,7 @@ from player import Player
 from core import ClientServer
 from connection import ClientServerConnection
 import proto
+from parameters import Parameters
 
 
 class ClientConnection(ClientServerConnection):
@@ -26,9 +27,13 @@ class ClientConnection(ClientServerConnection):
 
     h = proto.MessageHandler()
 
-    @h.handles(proto.SNAPSHOT)
-    def snapshot(jsonStr): # pylint: disable=W0612
-      self.game_logic.setSnapshot(time.time(), json.loads(jsonStr, cls=Player.Decoder))
+    @h.handles(proto.PLAYER_SNAPSHOT)
+    def playerSnapshot(jsonStr): # pylint: disable=W0612
+      self.game_logic.setPlayerSnapshot(time.time(), json.loads(jsonStr, cls=Player.Decoder))
+
+    @h.handles(proto.PARAMETERS_SNAPSHOT)
+    def parametersSnapshot(jsonStr): # pylint: disable=W0612
+      self.game_logic.setParametersSnapshot(time.time(), Parameters.fromSimpleTypes(json.loads(jsonStr)))
 
     @h.handles(proto.STARTGAME)
     def startGame(duration): # pylint: disable=W0612

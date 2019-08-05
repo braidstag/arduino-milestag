@@ -11,9 +11,7 @@ class Player():
 
     def reset(self):
         self.ammo = 100
-        self.maxAmmo = 100
         self.health = 5
-        self.maxHealth = 8
         self.gunDamage = 1
 
     def __str__(self):
@@ -47,9 +45,7 @@ class Player():
                 'teamID': obj.teamID,
                 'playerID': obj.playerID,
                 'ammo': obj.ammo,
-                'maxAmmo': obj.maxAmmo,
                 'health': obj.health,
-                'maxHealth': obj.maxHealth,
                 'gunDamage': obj.gunDamage,
             }
 
@@ -61,9 +57,7 @@ class Player():
             """decode JSON"""
             p = Player(jsonObj["teamID"], jsonObj["playerID"])
             p.ammo = jsonObj["ammo"]
-            p.maxAmmo = jsonObj["maxAmmo"]
             p.health = jsonObj["health"]
-            p.maxHealth = jsonObj["maxHealth"]
             p.gunDamage = jsonObj["gunDamage"]
 
             return p

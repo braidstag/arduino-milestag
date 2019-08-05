@@ -81,7 +81,9 @@ class ServerMsgHandler():
         player = self.gameLogic.gameState.getOrCreatePlayer(existingIds[0], existingIds[1])
       else:
         player = self.gameLogic.gameState.createNewPlayer()
-      connection.queueMessage(proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
+      connection.queueMessage(proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
+      parametersDict = self.gameLogic.gameState.withCurrGameState(lambda s: s.parameters.toSimpleTypes())
+      connection.queueMessage(proto.PARAMETERS_SNAPSHOT.create(json.dumps(parametersDict)))
 
       self.listeningThread.establishConnection(connection, player, clientId)
 

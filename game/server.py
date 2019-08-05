@@ -25,8 +25,11 @@ if __name__ == '__main__':
   main = ListeningThread(gameLogic)
   main.start()
 
-  def playerAdjusted(teamID, playerID, player):
-    msg = proto.SNAPSHOT.create(json.dumps(player, cls=Player.Encoder))
+  def playerAdjusted(teamID, playerID, player, parameters):
+    msg = proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder))
+    main.queueMessage(teamID, playerID, msg)
+
+    msg = proto.PARAMETERS_SNAPSHOT.create(json.dumps(parameters.toSimpleTypes()))
     main.queueMessage(teamID, playerID, msg)
 
   def gameStarted():

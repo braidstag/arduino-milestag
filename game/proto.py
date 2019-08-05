@@ -92,7 +92,8 @@ STARTGAME = Message(r"StartGame\((\d*)\)", "StartGame(%d)")
 STOPGAME = Message(r"StopGame\(\)", "StopGame()")
 RESETGAME = Message(r"ResetGame\(\)", "ResetGame()")
 DELETED = Message(r"Deleted\(\)", "Deleted()")
-SNAPSHOT = Message(r"Snapshot\((.*)\)", "Snapshot(%s)")
+PLAYER_SNAPSHOT = Message(r"PlayerSnapshot\((.*)\)", "PlayerSnapshot(%s)")
+PARAMETERS_SNAPSHOT = Message(r"ParametersSnapshot\((.*)\)", "ParametersSnapshot(%s)")
 
 #gun -> client (and usually also inside SENT and RECV for client -> server)
 # NB. If we can create these, it is for the fakeGun

@@ -3,6 +3,7 @@
 import pytest
 from clientConnection import ClientConnection
 from player import Player
+from parameters import Parameters
 
 # pylint:disable=redefined-outer-name
 
@@ -31,17 +32,23 @@ def test_reply_pong(client_connection, mocker):
     assert client_connection.handleMsg("E(123def,1516565852,Pong(1516565652,1))")
     client_connection.queueMessage.assert_called_once_with("Pong(1516565852,0)")
 
-def test_snapshot(client_connection, mocker, monkeypatch):
-    "Test handling of SNAPSHOT message"
+def test_playerSnapshot(client_connection, mocker, monkeypatch):
+    "Test handling of PLAYER_SNAPSHOT message"
     monkeypatch.setattr('time.time', lambda:300)
     mocker.patch("gameState.Timer", autospec=True)
-    assert client_connection.handleMsg('E(123def,1516565852,Snapshot({"playerID": 2, "maxHealth": 8, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100, "maxAmmo": 100}))')
+    assert client_connection.handleMsg('E(123def,1516565852,PlayerSnapshot({"playerID": 2, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100}))')
 
     p = Player(1, 2)
-    p.maxHealth == 8
     p.health == 5
     p.gunDamage == 1
     p.ammo == 100
-    p.maxAmmo == 100
 
-    client_connection.game_logic.setSnapshot.assert_called_once_with(300, p)
+    client_connection.game_logic.setPlayerSnapshot.assert_called_once_with(300, p)
+
+def test_parametersSnapshot(client_connection, mocker, monkeypatch):
+    "Test handling of PARAMETERS_SNAPSHOT message"
+    monkeypatch.setattr('time.time', lambda:300)
+    mocker.patch("gameState.Timer", autospec=True)
+    assert client_connection.handleMsg('E(123def,1516565852,ParametersSnapshot({"parameters": {"player.maxHealth": {"effects": [], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}}))')
+
+    client_connection.game_logic.setParametersSnapshot.assert_called_once_with(300, Parameters())

@@ -1,6 +1,8 @@
 from fnmatch import fnmatch
 import re
 
+valueRE = re.compile(r'[=*+-]\d+')
+
 class Parameters(object):
     """Game play parameters.
     These are variables represent the "settings" of a game, not the state
@@ -12,7 +14,6 @@ class Parameters(object):
     """
     def __init__(self):
         self.listeners = []
-        self.valueRE = re.compile(r'[=*+-]\d+')
         self.parameters = {}
         self.__addParameter("player.maxHealth", 100)
         self.__addParameter("gun.damage", 2)
@@ -21,7 +22,7 @@ class Parameters(object):
         self.parameters[name] = Parameter(baseValue)
 
     def _addEffect(self, parameterName, qualifierPattern, id, value):
-        if not self.valueRE.match(value):
+        if not valueRE.match(value):
             raise MalformedValueError(value)
 
         self.parameters[parameterName].addEffect(qualifierPattern, id, value)
@@ -54,9 +55,46 @@ class Parameters(object):
     def __repr__(self):
         return "Parameters(%s)" % (",".join(self.parameters),)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def getPlayerValue(self, parameterName, teamID, playerID):
         """Convenience function for getting a parameter value for a particular player."""
-        return self._getValue("player." + parameterName, teamID + "/" + playerID)
+        return self._getValue("player." + parameterName, str(teamID) + "/" + str(playerID))
+
+    def addPlayerEffect(self, parameterName, teamID, playerID, id, value):
+        """Convenience function for adding an effect for a particular player."""
+        self._addEffect("player." + parameterName, str(teamID) + "/" + str(playerID), id, value)
+
+    def addTeamEffect(self, parameterName, teamID, id, value):
+        """Convenience function for adding an effect for every player on a particular team."""
+        self._addEffect("player." + parameterName, str(teamID) + "/*", id, value)
+
+    #TODO: filter to just a single player's effects.
+    def toSimpleTypes(self):
+        """encode as JSON"""
+        out = {}
+        for pName in self.parameters:
+            out[pName] = self.parameters[pName].toSimpleTypes()
+
+        return { 'parameters': out }
+
+    @classmethod
+    def fromSimpleTypes(cls, input):
+        if isinstance(input, dict):
+            obj = Parameters()
+            for pName in input['parameters']:
+                obj.parameters[pName] = Parameter.fromSimpleTypes(input['parameters'][pName])
+
+            return obj
+        else:
+            raise ValueError('Parameters should be deserialised from a dict not a ' + type(input))
 
 
 class MalformedValueError(RuntimeError):
@@ -118,6 +156,15 @@ class Parameter(object):
     def __repr__(self):
         return "Parameter(%s, (%s))" % (self.baseValue, ",".join(self.effects), )
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Effect(object):
     def __init__(self, qualifierPattern, id, value):
@@ -157,3 +204,12 @@ class Effect(object):
 
     def __repr__(self):
         return "%s(%s, %s)" % (self.value, self.id, self.qualifierPattern, )
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

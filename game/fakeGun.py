@@ -79,7 +79,7 @@ class PlayerDetailsWidget(QWidget):
     if player:
       self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
-      self.healthLabel.setText("Health: %d / %d" % (player.health, player.maxHealth))
+      self.healthLabel.setText("Health: %d / %d" % (player.health, self.gameState.getPlayerParameter(player, "maxHealth")))
     else:
       self.idLabel.setText("Team/Player: None")
       self.ammoLabel.setText("Ammo: 0")

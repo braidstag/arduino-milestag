@@ -45,7 +45,7 @@ def test_snapshot(client_connection, game_logic, game_state, mocker):
     assert p.health == 4
 
     #Get sent an snapshot from the server. We weren't hit after all :-)
-    client_connection.handleMsg('E(123def,200,Snapshot({"playerID": 2, "maxHealth": 8, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100, "maxAmmo": 100}))')
+    client_connection.handleMsg('E(123def,200,PlayerSnapshot({"playerID": 2, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100}))')
 
     #assert that we used the snapshot and reverted the Hit.
     p = game_state.getMainPlayer()

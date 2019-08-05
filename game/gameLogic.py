@@ -1,5 +1,5 @@
 from __future__ import print_function
-from gameEvents import FireEvent, HitEvent, GameStartedEvent, GameEndedEvent, SetMainPlayerEvent
+from gameEvents import FireEvent, HitEvent, GameStartedEvent, GameEndedEvent, SetMainPlayerEvent, SetParametersEvent
 
 class GameLogic(object):
     def __init__(self, gameState):
@@ -33,5 +33,8 @@ class GameLogic(object):
     def setMainPlayer(self, serverTime, player):
         self.gameState.addEvent(SetMainPlayerEvent(serverTime, player))
 
-    def setSnapshot(self, serverTime, player):
+    def setPlayerSnapshot(self, serverTime, player):
         self.gameState.addEvent(SetMainPlayerEvent(serverTime, player))
+
+    def setParametersSnapshot(self, serverTime, parameters):
+        self.gameState.addEvent(SetParametersEvent(serverTime, parameters))

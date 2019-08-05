@@ -215,7 +215,7 @@ class PlayerDelegate(QStyledItemDelegate):
       ammoWidth = QFontMetrics(option.font).width("000") # allow space for 3 big digits
       ammoHeight = QFontMetrics(option.font).height()
       painter.setBrush(Qt.SolidPattern)
-      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * player.health / player.maxHealth, ammoHeight - 4, 5, 5)
+      painter.drawRoundedRect(ammoWidth + 5, 2, 100 * player.health / self.gameState.getPlayerParameter(player, "maxHealth"), ammoHeight - 4, 5, 5)
       painter.setBrush(Qt.NoBrush)
       painter.drawRoundedRect(ammoWidth + 5, 2, 100, ammoHeight - 4, 5, 5)
 
@@ -346,7 +346,7 @@ class PlayerDetailsWidget(QWidget):
       player = self.gameState.getOrCreatePlayer(self.teamID, self.playerID)
       self.idLabel.setText("Team: %d, Player: %d" % (player.teamID, player.playerID))
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
-      self.healthLabel.setText("%d / %d" % (player.health, player.maxHealth))
+      self.healthLabel.setText("%d / %d" % (player.health, self.gameState.getPlayerParameter(player, "maxHealth")))
       try:
         if self.listeningThread.connections[(player.teamID, player.playerID)].isOutOfContact():
           self.warningLabel.setText("WARNING: This player has been out\nof contact for at least %s" % self.listeningThread.connections[(player.teamID, player.playerID)].outOfContactTimeStr())

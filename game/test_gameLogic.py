@@ -7,6 +7,7 @@ from gameLogic import GameLogic
 from gameState import GameState
 from player import Player
 from gameEvents import FireEvent
+from parameters import Parameters
 
 @pytest.fixture
 def game_state():
@@ -276,7 +277,7 @@ def test_set_main_player_before_hit(client_game_state, client_game_logic, monkey
     assert initialHealth > player2.health
 
 def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
-    "Test handling of a subsequent, earlier event"
+    "Test that adding out of order events which doesn't adjust a player doesn't call playerAdjustedListener"
 
     monkeypatch.setattr('time.time', lambda: 300)
     mocker.patch("gameState.Timer", autospec=True)
@@ -284,8 +285,6 @@ def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mock
     playerAdjustedListener = mocker.MagicMock()
     game_state.addListener(playerAdjusted=playerAdjustedListener)
 
-    game_state.getOrCreatePlayer(1, 1)
-    game_state.getOrCreatePlayer(2, 1)
     game_logic.startGame(50)
 
     game_logic.hit(200, 2, 1, 1, 1, 999)
@@ -300,7 +299,36 @@ def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mock
 
     assert playerAdjustedListener.call_count == 0
 
-def test_detect_player_adjustment(game_state, game_logic, monkeypatch, mocker):
+def test_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
+    "Test that adding an out of order event which does adjust a player calls playerAdjustedListener"
+
+    monkeypatch.setattr('time.time', lambda: 300)
+    mocker.patch("gameState.Timer", autospec=True)
+
+    playerAdjustedListener = mocker.MagicMock()
+    game_state.addListener(playerAdjusted=playerAdjustedListener)
+
+    game_state.getOrCreatePlayer(1, 1)
+    game_state.getOrCreatePlayer(2, 1)
+    game_logic.startGame(50)
+
+    #Player A gets shot by Player B
+    game_logic.hit(200, 2, 1, 1, 1, 999)
+
+    assert game_state.currGameState.players[(1, 1)].health > 0
+    assert game_state.currGameState.players[(2, 1)].health == 0
+
+    #Player B was actually already shot by Player A
+    game_logic.hit(100, 1, 1, 2, 1, 999)
+
+    #assert that player B's shot on player A was reversed.
+    assert game_state.currGameState.players[(1, 1)].health == 0
+    assert game_state.currGameState.players[(2, 1)].health > 0
+
+    assert playerAdjustedListener.call_count == 2
+
+def test_detect_player_adjustment_with_stopGame(game_state, game_logic, monkeypatch, mocker):
+    """Test that an out-of-order stopGame event which changes a player calls playerAdjustedListener"""
     monkeypatch.setattr('time.time', lambda: 50)
     mocker.patch("gameState.Timer", autospec=True)
 
@@ -324,3 +352,22 @@ def test_detect_player_adjustment(game_state, game_logic, monkeypatch, mocker):
 
     #check we detected adjustment needed
     assert playerAdjustedListener.call_count == 1
+
+def test_parameters_snapshot(game_state, game_logic, monkeypatch, mocker):
+    monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
+
+    game_logic.startGame(50)
+    player = game_state.getOrCreatePlayer(1, 1)
+    initialMaxHealth = game_state.getPlayerParameter(player, "maxHealth")
+
+    parameters = Parameters()
+    parameters.addPlayerEffect("maxHealth", 1, 1, "foo-id", "*2")
+
+    #assert this doesn't take effect immediately
+    assert game_state.getPlayerParameter(player, "maxHealth") == initialMaxHealth
+
+    game_logic.setParametersSnapshot(80, parameters)
+
+    #assert this has applied now.
+    assert game_state.getPlayerParameter(player, "maxHealth") == initialMaxHealth * 2

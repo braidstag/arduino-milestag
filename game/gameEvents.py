@@ -118,3 +118,11 @@ class SetMainPlayerEvent(GameEvent):
 
     def apply(self, gameState):
         gameState.setMainPlayer(self.player)
+
+class SetParametersEvent(GameEvent):
+    def __init__(self, serverTime, parameters):
+        super(SetParametersEvent, self).__init__(serverTime)
+        self.parameters = parameters
+
+    def apply(self, gameState):
+        gameState.setParameters(self.parameters)

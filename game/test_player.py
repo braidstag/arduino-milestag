@@ -16,13 +16,11 @@ def test_serialising():
     assert jsonObj["health"] == p.health
 
 def test_deserialising():
-    jsonStr = '{"playerID": 2, "maxHealth": 8, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100, "maxAmmo": 100}'
+    jsonStr = '{"playerID": 2, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100}'
     p = json.loads(jsonStr, cls=Player.Decoder)
 
     assert p.playerID == 2
     assert p.teamID == 1
-    assert p.maxHealth == 8
     assert p.health == 5
     assert p.gunDamage == 1
     assert p.ammo == 100
-    assert p.maxAmmo == 100

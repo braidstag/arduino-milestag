@@ -91,3 +91,37 @@ def test_subscriptions_broadEffect(mocker):
     listener.assert_called_once_with("player.maxHealth")
     assert listener2.call_count == 0
 
+# Serialisation
+
+def test_fromSimpleTypes():
+    parameters = Parameters.fromSimpleTypes({"parameters": {"player.maxHealth": {"effects": [], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}});
+    assert len(parameters.parameters) == 2
+    assert parameters._getValue("player.maxHealth", "1/2") == 100
+    assert parameters._getValue("gun.damage", "1/2") == 2
+
+def test_fromSimpleTypes_withEffects():
+    parameters = Parameters.fromSimpleTypes({"parameters": {"player.maxHealth": {"effects": [{'id': 'id', 'qualifierPattern': '1/*', 'value': '*2'}], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}});
+    assert len(parameters.parameters) == 2
+    assert len (parameters.parameters['player.maxHealth'].effects) == 1
+    assert len (parameters.parameters['gun.damage'].effects) == 0
+    assert parameters._getValue("player.maxHealth", "1/2") == 200
+    assert parameters._getValue("gun.damage", "1/2") == 2
+
+def test_toSimpleTypes():
+    parameters = Parameters()
+    assert parameters.toSimpleTypes() == {"parameters": {"player.maxHealth": {"effects": [], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}};
+
+    parameters._addEffect("player.maxHealth", "1/*", "id", "*2")
+    assert parameters.toSimpleTypes() == {"parameters": {"player.maxHealth": {"effects": [{'id': 'id', 'qualifierPattern': '1/*', 'value': '*2'}], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}};
+
+def test_addTeamEffect(mocker):
+    parameters = Parameters()
+    mocker.patch.object(parameters, "_addEffect", autospec=True)
+    parameters.addTeamEffect("maxHealth", 1, "id", "*2")
+    parameters._addEffect.assert_called_once_with("player.maxHealth", "1/*", "id", "*2")
+
+def test_addPlayerEffect(mocker):
+    parameters = Parameters()
+    mocker.patch.object(parameters, "_addEffect", autospec=True)
+    parameters.addPlayerEffect("maxHealth", 1, 2, "id", "*2")
+    parameters._addEffect.assert_called_once_with("player.maxHealth", "1/2", "id", "*2")
