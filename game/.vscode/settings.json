@@ -1,19 +1,20 @@
 {
     //"python.pythonPath": "/usr/bin/python",
     "python.pythonPath": "C:\\Python27\\python.exe",
-    "python.unitTest.pyTestArgs": [
+    "python.testing.pytestArgs": [
         "--no-cov", //for debugging
         "--cov-report",
         "html",
         "--cov=.",
         "."
     ],
-    "python.unitTest.unittestEnabled": false,
-    "python.unitTest.nosetestsEnabled": false,
-    "python.unitTest.pyTestEnabled": true,
-    "python.linting.pylintEnabled": true,
+    "python.linting.pylintEnabled": false,
     "files.exclude": {
-        "**/*.pyc": true
+        "**/*.pyc": true,
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
     },
     "cSpell.words": [
         "Arduino",
@@ -22,5 +23,9 @@
         "pi",
         "pi's",
         "unestablished"
-    ]
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "C:\\PYTHON27\\SCRIPTS\\pytest.exe"
 }
