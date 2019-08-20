@@ -9,7 +9,8 @@ import time
 
 from player import Player
 from gameLogic import GameLogic
-from gameState import GameState
+from gameState import GameState, CS_OFFLINE, CS_UNINITIALISED, CS_INITIALISING, CS_ESTABLISHED
+
 from clientConnection.clientConnection import ClientConnection
 import proto
 from core import ArgumentError
@@ -25,7 +26,11 @@ class Client():
     self.gameState = GameState(isClient=True)
     self.logic = GameLogic(self.gameState)
 
-    self.gameState.addListener(fired = self.handleFire)
+    self.gameState.addListener(
+      fired = self.handleFire,
+      playerInitialising = self.handlePlayerInitialising,
+      playerInitialised = self.handlePlayerInitialised
+    )
 
     if serial:
       self.serial = serial
@@ -53,7 +58,6 @@ class Client():
     #This blocks until a connection is established so do it after connecting to the hardware
     self.connection = ClientConnection(self, self.logic)
     self._sendToServer(proto.HELLO.create())
-    #TODO: have a registration process
 
   def serialWrite(self, line):
     if (self.responsiveSerial):
@@ -85,14 +89,12 @@ class Client():
 
       @h.handles(proto.TRIGGER)
       def trigger(): # pylint: disable=W0612
-        if mainPlayer:
-          self.logic.trigger(time.time(), None, None)
+        self.logic.trigger(time.time(), None, None)
         return True
 
       @h.handles(proto.TRIGGER_RELEASE)
       def triggerRelease(): # pylint: disable=W0612
-        if mainPlayer:
-          self.logic.triggerRelease(time.time(), None, None)
+        self.logic.triggerRelease(time.time(), None, None)
         return True
 
       #TODO be more discerning about unparseable input here.
@@ -122,8 +124,28 @@ class Client():
     self.serialWrite(proto.CLIENTCONNECT.create())
 
   def handleFire(self):
-    mainPlayer = self.gameState.getMainPlayer()
-    self.serialWrite(proto.FIRE.create(mainPlayer.teamID, mainPlayer.playerID, mainPlayer.gunDamage))
+    if self.gameState.clientState == CS_OFFLINE or self.gameState.clientState == CS_UNINITIALISED:
+      # We havn't connected to the server or haven't been told we can fire yet. So just ignore this.
+      # NB. gamelogic/events shouldn't be asking us to do this in this state but just in case...
+      return
+    elif self.gameState.clientState == CS_INITIALISING:
+      # We are initialising so should fire but don't have a proper player yet.
+      self.serialWrite(proto.FIRE.create(0, 0, 0))
+      return
+    else:
+      # We know what player we are so proceed as normal.
+      mainPlayer = self.gameState.getMainPlayer()
+      self.serialWrite(proto.FIRE.create(mainPlayer.teamID, mainPlayer.playerID, mainPlayer.gunDamage))
+
+  def handlePlayerInitialising(self):
+    """ We've just started initialising, turn the torch on """
+    #TODO:
+    pass
+
+  def handlePlayerInitialised(self):
+    """ We've finished initialising, turn the torch off """
+    #TODO:
+    pass
 
 if __name__ == "__main__":
   client = Client()

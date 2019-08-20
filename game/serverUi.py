@@ -381,6 +381,24 @@ class TrashDropTarget(QLabel):
     event.acceptProposedAction()
 
 
+class InitialisationButton(QPushButton):
+  def __init__(self, gameState, listeningThread, parent=None):
+    super(InitialisationButton, self).__init__("Initialise", parent)
+    self.gameState = gameState
+    self.listeningThread = listeningThread
+    self.clicked.connect(self.initialise)
+    self.gameState.addListener(connectionsChanged = self.refresh)
+
+    self.refresh()
+
+  def initialise(self):
+    connection = self.listeningThread.uninitialisedConnections.pop()
+    self.listeningThread.startInitialising(connection)
+
+  def refresh(self):
+    self.setEnabled(bool(not self.listeningThread.initialisingConnection and self.listeningThread.uninitialisedConnections))
+
+
 class PlayersView(QWidget):
   def __init__(self, model, gameState, listeningThread, parent=None):
     super(PlayersView, self).__init__(parent)
@@ -398,6 +416,9 @@ class PlayersView(QWidget):
 
     trashLabel = TrashDropTarget()
     tableLayout.addWidget(trashLabel)
+
+    initialisatonLabel = InitialisationButton(gameState, listeningThread)
+    tableLayout.addWidget(initialisatonLabel)
 
     tableView = QTableView()
     tableView.setModel(self.model)

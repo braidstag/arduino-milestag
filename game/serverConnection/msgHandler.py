@@ -50,7 +50,14 @@ class ServerMsgHandler():
 
         serverTime = connection.clientTimeToServer(event.time)
 
-        self.gameLogic.hit(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
+        if sentTeam == 0 and sentPlayer == 0:
+          # This is a shot from a gun which is initialising.
+          # TODO: allow the UI to pick the team
+          player = self.gameLogic.gameState.createNewPlayer()
+
+          self.finishInitialisation(player, connection, self.listeningThread.initialisingConnection.clientId)
+        else:
+          self.gameLogic.hit(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
 
       @h2.handles(proto.TRIGGER)
       def trigger(): # pylint: disable=W0612
@@ -79,16 +86,9 @@ class ServerMsgHandler():
       existingIds = self.listeningThread.isConnected(clientId)
       if existingIds:
         player = self.gameLogic.gameState.getOrCreatePlayer(existingIds[0], existingIds[1])
+        self.finishInitialisation(player, connection, clientId)
       else:
-        player = self.gameLogic.gameState.createNewPlayer()
-      connection.queueMessage(proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
-      parametersDict = self.gameLogic.gameState.withCurrGameState(lambda s: s.parameters.toSimpleTypes())
-      connection.queueMessage(proto.PARAMETERS_SNAPSHOT.create(json.dumps(parametersDict)))
-
-      self.listeningThread.establishConnection(connection, player, clientId)
-
-      if self.gameLogic.gameState.isGameStarted():
-        connection.queueMessage(proto.STARTGAME.create(self.gameLogic.gameState.gameTimeRemaining()))
+        self.listeningThread.recievedHello(connection, clientId)
 
     @h1.handles(proto.PING)
     def ping(): # pylint: disable=W0612
@@ -105,3 +105,13 @@ class ServerMsgHandler():
         connection.queueMessage(proto.PONG.create(event.time, 0))
 
     return h1.handle(event.msgStr)
+
+  def finishInitialisation(self, player, connection, clientId):
+    connection.queueMessage(proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder)))
+    parametersDict = self.gameLogic.gameState.withCurrGameState(lambda s: s.parameters.toSimpleTypes())
+    connection.queueMessage(proto.PARAMETERS_SNAPSHOT.create(json.dumps(parametersDict)))
+
+    self.listeningThread.establishConnection(connection, player, clientId)
+
+    if self.gameLogic.gameState.isGameStarted():
+      connection.queueMessage(proto.STARTGAME.create(self.gameLogic.gameState.gameTimeRemaining()))

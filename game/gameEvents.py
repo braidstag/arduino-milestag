@@ -1,4 +1,5 @@
 from __future__ import print_function
+from gameState import CS_OFFLINE, CS_UNINITIALISED, CS_INITIALISING, CS_ESTABLISHED
 
 class GameEvent(object):
     """An event in the game. Not to be confused with the class representing the string passed over the wire between client and server"""
@@ -60,14 +61,25 @@ class FireEvent(ClientGameEvent):
         self.firstApplication = True
 
     def apply(self, gameState):
+        if gameState.isClient:
+            if gameState.clientState == CS_OFFLINE or gameState.clientState == CS_UNINITIALISED:
+                # We havn't connected to the server or havn't been told we can fire yet. So just ignore this.
+                return
+            elif gameState.clientState == CS_INITIALISING:
+                # We are initialising so should fire but don't have a proper player yet.
+                # just tell the gun to fire the IR.
+                gameState.notifyFiredListeners()
+                return
+            else:
+                # We know what player we are so proceed as normal.
+                player = gameState.getMainPlayer()
+        else:
+            player = gameState.getOrCreatePlayer(self.recvTeam, self.recvPlayerId)
+
         if not gameState.isGameStarted():
             #nothing to do
             # TODO: should we repeat?
             return
-        if gameState.isClient:
-            player = gameState.getMainPlayer()
-        else:
-            player = gameState.getOrCreatePlayer(self.recvTeam, self.recvPlayerId)
 
         #print("Applying FireEvent to", player)
 
@@ -90,12 +102,13 @@ class HitEvent(ClientGameEvent):
 
     def apply(self, gameState):
         if gameState.isClient:
+            if gameState.clientState != CS_ESTABLISHED:
+                # Don't apply a hit to an uninitialised player.
+                return
             toPlayer = gameState.getMainPlayer()
         else:
             toPlayer = gameState.getOrCreatePlayer(self.recvTeam, self.recvPlayerId)
             fromPlayer = gameState.getOrCreatePlayer(self.sentTeam, self.sentPlayerId)
-
-        #print("Applying HitEvent to", toPlayer)
 
         if not gameState.isGameStarted():
             print("hit before game started")

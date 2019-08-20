@@ -45,18 +45,14 @@ def test_hello_new(msg_handler, mocker):
     cgs.parameters = Parameters()
     msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
-    msg_handler.gameLogic.gameState.createNewPlayer.assert_called_once_with()
-    server.queueMessage.assert_has_calls([
-        mocker.call("PlayerSnapshot({\"playerID\": 1, \"gunDamage\": 1, \"teamID\": 1, \"health\": 5, \"ammo\": 100})"),
-        mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
-        mocker.call("StartGame(1)")
-    ])
+    msg_handler.listeningThread.recievedHello.assert_called_once_with(server, 0x123def)
 
 def test_hello_existing(msg_handler, mocker):
     "Test handling of HELLO message from existing client"
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = (3, 4)
-    msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = Player(3, 4)
+    player = Player(3, 4)
+    msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = player
     cgs = mocker.MagicMock()
     cgs.parameters = Parameters()
     msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
@@ -68,10 +64,13 @@ def test_hello_existing(msg_handler, mocker):
         mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
         mocker.call("StartGame(1)")
     ])
+    msg_handler.listeningThread.establishConnection.assert_called_once_with(server, player, 0x123def)
+
 
 def test_hello_unstarted(msg_handler, mocker):
-    "Test handling of HELLO message from new client"
+    "Test handling of HELLO message from new client when game is unstarted"
     server = mocker.MagicMock()
+    msg_handler.listeningThread.isConnected.return_value = None
     msg_handler.gameLogic.gameState.isGameStarted.return_value = False
     msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = Player(1, 1)
     cgs = mocker.MagicMock()
@@ -79,13 +78,66 @@ def test_hello_unstarted(msg_handler, mocker):
     msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
 
     assert msg_handler.handleMsg("E(123def,1516565852,Hello())", server)
+    msg_handler.listeningThread.recievedHello.assert_called_once_with(server, 0x123def)
+
+def test_recv_initialising_hit(msg_handler, mocker):
+    "Test handling of hit message from initialising player"
+    server = mocker.MagicMock()
+    server.clientTimeToServer.return_value = 200
+
+    server2 = mocker.MagicMock()
+    server2.clientTimeToServer.return_value = 200
+    server2.clientId=0x123def
+
+    player = Player(1, 1)
+
+    msg_handler.listeningThread.initialisingConnection=server2
+    msg_handler.gameLogic.gameState.createNewPlayer.return_value = player
+    cgs = mocker.MagicMock()
+    cgs.parameters = Parameters()
+    msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
+
+    assert msg_handler.handleMsg("E(456abc,100,Recv(2,2,H0,0,0))", server)
+
+    msg_handler.gameLogic.hit.assert_has_calls([]) # This isn't a real hit, don't treat it as one
+    msg_handler.gameLogic.gameState.createNewPlayer.assert_called_once()
+    server.queueMessage.assert_has_calls([
+        mocker.call("PlayerSnapshot({\"playerID\": 1, \"gunDamage\": 1, \"teamID\": 1, \"health\": 5, \"ammo\": 100})"),
+        mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
+        mocker.call("StartGame(1)")
+    ])
+    msg_handler.listeningThread.establishConnection.assert_called_once_with(server, player, 0x123def)
+
+def test_recv_initialising_hit_unstarted(msg_handler, mocker):
+    "Test handling of hit message from initialising player when game is unstarted"
+    server = mocker.MagicMock()
+    server.clientTimeToServer.return_value = 200
+
+    server2 = mocker.MagicMock()
+    server2.clientTimeToServer.return_value = 200
+    server2.clientId=0x123def
+
+    player = Player(1, 1)
+
+    msg_handler.listeningThread.initialisingConnection=server2
+    msg_handler.gameLogic.gameState.createNewPlayer.return_value = player
+    msg_handler.gameLogic.gameState.isGameStarted.return_value = False
+    cgs = mocker.MagicMock()
+    cgs.parameters = Parameters()
+    msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
+
+    assert msg_handler.handleMsg("E(456abc,100,Recv(2,2,H0,0,0))", server)
+
+    msg_handler.gameLogic.hit.assert_has_calls([]) # This isn't a real hit, don't treat it as one
+    msg_handler.gameLogic.gameState.createNewPlayer.assert_called_once()
     server.queueMessage.assert_has_calls([
         mocker.call("PlayerSnapshot({\"playerID\": 1, \"gunDamage\": 1, \"teamID\": 1, \"health\": 5, \"ammo\": 100})"),
         mocker.call("ParametersSnapshot({\"parameters\": {\"player.maxHealth\": {\"effects\": [], \"baseValue\": 100}, \"gun.damage\": {\"effects\": [], \"baseValue\": 2}}})"),
     ])
+    msg_handler.listeningThread.establishConnection.assert_called_once_with(server, player, 0x123def)
 
 def test_recv_hit(msg_handler, mocker):
-    "Test handling of HELLO message from new client"
+    "Test handling of normal hit message"
     server = mocker.MagicMock()
     server.clientTimeToServer.return_value = 200
 
@@ -95,7 +147,7 @@ def test_recv_hit(msg_handler, mocker):
     msg_handler.gameLogic.hit.assert_called_once_with(200, 1, 1, 2, 1, 3)
 
 def test_recv_trigger(msg_handler, mocker):
-    "Test handling of HELLO message from new client"
+    "Test handling of trigger message"
     server = mocker.MagicMock()
     server.clientTimeToServer.return_value = 200
 
@@ -105,7 +157,7 @@ def test_recv_trigger(msg_handler, mocker):
     msg_handler.gameLogic.trigger.assert_called_once_with(200, 1, 1)
 
 def test_recv_triggerRelease(msg_handler, mocker):
-    "Test handling of HELLO message from new client"
+    "Test handling of triggerRelease message"
     server = mocker.MagicMock()
     server.clientTimeToServer.return_value = 200
 

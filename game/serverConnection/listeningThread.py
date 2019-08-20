@@ -27,7 +27,9 @@ class ListeningThread(Thread):
     gameLogic.gameState.addListener(playerMoved = self.movePlayer)
 
     self.connections = {}
-    self.unestablishedConnections = set()
+    self.disconnectedConnections = set() # We have a tcp connection but havn'trecieved an application payload
+    self.uninitialisedConnections = set() # We have recieved an application payload but not in the game yet.
+    self.initialisingConnection = None
     self.connectedClients = {}
 
     print ("Starting server on ", ClientServer.SERVER, ":", ClientServer.PORT)
@@ -51,25 +53,67 @@ class ListeningThread(Thread):
         (clientsocket, dummy_address) = self.serversocket.accept()
         #this function is added to the class dynamically so pylint doesn't think it is there.
         clientsocket.setblocking(1) #pylint:disable=no-member
-        self.unestablishedConnections.add(ServerConnection(clientsocket, self, self.msgHandler))
+        self.disconnectedConnections.add(ServerConnection(clientsocket, self, self.msgHandler))
       except KeyboardInterrupt:
         break
       except socket.timeout:
         pass
 
+  def recievedHello(self, server, clientId):
+    """ Register that we have recieved the first application message from a client """
+    try:
+      self.disconnectedConnections.remove(server)
+    except KeyError:
+      pass
+
+    self.uninitialisedConnections.add(server)
+    server.clientId = clientId
+    self.gameLogic.gameState._notifyConnectionsChangedListeners()
+
+  def startInitialising(self, server):
+    """ Register that a particular client has been selected as initialising """
+    try:
+      self.uninitialisedConnections.remove(server)
+    except KeyError:
+      pass
+    if self.initialisingConnection:
+      print("started initialisation when we already had an uninitialised client")
+
+    self.initialisingConnection = server
+    server.queueMessage(proto.START_INITIALISING.create())
+    self.gameLogic.gameState._notifyPlayerInitialisingListeners()
+
   def establishConnection(self, server, player, clientId):
     """ Register that a connection has associated itself with a player"""
-    self.unestablishedConnections.remove(server)
+    try:
+      self.uninitialisedConnections.remove(server)
+    except KeyError:
+      pass
+    try:
+      self.disconnectedConnections.remove(server)
+    except KeyError:
+      pass
+    if self.initialisingConnection == server:
+      self.initialisingConnection = None
+
     self.connections[(player.teamID, player.playerID)] = server
     self.connectedClients[clientId] = (player.teamID, player.playerID)
+    self.gameLogic.gameState._notifyPlayerInitialisedListeners()
 
   def lostConnection(self, server):
     """ Register that a connection has been lost"""
     #remove from here just in case
     try:
-      self.unestablishedConnections.remove(server)
+      self.uninitialisedConnections.remove(server)
     except KeyError:
       pass
+    try:
+      self.disconnectedConnections.remove(server)
+    except KeyError:
+      pass
+    if self.initialisingConnection == server:
+      self.initialisingConnection = None
+
     #look the connection up, it isn't worth storing the reverse mapping as this shouldn't happen very often, I hope!
     for key in self.connections:
       if self.connections[key] == server:
@@ -81,8 +125,9 @@ class ListeningThread(Thread):
     return self.connectedClients.get(clientId)
 
   def queueMessageToAll(self, msg):
+    """ send a message to all clients. Note that this doesn't include unestablished connections."""
     for key in self.connections:
-      self.connections[key].queueMessage(msg)
+          self.connections[key].queueMessage(msg)
 
   def queueMessage(self, teamID, playerID, msg):
     if (teamID, playerID) in self.connections:

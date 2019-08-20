@@ -51,7 +51,10 @@ class PlayerDetailsWidget(QWidget):
     super(PlayerDetailsWidget, self).__init__(parent)
 
     self.gameState = gameState
-    self.gameState.addListener(currentStateChanged = self.__updateFromPlayer)
+    self.gameState.addListener(
+      currentStateChanged = self.__updateFromPlayer,
+      connectionsChanged = self.__updateFromPlayer
+    )
 
     layout = QHBoxLayout()
 
@@ -81,7 +84,7 @@ class PlayerDetailsWidget(QWidget):
       self.ammoLabel.setText("Ammo: %d" % player.ammo)
       self.healthLabel.setText("Health: %d / %d" % (player.health, self.gameState.getPlayerParameter(player, "maxHealth")))
     else:
-      self.idLabel.setText("Team/Player: None")
+      self.idLabel.setText("Team/Player: None - " + self.gameState.clientState)
       self.ammoLabel.setText("Ammo: 0")
       self.healthLabel.setText("Health: 0 / 0")
 
@@ -104,6 +107,10 @@ class MainWindow(QWidget):
     triggerLayout.addWidget(TriggerButton(self.serial, "trigger Up", False, True))
     layout.addLayout(triggerLayout)
 
+    hLayout2 = QHBoxLayout()
+    hLayout2.addWidget(ShotButton(self.serial, 0, 0))
+    layout.addLayout(hLayout2)
+
     for i in range(1,4):
       hLayout2 = QHBoxLayout()
       for j in range(1,4):
@@ -116,6 +123,8 @@ class MainWindow(QWidget):
 class SerialAdapter():
   readQueue = Queue.Queue()
   shouldStop = False
+  #Queue gets garbage collected while it is still being used when shutting down so keep a reference here
+  empty = Queue.Empty
 
   def queueMessage(self, line):
     self.readQueue.put(line + "\n")
@@ -139,7 +148,7 @@ class SerialAdapter():
     while not self.shouldStop:
       try:
         return self.readQueue.get(True, 5)
-      except Queue.Empty:
+      except self.empty:
         continue
 
     # Stop the iteration

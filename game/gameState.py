@@ -9,6 +9,12 @@ from parameters import Parameters
 # initial game settings, these are told to the clients and can be changed in the UI.
 TEAM_COUNT = 2
 
+#Client states
+CS_OFFLINE = "CS_OFFLINE" # Not yet connected to the server
+CS_UNINITIALISED = "CS_UNINITIALISED" # Not yet added to game
+CS_INITIALISING = "CS_INITIALISING" # Being added to game
+CS_ESTABLISHED = "CS_ESTABLISHED" # Added to game
+
 #TODO: Can we make this (and Player) immutable and have events create a new one based on their changes?
 class MomentaryGameState(object):
     """The state of the game at any given moment in time.
@@ -62,6 +68,8 @@ class GameState(object):
 
     def __init__(self, isClient = False):
         self.isClient = isClient #immutable, are we using client or server logic
+        if (isClient):
+            self.clientState = CS_OFFLINE
 
         self.currGameState = MomentaryGameState()
         self.baselineGameState = MomentaryGameState()
@@ -81,6 +89,9 @@ class GameState(object):
         self.gameStartedListeners = []
         self.gameStoppedListeners = []
         self.firedListeners = []
+        self.connectionsChangedListeners = []
+        self.playerInitialisingListeners = []
+        self.playerInitialisedListeners = []
 
     ####################
     ## Players and teams
@@ -261,6 +272,8 @@ class GameState(object):
             key = (player.teamID, player.playerID)
             self.currGameState.players[key] = deepcopy(player)
             self.currGameState.mainPlayer = key
+            self.clientState = CS_ESTABLISHED
+            self._notifyPlayerInitialisedListeners
 
         self._notifyStateChangedListeners()
 
@@ -281,6 +294,13 @@ class GameState(object):
                 return self.currGameState.players[self.currGameState.mainPlayer]
             except (KeyError, AttributeError):
                 return None
+
+    def startInitialisation(self):
+        self.clientState = CS_INITIALISING
+        self._notifyPlayerInitialisingListeners()
+
+    #########
+    # currState Access
 
     def withCurrGameState(self, func):
         """Execute the func passing in the current state.
@@ -482,7 +502,10 @@ class GameState(object):
         playerMoved = None,
         gameStarted = None,
         gameStopped = None,
-        fired = None
+        fired = None,
+        connectionsChanged = None,
+        playerInitialising = None,
+        playerInitialised = None
     ):
         """
         Add listeners which get notified about changes to gameState
@@ -500,6 +523,12 @@ class GameState(object):
             self.gameStoppedListeners.append(gameStopped)
         if fired:
             self.firedListeners.append(fired)
+        if connectionsChanged:
+            self.connectionsChangedListeners.append(connectionsChanged)
+        if playerInitialising:
+            self.playerInitialisingListeners.append(playerInitialising)
+        if playerInitialised:
+            self.playerInitialisedListeners.append(playerInitialised)
 
     def _notifyStateChangedListeners(self):
         if not self.pauseListeners:
@@ -529,4 +558,23 @@ class GameState(object):
     def notifyFiredListeners(self):
         if not self.pauseListeners:
             for l in self.firedListeners:
+                l()
+
+    def _notifyConnectionsChangedListeners(self):
+        if not self.pauseListeners:
+            for l in self.connectionsChangedListeners:
+                l()
+
+    def _notifyPlayerInitialisingListeners(self):
+        if not self.pauseListeners:
+            for l in self.playerInitialisingListeners:
+                l()
+            for l in self.connectionsChangedListeners:
+                l()
+
+    def _notifyPlayerInitialisedListeners(self):
+        if not self.pauseListeners:
+            for l in self.playerInitialisedListeners:
+                l()
+            for l in self.connectionsChangedListeners:
                 l()

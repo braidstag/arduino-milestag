@@ -65,6 +65,10 @@ class ClientConnection(ClientServerConnection):
       if int(reply):
         self.queueMessage(proto.PONG.create(event.time, 0))
 
+    @h.handles(proto.START_INITIALISING)
+    def startInitialising(): # pylint: disable=W0612
+      self.game_logic.gameState.startInitialisation()
+
     return h.handle(msgStr)
 
   def _openConnection(self):

@@ -52,3 +52,11 @@ def test_parametersSnapshot(client_connection, mocker, monkeypatch):
     assert client_connection.handleMsg('E(123def,1516565852,ParametersSnapshot({"parameters": {"player.maxHealth": {"effects": [], "baseValue": 100}, "gun.damage": {"effects": [], "baseValue": 2}}}))')
 
     client_connection.game_logic.setParametersSnapshot.assert_called_once_with(300, Parameters())
+
+def test_startInitialising(client_connection, mocker, monkeypatch):
+    "Test handling of START_INITIALISING message"
+    monkeypatch.setattr('time.time', lambda:300)
+    mocker.patch("gameState.Timer", autospec=True)
+    assert client_connection.handleMsg('E(123def,1516565852,StartInitialising())')
+
+    client_connection.game_logic.gameState.startInitialisation.assert_called_once()
