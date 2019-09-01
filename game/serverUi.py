@@ -195,9 +195,10 @@ class GameResetButton(QPushButton):
 
 
 class PlayerDelegate(QStyledItemDelegate):
-  def __init__(self, listeningThread):
+  def __init__(self, gameState, listeningThread):
     super(PlayerDelegate, self).__init__()
     self.listeningThread = listeningThread
+    self.gameState = gameState
 
   def paint(self, painter, option, index):
     player = index.data()
@@ -422,7 +423,7 @@ class PlayersView(QWidget):
 
     tableView = QTableView()
     tableView.setModel(self.model)
-    tableView.setItemDelegate(PlayerDelegate(listeningThread))
+    tableView.setItemDelegate(PlayerDelegate(gameState, listeningThread))
     tableView.setSelectionMode(QAbstractItemView.SingleSelection)
     tableView.setDragEnabled(True)
     tableView.setAcceptDrops(True)
