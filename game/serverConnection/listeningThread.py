@@ -32,7 +32,7 @@ class ListeningThread(Thread):
     self.initialisingConnection = None
     self.connectedClients = {}
 
-    print ("Starting server on ", ClientServer.SERVER, ":", ClientServer.PORT)
+    print ("Starting game server on", ClientServer.SERVER, ":", ClientServer.PORT)
     self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.serversocket.bind((ClientServer.SERVER, ClientServer.PORT))
     self.serversocket.settimeout(1)

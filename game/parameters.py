@@ -1,4 +1,4 @@
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 import re
 
 valueRE = re.compile(r'[=*+-]\d+')
@@ -45,8 +45,8 @@ class Parameters(object):
             #check qualifiers both ways round as either pattern could be broader than the other
             #TODO: This doesn't cover the fact that '*/1' and '1/*' should match
             #https://stackoverflow.com/a/3213301/6950 for a better algorithm
-            qualifierMatches = fnmatch(listenerQualifierPattern, qualifierPattern) or fnmatch(qualifierPattern, listenerQualifierPattern)
-            if fnmatch(parameterName, parameterNamePattern) and qualifierMatches:
+            qualifierMatches = fnmatchcase(listenerQualifierPattern, qualifierPattern) or fnmatchcase(qualifierPattern, listenerQualifierPattern)
+            if fnmatchcase(parameterName, parameterNamePattern) and qualifierMatches:
                 listener(parameterName)
 
     def __str__(self):
@@ -75,6 +75,17 @@ class Parameters(object):
     def addTeamEffect(self, parameterName, teamID, id, value):
         """Convenience function for adding an effect for every player on a particular team."""
         self._addEffect("player." + parameterName, str(teamID) + "/*", id, value)
+
+    def getPlayerParameters(self, teamID, playerID):
+        """
+        Get all of the parameters and effects for a given player
+        This looks like a filtered version of toSimpleTypes
+        """
+        out = {}
+        for pName in self.parameters:
+            out[pName] = self.parameters[pName].getQualifiedParameter(str(teamID) + "/" + str(playerID))
+
+        return { 'parameters': out }
 
     #TODO: filter to just a single player's effects.
     def toSimpleTypes(self):
@@ -128,13 +139,12 @@ class Parameter(object):
             'effects': [e.toSimpleTypes() for e in self.effects]
         }
 
-    #TODO: If we split parameters into the individual players,
-    # the list of effects will not be centralised and new players won't pick them up.
-
-    # If we centralise it all, then the list of effects needs to snapshotted in the same way the player is.
-
-    # Do we handle this differently between the client and server?
-    # The client only has one player to care about effects for (although still multiple guns).
+    def getQualifiedParameter(self, qualifier):
+        """Serialise this parameter including only the effects which cover the given qualifier"""
+        return {
+            'baseValue': self.baseValue,
+            'effects': [e.toSimpleTypes() for e in self.effects if e.appliesTo(qualifier)]
+        }
 
     def value(self, qualifier):
         val = self.baseValue
@@ -182,8 +192,11 @@ class Effect(object):
     def toSimpleTypes(self):
         return self.__dict__
 
+    def appliesTo(self, qualifier):
+        return fnmatchcase(qualifier, self.qualifierPattern)
+
     def apply(self, val, qualifier):
-        if fnmatch(qualifier, self.qualifierPattern):
+        if self.appliesTo(qualifier):
             op = self.value[0]
             arg = int(self.value[1:])
 

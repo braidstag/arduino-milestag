@@ -13,6 +13,8 @@ from serverUi import MainWindow
 from player import Player
 import proto
 
+from api.restapi import RestApiThread
+
 from PySide import QtGui
 
 if __name__ == '__main__':
@@ -24,6 +26,9 @@ if __name__ == '__main__':
 
   main = ListeningThread(gameLogic)
   main.start()
+
+  api = RestApiThread(gameState, gameLogic)
+  api.start()
 
   def playerAdjusted(teamID, playerID, player, parameters):
     msg = proto.PLAYER_SNAPSHOT.create(json.dumps(player, cls=Player.Encoder))
@@ -58,5 +63,6 @@ if __name__ == '__main__':
   gameState.withCurrGameState(printPlayers)
 
   main.stop()
+  api.stop()
 
   sys.exit(retval)
