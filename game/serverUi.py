@@ -259,19 +259,26 @@ class TeamCountSlider(LabelledSlider):
   def __init__(self, gameState):
     super(TeamCountSlider, self).__init__("Team Size: ")
 
+    self.gameState = gameState
+
     self.slider.setMinimum(1)
     self.slider.setMaximum(8)
     self.slider.setSingleStep(1)
     self.slider.setPageStep(1)
     self.slider.setTickPosition(QSlider.TicksAbove)
     self.slider.setTickInterval(1)
-    self.slider.setValue(gameState.withCurrGameState(lambda s: s.targetTeamCount))
+    self.update()
     self.slider.valueChanged.connect(gameState.setTargetTeamCount)
+    gameState.addListener(currentStateChanged=self.update)
+
+  def update(self):
+    self.slider.setValue(self.gameState.withCurrGameState(lambda s: s.targetTeamCount))
 
 
 class GameTimeSlider(LabelledSlider):
   def __init__(self, gameState):
     super(GameTimeSlider, self).__init__("Game Time: ")
+    self.gameState = gameState
 
     self.slider.setMinimum(60) # 1 minute
     self.slider.setMaximum(1800) # 30 minutes
@@ -279,8 +286,12 @@ class GameTimeSlider(LabelledSlider):
     self.slider.setPageStep(300) # 5 minutes
     self.slider.setTickPosition(QSlider.TicksAbove)
     self.slider.setTickInterval(300)
-    self.slider.setValue(gameState.withCurrGameState(lambda s: s.gameTime))
+    self.update()
     self.slider.valueChanged.connect(gameState.setGameTime)
+    gameState.addListener(currentStateChanged=self.update)
+
+  def update(self):
+    self.slider.setValue(self.gameState.withCurrGameState(lambda s: s.gameTime))
 
   def formatValue(self, value):
     return "%02d:%02d" % ((value // 60),  (value % 60))
