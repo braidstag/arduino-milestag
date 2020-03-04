@@ -34,6 +34,7 @@ class MomentaryGameState(object):
 
         self.gameStarted = False
         self.gameTime = 1200 #20 mins
+        self.gameEndTime = None
 
 
     def __eq__(self, other):
@@ -234,6 +235,13 @@ class GameState(object):
         with self.stateLock:
             if self.currGameState.gameEndTime:
                 return self.currGameState.gameEndTime - time.time()
+            else:
+                return None
+
+    def gameEndTime(self):
+        with self.stateLock:
+            if self.currGameState.gameEndTime:
+                return self.currGameState.gameEndTime
             else:
                 return None
 
