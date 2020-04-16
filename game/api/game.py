@@ -10,13 +10,13 @@ class GameResource:
         """Handles GET requests"""
         game = {
             'started': self.gameState.isGameStarted(),
-            'gameEndTime': self.gameState.gameEndTime(), #TODO: how do I omit this if it is None
+            'gameEndTime': self.gameState.gameEndTime(),
             'targetTeamCount': self.gameState.withCurrGameState(lambda s: s.targetTeamCount),
             'gameTime': self.gameState.withCurrGameState(lambda s: s.gameTime),
             'teamPoints': self.gameState.withCurrGameState(lambda s: s.stats.teamPoints),
         }
 
-        resp.media = game
+        resp.media = {key: value for key, value in game.items() if value is not None}
 
     def on_patch(self, req, resp):
         """Handles PATCH requests which change game settings/state"""

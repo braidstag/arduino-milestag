@@ -492,7 +492,6 @@ class GameState(object):
                 self._reapplyEvents()
             # print("New State: " + str(self.uncertainEvents) + " / " + str(self.futureEvents))
 
-    # TODO: call this
     def adjustConfidencePoint(self, newConfidencePoint):
         with self.stateLock:
             if (newConfidencePoint < self.confidencePoint):

@@ -101,6 +101,13 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
                         u'effects': []
                     }
                 },
+                u'stats': {
+                    u'deaths': 0,
+                    u'hitsGiven': 0,
+                    u'hitsReceived': 0,
+                    u'kills': 0,
+                    u'shotsFired': 0
+                }
             },
             {
                 u'teamId': 2,
@@ -119,6 +126,13 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
                         u'effects': []
                     }
                 },
+                u'stats': {
+                    u'deaths': 0,
+                    u'hitsGiven': 0,
+                    u'hitsReceived': 0,
+                    u'kills': 0,
+                    u'shotsFired': 0
+                }
             }
         ]
     }
@@ -159,6 +173,13 @@ def test_getDetails(game_state, game_logic, current_game_state, client, monkeypa
                 u'effects': []
             }
         },
+        u'stats': {
+            u'deaths': 0,
+            u'hitsGiven': 0,
+            u'hitsReceived': 0,
+            u'kills': 0,
+            u'shotsFired': 0
+        }
     }
 
     assert result.status_code == 200

@@ -60,6 +60,16 @@ def test_getValue_removeEffect():
     parameters._removeEffect("player.maxHealth", "id")
     assert parameters._getValue("player.maxHealth", "1/2") == 100
 
+def test_qualifierMatches():
+    parameters = Parameters()
+    assert parameters._qualifierMatches("*", "*") == True
+    assert parameters._qualifierMatches("aa", "*") == True
+    assert parameters._qualifierMatches("*", "bb") == True
+    assert parameters._qualifierMatches("aa*", "*bb") == True
+
+    assert parameters._qualifierMatches("1*", "1") == True
+    assert parameters._qualifierMatches("1*", "12") == True
+    assert parameters._qualifierMatches("1*", "2") == False
 
 def test_subscriptions_broadListener(mocker):
     parameters = Parameters()

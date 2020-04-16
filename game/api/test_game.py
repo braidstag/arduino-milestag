@@ -32,12 +32,13 @@ def game_resource(game_state, game_logic):
 
 def test_get(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
 
-    gameEndTime = time.time() + 1140;
+    gameEndTime = time.time() + 1140
 
     game_state.isGameStarted.return_value = False
     game_state.gameEndTime.return_value = gameEndTime
     current_game_state.targetTeamCount = 2
     current_game_state.gameTime = 1200
+    current_game_state.stats.teamPoints = {1: 2, 2: 5}
 
     result = client.simulate_get('/game')
 
@@ -45,7 +46,33 @@ def test_get(game_state, game_logic, current_game_state, client, monkeypatch, mo
         u'gameEndTime': gameEndTime,
         u'gameTime': 1200,
         u'started': False,
-        u'targetTeamCount': 2
+        u'targetTeamCount': 2,
+        u'teamPoints': {
+            u'1': 2,
+            u'2': 5
+        }
+    }
+
+    assert result.status_code == 200
+
+def test_get_noGameEndTime(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
+
+    game_state.isGameStarted.return_value = False
+    game_state.gameEndTime.return_value = None
+    current_game_state.targetTeamCount = 2
+    current_game_state.gameTime = 1200
+    current_game_state.stats.teamPoints = {1: 2, 2: 5}
+
+    result = client.simulate_get('/game')
+
+    assert result.json == {
+        u'gameTime': 1200,
+        u'started': False,
+        u'targetTeamCount': 2,
+        u'teamPoints': {
+            u'1': 2,
+            u'2': 5
+        }
     }
 
     assert result.status_code == 200

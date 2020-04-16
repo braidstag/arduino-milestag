@@ -2,6 +2,7 @@ from fnmatch import fnmatchcase
 import re
 
 valueRE = re.compile(r'[=*+-]\d+')
+empty_or_all_wildcards = re.compile(r'^\**$')
 
 class Parameters(object):
     """Game play parameters.
@@ -42,12 +43,24 @@ class Parameters(object):
 
     def _notifyListeners(self, parameterName, listenerQualifierPattern):
         for (parameterNamePattern, qualifierPattern, listener) in self.listeners:
-            #check qualifiers both ways round as either pattern could be broader than the other
-            #TODO: This doesn't cover the fact that '*/1' and '1/*' should match
-            #https://stackoverflow.com/a/3213301/6950 for a better algorithm
-            qualifierMatches = fnmatchcase(listenerQualifierPattern, qualifierPattern) or fnmatchcase(qualifierPattern, listenerQualifierPattern)
-            if fnmatchcase(parameterName, parameterNamePattern) and qualifierMatches:
+            if fnmatchcase(parameterName, parameterNamePattern) and self._qualifierMatches(qualifierPattern, listenerQualifierPattern):
                 listener(parameterName)
+
+    # algorithm from https://stackoverflow.com/a/3213301/6950
+    def _qualifierMatches(self, g1, g2):
+        if len(g1) == 0:
+            return bool(empty_or_all_wildcards.match(g2))
+        if len(g2) == 0:
+            return bool(empty_or_all_wildcards.match(g1))
+
+        c1 = g1[0]
+        t1 = g1[1:]
+        c2 = g2[0]
+        t2 = g2[1:]
+        if (c1 == '*' or c2 == '*'):
+            return self._qualifierMatches(g1, t2) or self._qualifierMatches(t1, g2)
+
+        return c1 == c2 and  self._qualifierMatches(t1, t2)
 
     def __str__(self):
         return self.__repr__()
@@ -87,7 +100,6 @@ class Parameters(object):
 
         return { 'parameters': out }
 
-    #TODO: filter to just a single player's effects.
     def toSimpleTypes(self):
         """encode as JSON"""
         out = {}
