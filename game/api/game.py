@@ -13,6 +13,7 @@ class GameResource:
             'gameEndTime': self.gameState.gameEndTime(), #TODO: how do I omit this if it is None
             'targetTeamCount': self.gameState.withCurrGameState(lambda s: s.targetTeamCount),
             'gameTime': self.gameState.withCurrGameState(lambda s: s.gameTime),
+            'teamPoints': self.gameState.withCurrGameState(lambda s: s.stats.teamPoints),
         }
 
         resp.media = game

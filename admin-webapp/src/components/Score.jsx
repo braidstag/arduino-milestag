@@ -54,13 +54,13 @@ function Score(props) {
 
         //team Headers
         const teamsMarkup = Object.keys(playersByTeam).map(teamId => {
-            return <TeamHeader key={teamId}>{teamId}</TeamHeader>;
+            return <TeamHeader key={teamId}>{teamId} - {props.teamPoints[teamId] || 0}</TeamHeader>;
         })
 
         //player details
         const playersMarkup = braidedPlayers.map(p => {
             const key = `${p.teamId}:${p.playerId}`;
-            return p.health !== undefined ? <PlayerContainer key={key}>{p.playerId}. Health: {p.health}/{p.parameters['player.maxHealth'].currentValue}</PlayerContainer> : <PlayerContainer key={key}/>
+            return p.health !== undefined ? <PlayerContainer key={key}>{p.playerId}. Score: {p.stats.kills} Health: {p.health}/{p.parameters['player.maxHealth'].currentValue}</PlayerContainer> : <PlayerContainer key={key}/>
         })
 
         return <SideBySideContainer>{teamsMarkup}{playersMarkup}</SideBySideContainer>;
@@ -68,10 +68,10 @@ function Score(props) {
         //not 2 teams, show in a list
 
         const teamsMarkup = Object.keys(playersByTeam).map(teamId => {
-            const playersMarkup = playersByTeam[teamId].map(p => 
-                <PlayerContainer key={`${p.teamId}:${p.playerId}`}>{p.health}</PlayerContainer>
+            const playersMarkup = playersByTeam[teamId].map(p =>
+                <PlayerContainer key={`${p.teamId}:${p.playerId}`}>{p.playerId}. Score: {p.stats.kills} Health: {p.health}/{p.parameters['player.maxHealth'].currentValue}</PlayerContainer>
             )
-            return <React.Fragment key={teamId}><TeamHeader>{teamId}</TeamHeader>{playersMarkup}</React.Fragment>;
+            return <React.Fragment key={teamId}><TeamHeader>{teamId} - {props.teamPoints[teamId] || 0}</TeamHeader>{playersMarkup}</React.Fragment>;
         })
         return <ListContainer>{teamsMarkup}</ListContainer>;
     }

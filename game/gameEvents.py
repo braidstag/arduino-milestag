@@ -85,6 +85,10 @@ class FireEvent(ClientGameEvent):
 
         if player.ammo > 0 and player.health > 0:
             player.ammo = player.ammo - 1
+
+            if not gameState.isClient:
+                player.stats.shotsFired = player.stats.shotsFired + 1
+
             #Let listeners know this has just been processed
             gameState.notifyFiredListeners()
             #TODO: lookup repeatRate from the player and what their gun does.
@@ -119,8 +123,21 @@ class HitEvent(ClientGameEvent):
             #shooting player is already dead, don't count this if we're the server.
             pass
         else:
-            toPlayer.reduceHealth(self.damage)
+            died = toPlayer.reduceHealth(self.damage)
+            if not gameState.isClient:
+                toPlayer.stats.hitsReceived = toPlayer.stats.hitsReceived + 1
+                fromPlayer.stats.hitsGiven = fromPlayer.stats.hitsGiven + 1
+                if (died):
+                    toPlayer.stats.deaths = toPlayer.stats.deaths + 1
+                    fromPlayer.stats.kills = fromPlayer.stats.kills + 1
 
+                    # update team scores separately to player scores as they might change team and shouldn't take their points with them.
+                    def giveTeamPoint(cgs):
+                        if fromPlayer.teamID in cgs.stats.teamPoints:
+                            cgs.stats.teamPoints[fromPlayer.teamID] = cgs.stats.teamPoints[fromPlayer.teamID] + 1
+                        else:
+                            cgs.stats.teamPoints[fromPlayer.teamID] = 1
+                    gameState.withCurrGameState(giveTeamPoint)
 
 #############
 # Client Only

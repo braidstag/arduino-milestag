@@ -43,6 +43,26 @@ def test_simple_hit_from_live_player(game_state, game_logic, monkeypatch, mocker
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
     assert initialHealth > player.health
+    assert player.stats.hitsReceived == 1
+    assert player.stats.deaths == 0
+
+def test_fatal_hit_from_live_player(game_state, game_logic, monkeypatch, mocker):
+    monkeypatch.setattr('time.time', lambda: 100)
+    mocker.patch("gameState.Timer", autospec=True)
+
+    game_logic.startGame(50)
+    player = game_state.getOrCreatePlayer(1, 1)
+    initialHealth = player.health
+
+    damage = 2000
+
+    game_logic.hit(100, 1, 1, 2, 1, damage)
+
+    assert player.health == 0
+    assert player.stats.hitsReceived == 1
+    assert player.stats.deaths == 1
+    assert game_state.currGameState.stats.teamPoints == {2: 1}
+
 
 def test_simple_hit_from_live_player_client(client_game_state, client_game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -70,6 +90,7 @@ def test_simple_hit_from_live_player_before_game_starts(game_state, game_logic, 
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
     assert initialHealth == player.health
+    assert player.stats.hitsReceived == 0
 
 def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -86,6 +107,7 @@ def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
     assert initialHealth == player.health
+    assert player.stats.hitsReceived == 0
 
 def test_historic_hit_from_live_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -101,6 +123,7 @@ def test_historic_hit_from_live_player(game_state, game_logic, monkeypatch, mock
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
+    assert player.stats.hitsReceived == 0
 
 def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -119,6 +142,7 @@ def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypat
     game_logic.hit(150 + game_state.currGameState.gameTime, 1, 1, 1, 2, damage)
 
     assert initialHealth == player.health
+    assert player.stats.hitsReceived == 0
 
 def test_simple_hit_from_self(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -133,6 +157,7 @@ def test_simple_hit_from_self(game_state, game_logic, monkeypatch, mocker):
     game_logic.hit(100, 1, 1, 1, 1, damage)
 
     assert initialHealth == player.health
+    assert player.stats.hitsReceived == 0
 
 def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     "Test handling of a subsequent, earlier event"
@@ -150,12 +175,35 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     game_logic.hit(200, 2, 1, 1, 1, 999)
 
     assert game_state.currGameState.players[(1, 1)].health > 0
+    assert game_state.currGameState.players[(1, 1)].stats.hitsGiven == 1
+    assert game_state.currGameState.players[(1, 1)].stats.hitsReceived == 0
+    assert game_state.currGameState.players[(1, 1)].stats.kills == 1
+    assert game_state.currGameState.players[(1, 1)].stats.deaths ==0
+
     assert game_state.currGameState.players[(2, 1)].health == 0
+    assert game_state.currGameState.players[(2, 1)].stats.hitsGiven == 0
+    assert game_state.currGameState.players[(2, 1)].stats.hitsReceived == 1
+    assert game_state.currGameState.players[(2, 1)].stats.kills == 0
+    assert game_state.currGameState.players[(2, 1)].stats.deaths ==1
+
+    assert game_state.currGameState.stats.teamPoints == {1: 1}
+
 
     game_logic.hit(100, 1, 1, 2, 1, 999)
 
     assert game_state.currGameState.players[(1, 1)].health == 0
+    assert game_state.currGameState.players[(1, 1)].stats.hitsGiven == 0
+    assert game_state.currGameState.players[(1, 1)].stats.hitsReceived == 1
+    assert game_state.currGameState.players[(1, 1)].stats.kills == 0
+    assert game_state.currGameState.players[(1, 1)].stats.deaths ==1
+
     assert game_state.currGameState.players[(2, 1)].health > 0
+    assert game_state.currGameState.players[(2, 1)].stats.hitsGiven == 1
+    assert game_state.currGameState.players[(2, 1)].stats.hitsReceived == 0
+    assert game_state.currGameState.players[(2, 1)].stats.kills == 1
+    assert game_state.currGameState.players[(2, 1)].stats.deaths ==0
+
+    assert game_state.currGameState.stats.teamPoints == {2: 1}
 
     #at first we though 1,1 killed 2,1 @ 200 but it turns out that 2,1 killed 1,1 @ 100
     assert playerAdjustedListener.call_count == 2
@@ -172,6 +220,7 @@ def test_simple_fire(game_state, game_logic, monkeypatch, mocker):
     game_logic.trigger(100, 1, 1)
 
     assert initialAmmo - 1 == player.ammo
+    assert player.stats.shotsFired == 1
 
 def test_simple_fire_client(client_game_state, client_game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -199,6 +248,7 @@ def test_repeat_fire(game_state, game_logic, monkeypatch, mocker):
 
     assert initialAmmo - 3 == player.ammo
     assert isinstance(game_state.futureEvents[1], FireEvent)
+    assert player.stats.shotsFired == 3
 
 def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -215,6 +265,7 @@ def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 2 == player.ammo
     assert len(game_state.futureEvents) == 1
+    assert player.stats.shotsFired == 2
 
 #TODO: Should this be a unit test?
 

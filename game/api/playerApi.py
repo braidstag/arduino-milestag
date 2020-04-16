@@ -1,3 +1,5 @@
+from player import Stats
+
 def extractPlayerInfo(currentGameState, player, fullInfo = True):
     playerObj = {
         'teamId': player.teamID,
@@ -13,6 +15,7 @@ def extractPlayerInfo(currentGameState, player, fullInfo = True):
             params[p]['currentValue'] = currentGameState.parameters._getValue(p, str(player.teamID) + "/" + str(player.playerID))
 
         playerObj['parameters'] = params
+        playerObj['stats'] = player.stats.toSimpleTypes()
 
     return playerObj
 

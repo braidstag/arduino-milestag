@@ -15,6 +15,29 @@ CS_UNINITIALISED = "CS_UNINITIALISED" # Not yet added to game
 CS_INITIALISING = "CS_INITIALISING" # Being added to game
 CS_ESTABLISHED = "CS_ESTABLISHED" # Added to game
 
+
+class Stats():
+    def __init__(self):
+        self.teamPoints = {}
+
+    def __str__(self):
+        return "Stats(%s)" % (str(self.__dict__), )
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def toSimpleTypes(self):
+        return self.__dict__
+
 #TODO: Can we make this (and Player) immutable and have events create a new one based on their changes?
 class MomentaryGameState(object):
     """The state of the game at any given moment in time.
@@ -31,6 +54,7 @@ class MomentaryGameState(object):
         self.targetTeamCount = TEAM_COUNT
 
         self.parameters = Parameters()
+        self.stats = Stats()
 
         self.gameStarted = False
         self.gameTime = 1200 #20 mins

@@ -103,6 +103,7 @@ function App() {
           <Route exact path="/score" render={() => (
             <Score
               players={players}
+              teamPoints={data.teamPoints}
             />
           )} />
         </>
