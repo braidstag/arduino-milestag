@@ -270,9 +270,9 @@ def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
 #TODO: Should this be a unit test?
 
 # def test_detectAndHandleClockDrift(msg_handler, server, game_state, mocker):
-#     server.timeProvider.return_value = 300
+#     monkeypatch.setattr('time.time', lambda: 300)
 #     assert msg_handler.handleMsg("E(123def,1200,Pong(100,0))", server)
-#     server.timeProvider.return_value = 400
+#     monkeypatch.setattr('time.time', lambda: 400)
 #     mocker.spy(game_state, "addEvent")
 #     assert msg_handler.handleMsg("E(123def,1300,H2,1,3)", server)
 

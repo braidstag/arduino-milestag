@@ -2,8 +2,7 @@
 
 from __future__ import print_function
 
-#TODO replace timeProvider with just time.time
-#import time
+import time
 
 from core import ClientServer
 from connection import ClientServerConnection
@@ -16,7 +15,7 @@ class ServerConnection(ClientServerConnection):
     ClientServerConnection.__init__(self)
     self.listeningThread = listeningThread #TODO: Can we remove this reference?
     self.msgHandler = msgHandler
-    self.lastContact = self.timeProvider()
+    self.lastContact = time.time()
     self.latency = 0
     self.clientClockDrift = 0
 
@@ -41,10 +40,10 @@ class ServerConnection(ClientServerConnection):
     self.startLatencyCheck()
 
   def isOutOfContact(self):
-    return self.lastContact < self.timeProvider() - self.outOfContactTime
+    return self.lastContact < time.time() - self.outOfContactTime
 
   def outOfContactTimeStr(self):
-    return "{:,}s".format((self.timeProvider() - self.lastContact))
+    return "{:,}s".format((time.time() - self.lastContact))
 
   def setLatency(self, latency):
     self.latency = latency

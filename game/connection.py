@@ -36,11 +36,10 @@ class PiSerialIdProvider():
 
 
 class ClientServerConnection(object):
-  def __init__(self, idProvider = PiSerialIdProvider(), timeProvider = time.time):
+  def __init__(self, idProvider = PiSerialIdProvider()):
     self.sock = None
     self.readThread = None
-    self.timeProvider = timeProvider
-    self.writeThread = WriteThread(idProvider, timeProvider)
+    self.writeThread = WriteThread(idProvider)
     self.writeThread.start()
 
   def queueMessage(self, msg):
@@ -139,7 +138,7 @@ class ReadThread(Thread):
     self.shouldStop = True
 
 class WriteThread(Thread):
-  def __init__(self, idProvider, timeProvider):
+  def __init__(self, idProvider):
     super(WriteThread, self).__init__(group=None)
     self.setDaemon(True)
     self.name = "Client/Server Write Thread"
@@ -148,7 +147,6 @@ class WriteThread(Thread):
     self.shouldStop = False
 
     self.idProvider = idProvider
-    self.timeProvider = timeProvider
 
   def run(self):
     while not self.shouldStop:
@@ -178,7 +176,7 @@ class WriteThread(Thread):
     self.join()
 
   def queueMessage(self, msg):
-    self.queue.put(Event(msg, self.idProvider(), self.timeProvider()))
+    self.queue.put(Event(msg, self.idProvider(), time.time()))
 
   def setSocket(self, sock):
     self.sock = sock
