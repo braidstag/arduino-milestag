@@ -72,8 +72,6 @@ class Client():
       print("<a-", repr(line))
       sys.stdout.flush()
 
-      mainPlayer = self.gameState.getMainPlayer()
-
       h = proto.MessageHandler()
 
       @h.handles(proto.HIT)
@@ -100,6 +98,7 @@ class Client():
       #TODO be more discerning about unparseable input here.
       h.handle(line)
 
+      mainPlayer = self.gameState.getMainPlayer()
       if (mainPlayer):
         msg = proto.RECV.create(mainPlayer.teamID, mainPlayer.playerID, line)
       else:

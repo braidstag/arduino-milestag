@@ -20,7 +20,7 @@ def test_establishConnection(listening_thread, mocker):
     "Test establishConnection"
     server = mocker.MagicMock()
     server2 = mocker.MagicMock()
-    player = Player(1,1)
+    player = Player(teamID = 1, playerID = 1)
     clientId = 'abc123'
 
     listening_thread.uninitialisedConnections = set([server, server2])
@@ -37,7 +37,7 @@ def test_establishConnection_initialising(listening_thread, mocker):
     "Test establishConnection for an initialising connection"
     server = mocker.MagicMock()
     server2 = mocker.MagicMock()
-    player = Player(1,1)
+    player = Player(teamID = 1, playerID = 1)
     clientId = 'abc123'
 
     listening_thread.uninitialisedConnections = set([server2])

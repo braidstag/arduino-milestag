@@ -66,13 +66,8 @@ def test_getListSummary(game_state, game_logic, current_game_state, client, monk
     assert result.status_code == 200
 
 def test_getListFull(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
-    player1 = Player(1, 1)
-    player1.ammo = 95
-    player1.health = 8
-
-    player2 = Player(2, 1)
-    player2.ammo = 100
-    player2.health = 7
+    player1 = Player(teamID = 1, playerID = 1, ammo = 95, health = 8)
+    player2 = Player(teamID = 2, playerID = 1, ammo = 100, health = 7)
 
     current_game_state.players = {
         (1,1): player1,
@@ -140,13 +135,8 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
     assert result.status_code == 200
 
 def test_getDetails(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
-    player1 = Player(1, 1)
-    player1.ammo = 95
-    player1.health = 8
-
-    player2 = Player(2, 1)
-    player2.ammo = 100
-    player2.health = 7
+    player1 = Player(teamID = 1, playerID = 1, ammo = 95, health = 8)
+    player2 = Player(teamID = 2, playerID = 1, ammo = 100, health = 7)
 
     current_game_state.players = {
         (1,1): player1,

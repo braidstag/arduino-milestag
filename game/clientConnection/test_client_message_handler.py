@@ -38,10 +38,7 @@ def test_playerSnapshot(client_connection, mocker, monkeypatch):
     mocker.patch("gameState.Timer", autospec=True)
     assert client_connection.handleMsg('E(123def,1516565852,PlayerSnapshot({"playerID": 2, "teamID": 1, "health": 5, "gunDamage": 1, "ammo": 100}))')
 
-    p = Player(1, 2)
-    p.health == 5
-    p.gunDamage == 1
-    p.ammo == 100
+    p = Player(teamID = 1, playerID = 2, ammo = 100, health = 5, gunDamage = 1)
 
     client_connection.game_logic.setPlayerSnapshot.assert_called_once_with(300, p)
 

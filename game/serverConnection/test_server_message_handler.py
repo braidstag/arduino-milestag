@@ -40,7 +40,7 @@ def test_hello_new(msg_handler, mocker):
     "Test handling of HELLO message from new client"
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = None
-    msg_handler.gameLogic.gameState.createNewPlayer.return_value = Player(1, 1)
+    msg_handler.gameLogic.gameState.createNewPlayer.return_value = Player(teamID = 1, playerID = 1)
     cgs = mocker.MagicMock()
     cgs.parameters = Parameters()
     msg_handler.gameLogic.gameState.withCurrGameState.side_effect = lambda x: x(cgs)
@@ -51,7 +51,7 @@ def test_hello_existing(msg_handler, mocker):
     "Test handling of HELLO message from existing client"
     server = mocker.MagicMock()
     msg_handler.listeningThread.isConnected.return_value = (3, 4)
-    player = Player(3, 4)
+    player = Player(teamID = 3, playerID = 4)
     msg_handler.gameLogic.gameState.getOrCreatePlayer.return_value = player
     cgs = mocker.MagicMock()
     cgs.parameters = Parameters()
@@ -89,7 +89,7 @@ def test_recv_initialising_hit(msg_handler, mocker):
     server2.clientTimeToServer.return_value = 200
     server2.clientId=0x123def
 
-    player = Player(1, 1)
+    player = Player(teamID = 1, playerID = 1)
 
     msg_handler.listeningThread.initialisingConnection=server2
     msg_handler.gameLogic.gameState.createNewPlayer.return_value = player
@@ -117,7 +117,7 @@ def test_recv_initialising_hit_unstarted(msg_handler, mocker):
     server2.clientTimeToServer.return_value = 200
     server2.clientId=0x123def
 
-    player = Player(1, 1)
+    player = Player(teamID = 1, playerID = 1)
 
     msg_handler.listeningThread.initialisingConnection=server2
     msg_handler.gameLogic.gameState.createNewPlayer.return_value = player

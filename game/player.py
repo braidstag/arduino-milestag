@@ -2,13 +2,26 @@ from __future__ import print_function
 
 import json
 
-class Stats():
-    def __init__(self):
-        self.shotsFired = 0
-        self.hitsReceived = 0
-        self.hitsGiven = 0
-        self.deaths = 0
-        self.kills = 0
+class Stats(object):
+    def __init__(self, copyFrom = None, shotsFired = 0, hitsReceived = 0, hitsGiven = 0, deaths = 0, kills = 0):
+        if (copyFrom):
+            shotsFired = shotsFired or copyFrom.shotsFired
+            hitsReceived = hitsReceived or copyFrom.hitsReceived
+            hitsGiven = hitsGiven or copyFrom.hitsGiven
+            deaths = deaths or copyFrom.deaths
+            kills = kills or copyFrom.kills
+
+        object.__setattr__(self, "shotsFired", shotsFired)
+        object.__setattr__(self, "hitsReceived", hitsReceived)
+        object.__setattr__(self, "hitsGiven", hitsGiven)
+        object.__setattr__(self, "deaths", deaths)
+        object.__setattr__(self, "kills", kills)
+
+    def __setattr__(self, *args):
+        raise TypeError
+
+    def __delattr__(self, *args):
+        raise TypeError
 
     def __str__(self):
         return "Stats(%s)" % (str(self.__dict__), )
@@ -29,18 +42,44 @@ class Stats():
         return self.__dict__
 
 
-class Player():
+class Player(object):
 
-    def __init__(self, teamID, playerID):
-        self.stats = Stats()
-        self.teamID = int(teamID)
-        self.playerID = int(playerID)
-        self.reset()
+    def __init__(self, teamID = None, playerID = None, copyFrom = None, stats = None, ammo = None, health = None, gunDamage = None):
+        if (copyFrom):
+            teamID = teamID or copyFrom.teamID
+            playerID = playerID or copyFrom.playerID
+            if ammo == None:
+                ammo = copyFrom.ammo
+            if health == None:
+                health = copyFrom.health
+            if gunDamage == None:
+                gunDamage = copyFrom.gunDamage
 
-    def reset(self):
-        self.ammo = 100
-        self.health = 5
-        self.gunDamage = 1
+            if stats and not isinstance(stats, Stats):
+                #This is an object literal which should be mixed in with the stats from copyFrom
+                stats = Stats(copyFrom = copyFrom.stats, **stats)
+            else:
+                stats = stats or copyFrom.stats
+
+        #Default values
+        stats = stats or Stats()
+        if ammo == None:
+            ammo = 100
+        if health == None:
+            health = 5
+        if gunDamage == None:
+            gunDamage = 1
+
+        #Type coercion
+        teamID = int(teamID)
+        playerID = int(playerID)
+
+        object.__setattr__(self, "teamID", teamID)
+        object.__setattr__(self, "playerID", playerID)
+        object.__setattr__(self, "ammo", ammo)
+        object.__setattr__(self, "health", health)
+        object.__setattr__(self, "gunDamage", gunDamage)
+        object.__setattr__(self, "stats", stats)
 
     def __str__(self):
         return "Player(team=%d, id=%d, ammo=%d, health=%d)" % (self.teamID, self.playerID, self.ammo, self.health)
@@ -59,14 +98,11 @@ class Player():
 
     def reduceHealth(self, damage):
         if (self.health > int(damage)):
-            self.health -= int(damage)
-            return False
+            return Player(copyFrom=self, health=self.health - int(damage))
         elif (self.health > 0):
-            self.health = 0
-            return True
+            return Player(copyFrom=self, health=0)
         else:
-            # already have 0 health
-            return False
+            return self
 
 #TODO: Should stats be included in here?
     class Encoder(json.JSONEncoder):
@@ -86,9 +122,10 @@ class Player():
 
         def dict_to_object(self, jsonObj):
             """decode JSON"""
-            p = Player(jsonObj["teamID"], jsonObj["playerID"])
-            p.ammo = jsonObj["ammo"]
-            p.health = jsonObj["health"]
-            p.gunDamage = jsonObj["gunDamage"]
-
-            return p
+            return Player(
+                teamID = jsonObj["teamID"],
+                playerID = jsonObj["playerID"],
+                ammo = jsonObj["ammo"],
+                health = jsonObj["health"],
+                gunDamage = jsonObj["gunDamage"]
+            )

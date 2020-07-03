@@ -83,7 +83,7 @@ class GameState(object):
 
     We keep a baseline state which contains the result of all certain past events
     (and discard the certain past events themselves)
-    We periodically re-baseline when we are confident that we have recieved
+    We periodically re-baseline when we are confident that we have received
     all events up to a point (the confidence point) effectively moving events
     from the uncertain past to the certain past.
 
@@ -124,7 +124,7 @@ class GameState(object):
     def getOrCreatePlayer(self, sentTeam, sentPlayer):
         with self.stateLock:
             if not (sentTeam, sentPlayer) in self.currGameState.players:
-                self.currGameState.players[(sentTeam, sentPlayer)] = Player(sentTeam, sentPlayer)
+                self.currGameState.players[(sentTeam, sentPlayer)] = Player(teamID = sentTeam, playerID = sentPlayer)
                 if sentTeam > self.currGameState.teamCount:
                     self.currGameState.teamCount = sentTeam
                     # self.currGameState.teamCountChanged.emit(self.currGameState.teamCount)
@@ -158,10 +158,8 @@ class GameState(object):
             if (srcTeamID, srcPlayerID) not in self.currGameState.players:
                 return
 
-            player = self.currGameState.players[(srcTeamID, srcPlayerID)]
+            player = Player(copyFrom = self.currGameState.players[(srcTeamID, srcPlayerID)], teamID = dstTeamID, playerID = dstPlayerID)
             self.currGameState.players[(dstTeamID, dstPlayerID)] = player
-            player.teamID = dstTeamID
-            player.playerID = dstPlayerID
             # TODO: should we reset their stats.
             del self.currGameState.players[(srcTeamID, srcPlayerID)]
 
@@ -302,10 +300,10 @@ class GameState(object):
     def setMainPlayer(self, player):
         with self.stateLock:
             key = (player.teamID, player.playerID)
-            self.currGameState.players[key] = deepcopy(player)
+            self.currGameState.players[key] = player
             self.currGameState.mainPlayer = key
             self.clientState = CS_ESTABLISHED
-            self._notifyPlayerInitialisedListeners
+            self._notifyPlayerInitialisedListeners()
 
         self._notifyStateChangedListeners()
 
@@ -320,7 +318,12 @@ class GameState(object):
         self._notifyStateChangedListeners()
 
     def getMainPlayer(self):
-        #TODO: player is mutable, there is nothing preventing this being changed by our events system. We should do this as withMainPlayer(func)
+        """
+        Get the (immutable) Player object for the main player.
+
+        While this uses a lock internally, it isn't retained so be careful when using this
+        along with any other gameState as it may get out of sync.
+        """
         with self.stateLock:
             try:
                 return self.currGameState.players[self.currGameState.mainPlayer]
@@ -466,9 +469,8 @@ class GameState(object):
             newPlayer = self.getOrCreatePlayer(oldPlayer.teamID, oldPlayer.playerID)
             if (oldPlayer != newPlayer):
                 print("Detected a Player in need of adjusting: ", oldPlayer, "->", newPlayer)
-                playerSnapshot = deepcopy(newPlayer)
                 parametersSnapshot = deepcopy(self.currGameState.parameters)
-                self._notifyPlayerAdjustedListeners(oldPlayer.teamID, oldPlayer.playerID, playerSnapshot, parametersSnapshot)
+                self._notifyPlayerAdjustedListeners(oldPlayer.teamID, oldPlayer.playerID, newPlayer, parametersSnapshot)
 
         #add the new events
         for newEvent in newEvents:

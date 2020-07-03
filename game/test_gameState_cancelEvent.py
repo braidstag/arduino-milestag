@@ -4,7 +4,6 @@ import time
 from mock import call, ANY
 
 from gameState import GameState
-from player import Player
 from gameEvents import GameEvent
 
 import gameState

@@ -4,7 +4,6 @@ import pytest
 from gameLogic import GameLogic
 from gameState import GameState
 from clientConnection import ClientConnection
-from player import Player
 
 # pylint:disable=redefined-outer-name
 

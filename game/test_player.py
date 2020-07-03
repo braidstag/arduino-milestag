@@ -24,3 +24,14 @@ def test_deserialising():
     assert p.health == 5
     assert p.gunDamage == 1
     assert p.ammo == 100
+
+
+def test_copyFrom():
+    p1 = Player(teamID=1, playerID=2, health=5)
+    p2 = Player(copyFrom=p1, health=10)
+
+    assert p2.health == 10
+
+    p3 = Player(copyFrom=p1, health=0)
+
+    assert p3.health == 0

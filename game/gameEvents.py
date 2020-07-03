@@ -1,5 +1,6 @@
 from __future__ import print_function
 from gameState import CS_OFFLINE, CS_UNINITIALISED, CS_INITIALISING, CS_ESTABLISHED
+from player import Player, Stats as PlayerStats
 
 class GameEvent(object):
     """An event in the game. Not to be confused with the class representing the string passed over the wire between client and server"""
@@ -84,10 +85,12 @@ class FireEvent(ClientGameEvent):
         #print("Applying FireEvent to", player)
 
         if player.ammo > 0 and player.health > 0:
-            player.ammo = player.ammo - 1
+            player = Player(copyFrom = player, ammo = player.ammo - 1)
 
             if not gameState.isClient:
-                player.stats.shotsFired = player.stats.shotsFired + 1
+                player = Player(copyFrom = player, stats = {'shotsFired': player.stats.shotsFired + 1})
+
+            gameState.currGameState.players[(player.teamID, player.playerID)] = player
 
             #Let listeners know this has just been processed
             gameState.notifyFiredListeners()
@@ -123,13 +126,16 @@ class HitEvent(ClientGameEvent):
             #shooting player is already dead, don't count this if we're the server.
             pass
         else:
-            died = toPlayer.reduceHealth(self.damage)
+            origToPlayer = toPlayer
+            toPlayer = toPlayer.reduceHealth(self.damage)
+            died = origToPlayer != toPlayer and toPlayer.health == 0
             if not gameState.isClient:
-                toPlayer.stats.hitsReceived = toPlayer.stats.hitsReceived + 1
-                fromPlayer.stats.hitsGiven = fromPlayer.stats.hitsGiven + 1
+                toPlayer = Player(copyFrom=toPlayer, stats = {'hitsReceived': toPlayer.stats.hitsReceived + 1})
+                fromPlayer = Player(copyFrom=fromPlayer, stats = {'hitsGiven': fromPlayer.stats.hitsGiven + 1})
+
                 if (died):
-                    toPlayer.stats.deaths = toPlayer.stats.deaths + 1
-                    fromPlayer.stats.kills = fromPlayer.stats.kills + 1
+                    toPlayer = Player(copyFrom=toPlayer, stats = {'deaths': toPlayer.stats.deaths + 1})
+                    fromPlayer = Player(copyFrom=fromPlayer, stats = {'kills': fromPlayer.stats.kills + 1})
 
                     # update team scores separately to player scores as they might change team and shouldn't take their points with them.
                     def giveTeamPoint(cgs):
@@ -138,6 +144,8 @@ class HitEvent(ClientGameEvent):
                         else:
                             cgs.stats.teamPoints[fromPlayer.teamID] = 1
                     gameState.withCurrGameState(giveTeamPoint)
+                gameState.currGameState.players[(self.sentTeam, self.sentPlayerId)] = fromPlayer
+            gameState.currGameState.players[(toPlayer.teamID, toPlayer.playerID)] = toPlayer
 
 #############
 # Client Only

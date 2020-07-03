@@ -42,6 +42,7 @@ def test_simple_hit_from_live_player(game_state, game_logic, monkeypatch, mocker
 
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth > player.health
     assert player.stats.hitsReceived == 1
     assert player.stats.deaths == 0
@@ -58,6 +59,7 @@ def test_fatal_hit_from_live_player(game_state, game_logic, monkeypatch, mocker)
 
     game_logic.hit(100, 1, 1, 2, 1, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert player.health == 0
     assert player.stats.hitsReceived == 1
     assert player.stats.deaths == 1
@@ -76,6 +78,7 @@ def test_simple_hit_from_live_player_client(client_game_state, client_game_logic
 
     client_game_logic.hit(100, None, None, 1, 2, damage)
 
+    player = client_game_state.getOrCreatePlayer(1, 1)
     assert initialHealth > player.health
 
 def test_simple_hit_from_live_player_before_game_starts(game_state, game_logic, monkeypatch, mocker):
@@ -89,6 +92,7 @@ def test_simple_hit_from_live_player_before_game_starts(game_state, game_logic, 
 
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
     assert player.stats.hitsReceived == 0
 
@@ -101,11 +105,14 @@ def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker
     initialHealth = player.health
 
     sentPlayer = game_state.getOrCreatePlayer(1, 2)
-    sentPlayer.health = 0
+    sentPlayer = Player(copyFrom = sentPlayer, health = 0)
+
+    game_state.currGameState.players[(1, 2)] = sentPlayer
     damage = 2
 
     game_logic.hit(100, 1, 1, 1, 2, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
     assert player.stats.hitsReceived == 0
 
@@ -141,6 +148,7 @@ def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypat
 
     game_logic.hit(150 + game_state.currGameState.gameTime, 1, 1, 1, 2, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
     assert player.stats.hitsReceived == 0
 
@@ -156,6 +164,7 @@ def test_simple_hit_from_self(game_state, game_logic, monkeypatch, mocker):
 
     game_logic.hit(100, 1, 1, 1, 1, damage)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
     assert player.stats.hitsReceived == 0
 
@@ -195,13 +204,13 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     assert game_state.currGameState.players[(1, 1)].stats.hitsGiven == 0
     assert game_state.currGameState.players[(1, 1)].stats.hitsReceived == 1
     assert game_state.currGameState.players[(1, 1)].stats.kills == 0
-    assert game_state.currGameState.players[(1, 1)].stats.deaths ==1
+    assert game_state.currGameState.players[(1, 1)].stats.deaths == 1
 
     assert game_state.currGameState.players[(2, 1)].health > 0
     assert game_state.currGameState.players[(2, 1)].stats.hitsGiven == 1
     assert game_state.currGameState.players[(2, 1)].stats.hitsReceived == 0
     assert game_state.currGameState.players[(2, 1)].stats.kills == 1
-    assert game_state.currGameState.players[(2, 1)].stats.deaths ==0
+    assert game_state.currGameState.players[(2, 1)].stats.deaths == 0
 
     assert game_state.currGameState.stats.teamPoints == {2: 1}
 
@@ -219,6 +228,7 @@ def test_simple_fire(game_state, game_logic, monkeypatch, mocker):
 
     game_logic.trigger(100, 1, 1)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 1 == player.ammo
     assert player.stats.shotsFired == 1
 
@@ -233,6 +243,7 @@ def test_simple_fire_client(client_game_state, client_game_logic, monkeypatch, m
 
     client_game_logic.trigger(100, None, None)
 
+    player = client_game_state.getMainPlayer()
     assert initialAmmo - 1 == player.ammo
 
 def test_repeat_fire(game_state, game_logic, monkeypatch, mocker):
@@ -246,6 +257,7 @@ def test_repeat_fire(game_state, game_logic, monkeypatch, mocker):
 
     game_logic.trigger(50, 1, 1)
 
+    player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 3 == player.ammo
     assert isinstance(game_state.futureEvents[1], FireEvent)
     assert player.stats.shotsFired == 3
@@ -288,7 +300,7 @@ def test_set_main_player_after_hit(client_game_state, client_game_logic, monkeyp
     player1 = client_game_state.getMainPlayer()
     client_game_logic.setMainPlayer(20, player1)
 
-    player2 = deepcopy(client_game_state.getOrCreatePlayer(1, 2))
+    player2 = client_game_state.getOrCreatePlayer(1, 2)
     client_game_logic.setMainPlayer(120, player2)
 
     initialHealth = player1.health
