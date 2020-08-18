@@ -2,6 +2,14 @@
 //milestag protocol 2 documented at http://www.lasertagparts.com/mtformat-2.htm
 // we currently only implement MT1 as MT2 seems incomplete.
 
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <Arduino.h>
+#include <HardwareSerial.h>
+#include "miles_tag_defines.h"
+#include "IRComms.h"
+
 void serialQueue(int size, const char * fmt, ...) {
   char* out = (char*) malloc(size);
   va_list ap;

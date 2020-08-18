@@ -7,6 +7,8 @@
  
 #include <Wire.h>
 #include "glcdfont.c"
+#include "IRComms.h"
+
 #define SSD1306_LCDWIDTH                  128
 #define SSD1306_LCDHEIGHT                 64
 
@@ -75,6 +77,66 @@ char screen_scrollingData[SCREEN_HEIGHT][SCREEN_WIDTH] = {
 };
 byte screen_scrollingDataBottomLineIndex = 7;
 
+
+void ssd1306_command(uint8_t c) {
+    uint8_t control = 0x00;   // Co = 0, D/C = 0
+    Wire.beginTransmission(I2C_ADDR);
+    Wire.write(control);
+    Wire.write(c);
+    Wire.endTransmission();
+}
+
+void display() {
+  ssd1306_command(SSD1306_COLUMNADDR);
+  ssd1306_command(0);   // Column start address (0 = reset)
+  ssd1306_command(SSD1306_LCDWIDTH-1); // Column end address (127 = reset)
+
+  ssd1306_command(SSD1306_PAGEADDR);
+  ssd1306_command(0); // Page start address (0 = reset)
+  ssd1306_command(7); // Page end address
+
+
+
+  for(int8_t charRow=0; charRow<8; charRow++) { // 8 rows of character
+    byte lineBuffer[24] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    byte lineBufferCount = 0;
+    
+    for(int8_t charCol=0; charCol<21; charCol++) { // 21 characters per row
+      char c = screen_scrollingData[(screen_scrollingDataBottomLineIndex + 1 + charRow) % 8][charCol];
+      for(int8_t i=0; i<5; i++) { // 5 cols within each character
+        //right shift to find the correct row and check least significant bit 
+        uint8_t vline = (c == 0 || c == 0x20) ? 0 : pgm_read_byte(&font[c * 5 + i]);
+        lineBuffer[lineBufferCount++] = vline;
+      }
+      //blank col after the character
+      lineBuffer[lineBufferCount++] = 0;
+
+      //the number of bytes we write at once must be a multiple of 6
+      if (lineBufferCount == 12) {
+        //write out 12 bytes at once
+        Wire.beginTransmission(I2C_ADDR);
+        Wire.write(0x40);
+        for (uint8_t x=0; x<12; x++) {
+          Wire.write(lineBuffer[x]);
+        }
+        Wire.endTransmission();
+        lineBufferCount = 0;
+      }
+    }
+
+    Wire.beginTransmission(I2C_ADDR);
+    Wire.write(0x40);
+    //write remaining columns
+    for (uint8_t x=0; x<lineBufferCount; x++) {
+      Wire.write(lineBuffer[x]);
+    }
+    //write two blank columns to finish the line
+    Wire.write(0);
+    Wire.write(0);
+    Wire.endTransmission();
+  }
+}
+
 void screen_setup() {
 
   Wire.begin();
@@ -133,69 +195,8 @@ void screen_setup() {
   display();
 }
 
-void ssd1306_command(uint8_t c) {
-    uint8_t control = 0x00;   // Co = 0, D/C = 0
-    Wire.beginTransmission(I2C_ADDR);
-    Wire.write(control);
-    Wire.write(c);
-    Wire.endTransmission();
-}
-
-
-void display() {
-  ssd1306_command(SSD1306_COLUMNADDR);
-  ssd1306_command(0);   // Column start address (0 = reset)
-  ssd1306_command(SSD1306_LCDWIDTH-1); // Column end address (127 = reset)
-
-  ssd1306_command(SSD1306_PAGEADDR);
-  ssd1306_command(0); // Page start address (0 = reset)
-  ssd1306_command(7); // Page end address
-
-
-
-  for(int8_t charRow=0; charRow<8; charRow++) { // 8 rows of character
-    byte lineBuffer[24] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    byte lineBufferCount = 0;
-    
-    for(int8_t charCol=0; charCol<21; charCol++) { // 21 characters per row
-      char c = screen_scrollingData[(screen_scrollingDataBottomLineIndex + 1 + charRow) % 8][charCol];
-      for(int8_t i=0; i<5; i++) { // 5 cols within each character
-        //right shift to find the correct row and check least significant bit 
-        uint8_t vline = (c == 0 || c == 0x20) ? 0 : pgm_read_byte(&font[c * 5 + i]);
-        lineBuffer[lineBufferCount++] = vline;
-      }
-      //blank col after the character
-      lineBuffer[lineBufferCount++] = 0;
-
-      //the number of bytes we write at once must be a multiple of 6
-      if (lineBufferCount == 12) {
-        //write out 12 bytes at once
-        Wire.beginTransmission(I2C_ADDR);
-        Wire.write(0x40);
-        for (uint8_t x=0; x<12; x++) {
-          Wire.write(lineBuffer[x]);
-        }
-        Wire.endTransmission();
-        lineBufferCount = 0;
-      }
-    }
-
-    Wire.beginTransmission(I2C_ADDR);
-    Wire.write(0x40);
-    //write remaining columns
-    for (uint8_t x=0; x<lineBufferCount; x++) {
-      Wire.write(lineBuffer[x]);
-    }
-    //write two blank columns to finish the line
-    Wire.write(0);
-    Wire.write(0);
-    Wire.endTransmission();
-  }
-}
-
 void screen_addScrollingData(const char newLine[]) {
   screen_scrollingDataBottomLineIndex = (screen_scrollingDataBottomLineIndex + 1) % SCREEN_HEIGHT;
   strncpy(screen_scrollingData[screen_scrollingDataBottomLineIndex], newLine, SCREEN_WIDTH);
   display();
 }
-

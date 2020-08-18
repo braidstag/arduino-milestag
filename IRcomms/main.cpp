@@ -1,12 +1,93 @@
 //#define DEBUG_DECODE 1
 #define DEBUG_MAIN_LOOP 1
 
+#include <Arduino.h>
+#include <HardwareSerial.h>
+#include "pins.h"
+#include "IRComms.h"
+
 void decode_signal() {
 #ifdef DEBUG_DECODE
   Serial.print("==");
   Serial.println(readBuffer, BIN);
   Serial.println(readBuffer, HEX);
 #endif
+}
+
+void flashDigit(char c) {
+  char d = c - 0x30; //ASCII to numbers
+  digitalWrite(muzzleblue_pin, HIGH);
+  delay(200);
+  digitalWrite(muzzleblue_pin, LOW);
+  delay(300);
+  for (int i = 0; i < d; i++) {
+    digitalWrite(muzzlered_pin, HIGH);
+    delay(100);
+    digitalWrite(muzzlered_pin, LOW);
+    delay(300);
+  }
+  delay(1000);
+}
+
+boolean clientConnected = false;
+int preConnectedTeamId = 7; //our teamId - only used before a proper client connects.
+
+boolean oldTrigger = false;
+unsigned long lastTriggerCheck = 0;
+
+void checkTrigger() {
+  //only check the trigger every millisecond as a crude de-bounce.
+  if (micros() > lastTriggerCheck + 1000) {
+    boolean trigger = digitalRead(trigger_pin);
+    if (trigger && trigger != oldTrigger) {
+      //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
+      if (clientConnected) {
+        serialQueue_s("T\n");
+      }
+      else {
+        mt_fireShot();
+      }
+
+      oldTrigger = trigger;    
+    }
+    if (!trigger && trigger != oldTrigger) {
+      if (clientConnected) {
+        serialQueue_s("t\n");
+      }
+
+      oldTrigger = trigger;    
+    }
+    lastTriggerCheck = micros();
+  }
+}
+
+void checkAltfire() {
+  boolean altfire = digitalRead(altfire_pin);
+
+  if (altfire) {
+   	torch_up(preConnectedTeamId);
+
+  } else {
+    torch_down();
+  }
+}
+
+void checkBattery() {
+  serialQueue_s("B");
+  serialQueue_i(analogRead(power_monitor_pin) * 5 / 1023.0);
+  serialQueue_s("/n");
+}
+
+void shutdown() {
+  delay(50000);
+  digitalWrite(power_relay_pin, LOW);
+}
+
+void lifetest() {
+	if (batterytestmode == 1) {
+    checkBattery();
+    delay(1000);
+  }
 }
 
 //setting things ready
@@ -54,24 +135,6 @@ void setup() {
   flashDigit(__TIME__[4]);
 }
 
-void flashDigit(char c) {
-  char d = c - 0x30; //ASCII to numbers
-  digitalWrite(muzzleblue_pin, HIGH);
-  delay(200);
-  digitalWrite(muzzleblue_pin, LOW);
-  delay(300);
-  for (int i = 0; i < d; i++) {
-    digitalWrite(muzzlered_pin, HIGH);
-    delay(100);
-    digitalWrite(muzzlered_pin, LOW);
-    delay(300);
-  }
-  delay(1000);
-}
-
-boolean clientConnected = false;
-int preConnectedTeamId = 7; //our teamId - only used before a proper client connects.
-
 void loop() {
 #ifdef DEBUG_MAIN_LOOP
   timeDebug();
@@ -91,61 +154,4 @@ void loop() {
 #ifdef DEBUG_MAIN_LOOP
   timeDebug();
 #endif
-}
-
-boolean oldTrigger = false;
-unsigned long lastTriggerCheck = 0;
-
-void checkTrigger() {
-  //only check the trigger every millisecond as a crude de-bounce.
-  if (micros() > lastTriggerCheck + 1000) {
-    boolean trigger = digitalRead(trigger_pin);
-    if (trigger && trigger != oldTrigger) {
-      //if we are still debugging and the pi hasn't connected, just send a shot with fixed team/player/damage
-      if (clientConnected) {
-        serialQueue_s("T\n");
-      }
-      else {
-        mt_fireShot();
-      }
-
-      oldTrigger = trigger;    
-    }
-    if (!trigger && trigger != oldTrigger) {
-      if (clientConnected) {
-        serialQueue_s("t\n");
-      }
-
-      oldTrigger = trigger;    
-    }
-    lastTriggerCheck = micros();
-  }
-}
-
-void checkAltfire() {
-  boolean altfire = digitalRead(altfire_pin);
-
-  if (altfire) {
-   	torch_up(preConnectedTeamId);
-  } else {
-    torch_down();
-  }
-}
-
-void checkBattery() {
-  serialQueue_s("B");
-  serialQueue_i(analogRead(power_monitor_pin) * 5 / 1023.0);
-  serialQueue_s("/n");
-}
-
-void shutdown() {
-  delay(50000);
-  digitalWrite(power_relay_pin, LOW);
-}
-
-void lifetest() {
-	if (batterytestmode == 1) {
-    checkBattery();
-    delay(1000);
-  }
 }

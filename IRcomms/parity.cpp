@@ -1,6 +1,7 @@
+#include <stdbool.h>
 
-boolean isEvenParity(unsigned long buf) {
-  boolean evenParityBit = false;
+bool isEvenParity(unsigned long buf) {
+  bool evenParityBit = false;
   for (unsigned int i = 0; i < sizeof(unsigned long) * 8; i++) {
     evenParityBit = evenParityBit ^ (buf & 1);
     buf = buf >> 1;

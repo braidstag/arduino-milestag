@@ -14,23 +14,11 @@
 //Use a I2C scrren for debug instead of serial printing.
 #define SCREEN_DEBUG 1
 
-#define altfire_pin 2
-#define trigger_pin 3
-#define torchred_pin 4
-#define torchgreen_pin 5
-#define torchblue_pin 6
-#define laser_pin 7
-#define pin_ir_reciever 8
-#define pin_infrared 9
-#define power_relay_pin 10
-#define muzzlered_pin 11
-#define muzzleblue_pin 12
-#define muzzlegreen_pin 13
-#define power_monitor_pin A0
-// I2c uses A4 and A5
-
 //variable to tell the arduino to start constant battery life testing
 int batterytestmode = 0;
+
+#include "pins.h"
+#include "IRComms.h"
 
 // some timings
 unsigned int headerDuration = 2400;
@@ -70,6 +58,11 @@ unsigned long readFallTime = 0;
 #ifdef SCREEN_DEBUG
   char debugLine[22] = "                     ";
 #endif
+
+boolean within_tolerance(unsigned long value, unsigned long target, byte tolerance) {
+  long remainder = value - target;
+  return remainder < tolerance && remainder > -tolerance;
+}
 
 /*
  * read the IR receiver and if applicable add to the readBuffer.
@@ -196,13 +189,22 @@ void finished_signal_decode() {
   readBuffer = 0;
 }
 
-boolean within_tolerance(unsigned long value, unsigned long target, byte tolerance) {
-  long remainder = value - target;
-  return remainder < tolerance && remainder > -tolerance;
-}
-
 ////////////////////////
 // IR writing functions
+
+/*
+ * Reverse the num least significant bits.
+ */
+unsigned long reverse(unsigned long in, unsigned int num) {
+  unsigned long out = 0;
+  for (unsigned int i = 0; i < num; i++) {
+    out = out << 1;
+    out = out | (in & 1); //take the lsb from in to out
+    in = in >> 1;
+  }
+  
+  return out;
+}
 
 void start_command(unsigned long command, byte myTeamId) {
   if (writeUpTime || writeDownTime || postDataTime) {
@@ -303,25 +305,11 @@ void ir_down() {
   writeLastChangeTime = micros();
 }
 
-/*
- * Reverse the num least significant bits.
- */
-unsigned long reverse(unsigned long in, unsigned int num) {
-  unsigned long out = 0;
-  for (unsigned int i = 0; i < num; i++) {
-    out = out << 1;
-    out = out | (in & 1); //take the lsb from in to out
-    in = in >> 1;
-  }
-  
-  return out;
-}
-
 unsigned long timeCache = 0;
 
-//these are set by the serial code to say whther we have just written (or read) from the serial line.
-boolean serialWritten = false;
+//these are set by the serial code to say whether we have just written (or read) from the serial line.
 boolean serialRead = false;
+boolean serialWritten = false;
 
 void timeDebug() {
   if (timeCache == 0) {
