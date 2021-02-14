@@ -79,6 +79,9 @@ void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
             case SYSTEM_MESSAGE_ADD_ROUNDS:
                 serialQueue(22, "Shot(AddRounds(%u))\n", DataByte2);
                 break;
+            case SYSTEM_MESSAGE_EXTN_INIT:
+                serialQueue_s("InitHit\n");
+                break;
             case SYSTEM_MESSAGE_ADD_RPG_ROUNDS:
             case SYSTEM_MESSAGE_SCORE_DATA_HEADER:
             case SYSTEM_MESSAGE_SCORE_REQUEST:
@@ -136,4 +139,9 @@ void mt_fireShot() {
 void mt_fireShot(byte teamId, byte playerId, byte dmg) {
   unsigned long shot = (teamId << MT1_TEAM_OFFSET) | (playerId << MT1_PLAYER_OFFSET) | dmg;
   start_command(shot, teamId);
+}
+
+void mt_fireInit() {
+    unsigned long shot = (SYSTEM_MESSAGE << MT1_TEAM_OFFSET) | (SYSTEM_MESSAGE_EXTN_INIT << SYSTEM_MESSAGE_SHIFT);
+    start_command(shot, 7);
 }

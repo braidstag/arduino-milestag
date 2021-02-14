@@ -18,6 +18,7 @@ void finished_signal_decode();
 
 void mt_fireShot();
 void mt_fireShot(byte teamId, byte playerId, byte dmg);
+void mt_fireInit();
 void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead);
 void checkBattery();
 void shutdown();
@@ -44,6 +45,7 @@ extern boolean serialRead;
 extern boolean serialWritten;
 extern boolean clientConnected;
 extern int preConnectedTeamId;
+extern boolean initModeActive;
 extern int batterytestmode;
 extern unsigned long readBuffer;
 extern int bitsRead;

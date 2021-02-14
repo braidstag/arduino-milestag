@@ -50,14 +50,15 @@ class ServerMsgHandler():
 
         serverTime = connection.clientTimeToServer(event.time)
 
-        if sentTeam == 0 and sentPlayer == 0:
-          # This is a shot from a gun which is initialising.
-          # TODO: allow the UI to pick the team
-          player = self.gameLogic.gameState.createNewPlayer()
+        self.gameLogic.hit(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
 
-          self.finishInitialisation(player, connection, self.listeningThread.initialisingConnection.clientId)
-        else:
-          self.gameLogic.hit(serverTime, recvTeam, recvPlayer, sentTeam, sentPlayer, damage)
+      @h2.handles(proto.INIT_HIT)
+      def initHit(): # pylint: disable=W0612
+        # This is a shot from a gun which is initialising.
+        # TODO: allow the UI to pick the team
+        player = self.gameLogic.gameState.createNewPlayer()
+
+        self.finishInitialisation(player, connection, self.listeningThread.initialisingConnection.clientId)
 
       @h2.handles(proto.TRIGGER)
       def trigger(): # pylint: disable=W0612

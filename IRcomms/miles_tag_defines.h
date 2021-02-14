@@ -9,6 +9,8 @@
 #define SYSTEM_MESSAGE_ADD_CLIPS            B00011
 #define SYSTEM_MESSAGE_ADD_RPG_ROUNDS       B00100
 
+#define SYSTEM_MESSAGE_EXTN_INIT            B00101 //An extension to the spec, sent by a gun initialising to confirm it works / has been acknowledged
+
 #define SYSTEM_MESSAGE_GOD_GUN              B01001
 
 #define SYSTEM_MESSAGE_SCORE_DATA_HEADER    B10000

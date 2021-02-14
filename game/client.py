@@ -129,7 +129,7 @@ class Client():
       return
     elif self.gameState.clientState == CS_INITIALISING:
       # We are initialising so should fire but don't have a proper player yet.
-      self.serialWrite(proto.FIRE.create(0, 0, 0))
+      self.serialWrite(proto.GUN_FIRE_INITIALISING.create())
       return
     else:
       # We know what player we are so proceed as normal.
@@ -138,13 +138,13 @@ class Client():
 
   def handlePlayerInitialising(self):
     """ We've just started initialising, turn the torch on """
-    #TODO:
-    pass
+    self.serialWrite(proto.GUN_START_INITIALISING.create())
+
 
   def handlePlayerInitialised(self):
     """ We've finished initialising, turn the torch off """
-    #TODO:
-    pass
+    self.serialWrite(proto.GUN_STOP_INITIALISING.create())
+
 
 if __name__ == "__main__":
   client = Client()

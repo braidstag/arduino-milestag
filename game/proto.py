@@ -106,10 +106,14 @@ CLIENT_DISCONNECTED = Message(r"d", None)
 TRIGGER =             Message(r"T", "T")
 TRIGGER_RELEASE =     Message(r"t", "t")
 BATTERY =             Message(r"B(\d)", None)
+INIT_HIT =            Message(r"InitHit", None)
 
 #client -> gun
 CLIENTCONNECT = Message(None, "c")
 CLIENTDISCONNECT = Message(None, "d")
 FIRE = Message(None, "Fire(%d,%d,%d)")
 SHUTDOWN = Message(None, "Shutdown")
+GUN_START_INITIALISING = Message(None, "Init")
+GUN_FIRE_INITIALISING = Message(None, "FireInit")
+GUN_STOP_INITIALISING = Message(None, "NoInit")
 

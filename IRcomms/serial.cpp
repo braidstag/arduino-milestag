@@ -127,6 +127,20 @@ void checkSerial() {
     else if (numBytesRead > 8 && strncmp("Shutdown", serialReadBuffer, 8) == 0) {
       shutdown();
     }
+    else if (numBytesRead > 4 && strncmp("Init", serialReadBuffer, 4) == 0) {
+      //Start init mode.
+      initModeActive=false;
+    }
+    else if (numBytesRead > 6 && strncmp("NoInit", serialReadBuffer, 6) == 0) {
+      //Stop init mode.
+      initModeActive=false;
+      muzzleflash_down();
+      torch_down();
+    }
+    else if (numBytesRead > 8 && strncmp("FireInit", serialReadBuffer, 8) == 0) {
+      //Fire init shot.
+      mt_fireInit();
+    }
 //some more for battery testing
     else if (strncmp("test", serialReadBuffer, 4) == 0) {
       batterytestmode = 1;
