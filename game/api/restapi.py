@@ -3,13 +3,10 @@ from threading import Thread
 import falcon
 from wsgiref import simple_server
 
+from core import ClientServer
 from api.game import GameResource
 from api.playerApi import PlayerResource, PlayerListResource
 from api.helpers import CORSMiddleware
-
-
-SERVER = '127.0.0.1'
-PORT = 8000
 
 def create_api(gameState, gameLogic):
   api = falcon.API(middleware=[CORSMiddleware()])
@@ -35,8 +32,8 @@ class RestApiThread(Thread):
   def run(self):
     api = create_api(self.gameState, self.gameLogic);
 
-    self.httpd = simple_server.make_server(SERVER, PORT, api)
-    print ("Starting REST server on http://" + SERVER + ":" + str(PORT))
+    self.httpd = simple_server.make_server(ClientServer.SERVER, ClientServer.APIPORT, api)
+    print ("Starting REST server on http://" + ClientServer.SERVER + ":" + str(ClientServer.APIPORT))
 
     self.httpd.serve_forever(2)
 
