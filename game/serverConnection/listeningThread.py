@@ -83,7 +83,7 @@ class ListeningThread(Thread):
     server.queueMessage(proto.START_INITIALISING.create())
     self.gameLogic.gameState._notifyPlayerInitialisingListeners()
 
-  def establishConnection(self, server, player, clientId):
+  def establishConnection(self, server, player):
     """ Register that a connection has associated itself with a player"""
     try:
       self.uninitialisedConnections.remove(server)
@@ -97,7 +97,7 @@ class ListeningThread(Thread):
       self.initialisingConnection = None
 
     self.connections[(player.teamID, player.playerID)] = server
-    self.connectedClients[clientId] = (player.teamID, player.playerID)
+    self.connectedClients[server.clientId] = (player.teamID, player.playerID)
     self.gameLogic.gameState._notifyPlayerInitialisedListeners()
 
   def lostConnection(self, server):
