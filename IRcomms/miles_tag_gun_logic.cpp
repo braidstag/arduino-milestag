@@ -4,23 +4,10 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include "miles_tag_defines.h"
 #include "IRComms.h"
-
-void serialQueue(int size, const char * fmt, ...) {
-  char* out = (char*) malloc(size);
-  va_list ap;
-  va_start(ap, fmt);
-  
-  vsnprintf(out, size, fmt, ap);
-  Serial.println(out);
-  free(out);
-  
-  va_end (ap);
-}
 
 void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
     if (!isEvenParity(recvBuffer)) {
@@ -36,20 +23,20 @@ void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
 
     if (recv_TeamID == SYSTEM_MESSAGE) {
         byte recv_SystemMessage = (recvBuffer & SYSTEM_MESSAGE_MASK) >> SYSTEM_MESSAGE_SHIFT;
-        
+
         switch (recv_SystemMessage) {
             case SYSTEM_MESSAGE_SET_TEAM_ID:
-                serialQueue(20, "Shot(SetTeam(%u))\n", DataByte2);
+                serialQueue("Shot(SetTeam(%u))\n", DataByte2);
                 break;
             case SYSTEM_MESSAGE_SET_PLAYER_ID:
-                serialQueue(22, "Shot(SetPlayer(%u))\n", DataByte2);
+                serialQueue("Shot(SetPlayer(%u))\n", DataByte2);
                 break;
             case SYSTEM_MESSAGE_ADD_HEALTH:
-                serialQueue(22, "Shot(AddHealth(%u))\n", DataByte2);
+                serialQueue("Shot(AddHealth(%u))\n", DataByte2);
                 break;
             case SYSTEM_MESSAGE_ADD_CLIPS:
             {
-                serialQueue(21, "Shot(AddClips(%u))\n", DataByte2);
+                serialQueue("Shot(AddClips(%u))\n", DataByte2);
                 break;
             }
             case SYSTEM_MESSAGE_GOD_GUN:
@@ -73,11 +60,11 @@ void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
                         serialQueue_s("Shot(UnknownGGM)\n");
                         break;
                 }
-                
+
                 break;
             }
             case SYSTEM_MESSAGE_ADD_ROUNDS:
-                serialQueue(22, "Shot(AddRounds(%u))\n", DataByte2);
+                serialQueue("Shot(AddRounds(%u))\n", DataByte2);
                 break;
             case SYSTEM_MESSAGE_EXTN_INIT:
                 serialQueue_s("InitHit\n");
@@ -86,13 +73,13 @@ void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
             case SYSTEM_MESSAGE_SCORE_DATA_HEADER:
             case SYSTEM_MESSAGE_SCORE_REQUEST:
             default:
-                serialQueue(29, "Shot(UnknownSM(%lu, %d))\n", recvBuffer, bitsRead);
+                serialQueue("Shot(UnknownSM(%lu, %d))\n", recvBuffer, bitsRead);
                 break;
         }
     } else {
         byte recv_PlayerID = (recvBuffer & MT1_PLAYER_MASK) >> MT1_PLAYER_OFFSET;
         signed char damage = 0;
-        
+
         byte recv_PlayerWeaponHit = DataByte2;
         switch (recv_PlayerWeaponHit) {
             case 0:
@@ -119,15 +106,8 @@ void mt_parseIRMessage(unsigned long recvBuffer, int bitsRead) {
                 serialQueue_s("Shot(UnknownDmg)\n");
                 break;
         }
-        
-        serialQueue_s("H");
-        serialQueue_i((int) recv_TeamID);
-        serialQueue_s(",");
-        serialQueue_i((int) recv_PlayerID);
-        serialQueue_s(",");
-        serialQueue_i((int) damage);
-        /*serialQueue_s(","); serialQueue_i((int) baseDamage);*/
-        serialQueue_s("\n");
+
+        serialQueue("H%d,%d,%d\n", (int) recv_TeamID, (int) recv_PlayerID, (int) damage /*,(int) baseDamage*/);
     }
 }
 

@@ -26,6 +26,7 @@ void shutdown();
 void screen_setup();
 void screen_addScrollingData(const char newLine[]);
 
+void serialQueue(const char * fmt, ...);
 void serialQueue_s(const char *str);
 void serialQueue_d(double d);
 void serialQueue_i(int i);

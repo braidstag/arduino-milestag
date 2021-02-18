@@ -10,13 +10,34 @@ byte writeOffset = 0;
 //an offset from serialWriteBuffer ptr to the byte we next need to read from the circle buffer
 byte readOffset = 0;
 
+//a second buffer to temporarily format strings into.
+char formatBuffer[serialWriteBufferSize];
+
+/*
+ * Takes a format string and arguments (as per sprintf) and buffers it to be sent over serial.
+ * If the resulting string is bigger than the statically allocated buffer, it will be truncated.
+ */
+void serialQueue(const char * fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int targetSize = vsnprintf(formatBuffer, serialWriteBufferSize, fmt, ap);
+  if (targetSize > serialWriteBufferSize) {
+    //wanted to write more than we could. Set the last non-null byte to 'X' to indicate this.
+    formatBuffer[serialWriteBufferSize - 2] = 'X';
+  }
+  serialQueue_s(formatBuffer);
+
+  va_end (ap);
+}
+
 void serialQueue_s(const char *str) {
   //copy this byte-by-byte into the circle buffer
   int offset = 0;
   while (*(str + offset)) {
     if (writeOffset + 1 == readOffset || (writeOffset + 1 == serialWriteBufferSize && readOffset == 0)) {
-      //we have already written as many bytes as we are allowed to write. 
-      //As we are trying to write another byte, we have an issue. 
+      //we have already written as many bytes as we are allowed to write.
+      //As we are trying to write another byte, we have an issue.
       //replace the previous byte with an "X" and abandon anything else in this queue request
       if (writeOffset == 0) {
         *(serialWriteBuffer + serialWriteBufferSize - 1) = 'X';
@@ -33,28 +54,24 @@ void serialQueue_s(const char *str) {
       //we have gone off the end of the buffer
       writeOffset = 0;
     }
-    
+
     offset++;
   }
 }
 
 void serialQueue_d(double d) {
-  char* out = (char*) malloc(32);
-  snprintf(out, 32, "%.2f", d);
-  serialQueue_s(out);
-  free(out);
+  snprintf(formatBuffer, serialWriteBufferSize, "%.2f", d);
+  serialQueue_s(formatBuffer);
 }
 
 void serialQueue_i(int i) {
-  char* out = (char*) malloc(11);
-  snprintf(out, 11, "%d", i);
-  serialQueue_s(out);
-  free(out);
+  snprintf(formatBuffer, serialWriteBufferSize, "%d", i);
+  serialQueue_s(formatBuffer);
 }
 
 void writeSerialChar() {
   if (writeOffset == readOffset) {
-    //nothng to be read form the circle buffer (to be written to the serial line)
+    //nothing to be read form the circle buffer (to be written to the serial line)
     serialWritten = false;
     return;
   }
@@ -115,11 +132,16 @@ void checkSerial() {
       clientConnected = false;
       serialQueue_s("d\n");
     }
-    else if (numBytesRead > 5 && strncmp("Fire(", serialReadBuffer, 4) == 0) {
+    else if (numBytesRead > 5 && strncmp("Fire(", serialReadBuffer, 5) == 0) {
       //Fire
       byte teamId, playerId, dmg;
-      sscanf(serialReadBuffer, "Fire(%hhu,%hhu,%hhu)", &teamId, &playerId, &dmg);
-      mt_fireShot(teamId, playerId, dmg);
+      int r = sscanf(serialReadBuffer, "Fire(%hhu,%hhu,%hhu)", &teamId, &playerId, &dmg);
+      if (r == 3) {
+        mt_fireShot(teamId, playerId, dmg);
+      } else {
+        //This message didn't parse
+        //TODO: report this.
+      }
     }
     else if (numBytesRead == 12 && strncmp("BatteryCheck", serialReadBuffer, 12) == 0) {
       checkBattery();
