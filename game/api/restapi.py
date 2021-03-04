@@ -8,8 +8,12 @@ from api.game import GameResource
 from api.playerApi import PlayerResource, PlayerListResource
 from api.helpers import CORSMiddleware
 
-def create_api(gameState, gameLogic):
+def create_api(gameState, gameLogic, appPath):
   api = falcon.API(middleware=[CORSMiddleware()])
+
+  #server the admin-webapp on / if we have it
+  if appPath:
+    api.add_static_route('/', appPath, False, 'index.html')
 
   api.add_route('/game', GameResource(gameState, gameLogic))
 
@@ -23,14 +27,15 @@ class RestApiThread(Thread):
   A thread which serves a REST API.
   The rest api presents a view of the player and game state after the business logic has been applied
   """
-  def __init__(self, gameState, gameLogic):
+  def __init__(self, gameState, gameLogic, appPath=None):
     super(RestApiThread, self).__init__(group=None)
     self.name = "REST API Thread"
     self.gameState = gameState
     self.gameLogic = gameLogic
+    self.appPath = appPath
 
   def run(self):
-    api = create_api(self.gameState, self.gameLogic);
+    api = create_api(self.gameState, self.gameLogic, self.appPath);
 
     self.httpd = simple_server.make_server(ClientServer.SERVER, ClientServer.APIPORT, api)
     print ("Starting REST server on http://" + ClientServer.SERVER + ":" + str(ClientServer.APIPORT))

@@ -19,6 +19,7 @@ from api.restapi import RestApiThread
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='BraidsTag server.')
   parser.add_argument('-H', '--headless', action='store_true', help='start headless. There will be no UI although the REST API will still allow control')
+  parser.add_argument('-a', '--appPath',  type=str, help='filesystem path of the admin webapp build. If specified, the app will be served on /.')
 
   args = parser.parse_args()
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
   main = ListeningThread(gameLogic)
   main.start()
 
-  api = RestApiThread(gameState, gameLogic)
+  api = RestApiThread(gameState, gameLogic, args.appPath)
   api.start()
 
   def playerAdjusted(teamID, playerID, player, parameters):
