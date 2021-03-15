@@ -1,4 +1,5 @@
 from player import Stats
+import json
 
 def extractPlayerInfo(currentGameState, player, fullInfo = True):
     playerObj = {
@@ -35,7 +36,8 @@ class PlayerListResource:
             'players': self.gameState.withCurrGameState(lambda cgs: [extractPlayerInfo(cgs, player, fullInfo) for player in cgs.players.values()]),
         }
 
-        resp.media = playerList
+        #resp.media = playerList
+        resp.body = json.dumps(playerList)
 
 class PlayerResource:
     def __init__(self, gameState):
@@ -44,7 +46,8 @@ class PlayerResource:
     def on_get(self, req, resp, teamId, playerId):
 
         player = self.gameState.withCurrGameState(lambda cgs: extractPlayerInfo(cgs, cgs.players[(teamId, playerId)]))
-        resp.media = player
+        #resp.media = player
+        resp.body = json.dumps(player)
         #TODO handle 404
 
     def on_patch(self, req, resp, teamId, playerId):

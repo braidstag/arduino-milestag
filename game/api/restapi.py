@@ -3,17 +3,21 @@ from threading import Thread
 import falcon
 from wsgiref import simple_server
 
+import os
+import mimetypes
+
+
 from core import ClientServer
 from api.game import GameResource
 from api.playerApi import PlayerResource, PlayerListResource
 from api.helpers import CORSMiddleware
 
 def create_api(gameState, gameLogic, appPath):
-  api = falcon.API(middleware=[CORSMiddleware()])
+  api = falcon.API() #middleware=[CORSMiddleware()])
 
   #server the admin-webapp on / if we have it
   if appPath:
-    api.add_static_route('/', appPath, False, 'index.html')
+    api.add_sink(staticResource(appPath), '/')
 
   api.add_route('/game', GameResource(gameState, gameLogic))
 
@@ -43,4 +47,17 @@ class RestApiThread(Thread):
     self.httpd.serve_forever(2)
 
   def stop(self):
-      self.httpd.shutdown()
+    self.httpd.shutdown()
+
+def staticResource(appPath):
+  def on_get(req, resp):
+    name = req.path.strip()[1:];
+    if name == '':
+      name = 'index.html'
+
+    resp.content_type = mimetypes.guess_type(name)[0]
+    image_path = os.path.join(appPath, name)
+    resp.stream = open(image_path, 'rb')
+    resp.stream_len = os.path.getsize(image_path)
+  return on_get
+

@@ -1,5 +1,6 @@
 from time import time
 from falcon import HTTPBadRequest
+import json
 
 class GameResource:
     def __init__(self, gameState, gameLogic):
@@ -16,23 +17,27 @@ class GameResource:
             'teamPoints': self.gameState.withCurrGameState(lambda s: s.stats.teamPoints),
         }
 
-        resp.media = {key: value for key, value in game.items() if value is not None}
+        #resp.media = {key: value for key, value in game.items() if value is not None}
+        resp.body = json.dumps({key: value for key, value in game.items() if value is not None})
 
     def on_patch(self, req, resp):
         """Handles PATCH requests which change game settings/state"""
-        if 'started' in req.media:
-            if req.media['started']:
+
+        reqObj = json.load(req.stream)
+
+        if 'started' in reqObj:
+            if reqObj['started']:
                 #start game
                 self.gameLogic.startGame(time())
             else:
                 #stop game
                 self.gameLogic.stopGame(time())
 
-        if 'targetTeamCount' in req.media:
-            self.gameState.setTargetTeamCount(int(req.media['targetTeamCount']))
+        if 'targetTeamCount' in reqObj:
+            self.gameState.setTargetTeamCount(int(reqObj['targetTeamCount']))
 
-        if 'gameTime' in req.media:
-            self.gameState.setGameTime(int(req.media['gameTime']))
+        if 'gameTime' in reqObj:
+            self.gameState.setGameTime(int(reqObj['gameTime']))
 
     def on_delete(self, req, resp):
         if not self.gameState.isGameStarted():
