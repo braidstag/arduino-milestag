@@ -28,6 +28,9 @@ function Admin(props) {
         <Container>
             <div>{startStopButton}</div>
 
+            {/* TODO: disable this button when not applicable */}
+            <div><button onClick={() => props.initialisePlayer()}>Initialise Player</button></div>
+
             <Slider>
                 <span>game Time</span>
                 <MuiSlider

@@ -1,11 +1,11 @@
 # pylint:disable=redefined-outer-name
 import pytest
-import time
-from falcon import HTTPBadRequest, testing
+from falcon import testing
 
 from restapi import create_api
 from player import Player
 from parameters import Parameters
+
 
 @pytest.fixture()
 def current_game_state(mocker):
@@ -14,6 +14,7 @@ def current_game_state(mocker):
 
     return cgs
 
+
 @pytest.fixture()
 def game_state(mocker, current_game_state):
     gameState = mocker.MagicMock()
@@ -21,13 +22,20 @@ def game_state(mocker, current_game_state):
 
     return gameState
 
+
 @pytest.fixture()
 def game_logic(mocker):
     return mocker.MagicMock()
 
+
+def listening_thread(mocker):
+    return mocker.MagicMock()
+
+
 @pytest.fixture()
-def client(game_state, game_logic):
-    return testing.TestClient(create_api(game_state, game_logic))
+def client(game_state, game_logic, listening_thread):
+    return testing.TestClient(create_api(game_state, game_logic, listening_thread, None))
+
 
 def test_getListSummary(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
     player1 = Player(1, 1)
@@ -39,8 +47,8 @@ def test_getListSummary(game_state, game_logic, current_game_state, client, monk
     player2.health = 7
 
     current_game_state.players = {
-        (1,1): player1,
-        (2,1): player2
+        (1, 1): player1,
+        (2, 1): player2
     }
     current_game_state.gameTime = 1200
 
@@ -65,13 +73,14 @@ def test_getListSummary(game_state, game_logic, current_game_state, client, monk
 
     assert result.status_code == 200
 
+
 def test_getListFull(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
-    player1 = Player(team_id= 1, player_id= 1, ammo = 95, health = 8)
-    player2 = Player(team_id= 2, player_id= 1, ammo = 100, health = 7)
+    player1 = Player(team_id=1, player_id=1, ammo=95, health=8)
+    player2 = Player(team_id=2, player_id=1, ammo=100, health=7)
 
     current_game_state.players = {
-        (1,1): player1,
-        (2,1): player2
+        (1, 1): player1,
+        (2, 1): player2
     }
     current_game_state.gameTime = 1200
 
@@ -134,13 +143,14 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
 
     assert result.status_code == 200
 
+
 def test_getDetails(game_state, game_logic, current_game_state, client, monkeypatch, mocker):
-    player1 = Player(team_id= 1, player_id= 1, ammo = 95, health = 8)
-    player2 = Player(team_id= 2, player_id= 1, ammo = 100, health = 7)
+    player1 = Player(team_id=1, player_id=1, ammo=95, health=8)
+    player2 = Player(team_id=2, player_id=1, ammo=100, health=7)
 
     current_game_state.players = {
-        (1,1): player1,
-        (2,1): player2
+        (1, 1): player1,
+        (2, 1): player2
     }
     current_game_state.gameTime = 1200
 

@@ -25,9 +25,13 @@ def game_logic(mocker):
     return mocker.MagicMock()
 
 
+def listening_thread(mocker):
+    return mocker.MagicMock()
+
+
 @pytest.fixture()
-def client(game_state, game_logic):
-    return testing.TestClient(create_api(game_state, game_logic))
+def client(game_state, game_logic, listening_thread):
+    return testing.TestClient(create_api(game_state, game_logic, listening_thread, None))
 
 
 @pytest.fixture()

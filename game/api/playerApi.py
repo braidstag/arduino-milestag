@@ -1,5 +1,5 @@
-from player import Stats
 import json
+from falcon import HTTPBadRequest
 
 
 def extractPlayerInfo(current_game_state, player, full_info=True):
@@ -51,6 +51,22 @@ class PlayerResource:
         # resp.media = player
         resp.body = json.dumps(player)
         # TODO handle 404
+
+    def on_patch(self, req, resp, team_id, player_id):
+        pass
+
+
+class PlayerInitialisationResource:
+    def __init__(self, listening_thread):
+        self.listening_thread = listening_thread
+
+    def on_post(self, _req, _resp):
+        try:
+            connection = self.listening_thread.uninitialisedConnections.pop()
+        except KeyError:
+            raise HTTPBadRequest(title='No player waiting to initialise')
+
+        self.listening_thread.startInitialising(connection)
 
     def on_patch(self, req, resp, team_id, player_id):
         pass

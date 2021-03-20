@@ -14,4 +14,13 @@ async function getPlayersData() {
     return response;
 }
 
-export default { getPlayersData }
+async function initialisePlayer() {
+    if (mock) {
+        return
+    }
+    await fetch('/players:startInitialising', {
+        method: 'POST',
+    })
+}
+
+export default { getPlayersData, initialisePlayer }

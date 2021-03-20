@@ -42,9 +42,11 @@ class Message():
             self.regex = re.compile("^" + regex + "$")
         self.subst = subst
 
-    def parse(self, line, action=lambda _: True):
+    def parse(self, line, action=lambda: True):
         m = self.regex.match(line)
         if m:
+            # Note that the number of groups in the regex must match the number of args which action takes
+            # (and the default can only be used if there are no capture groups)
             actionResult = action(*m.groups())
             return actionResult or actionResult is None  # If the action doesn't return anything, assume all went well!
         else:

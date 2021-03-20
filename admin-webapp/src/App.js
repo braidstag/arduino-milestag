@@ -81,7 +81,9 @@ function App() {
     });
   }
 
-
+  const initialisePlayer = () => {
+    playersData.initialisePlayer()
+  }
 
   const body = (() => {
     if (isLoading) {
@@ -98,6 +100,7 @@ function App() {
               saveTargetTeamCount={saveTargetTeamCount}
               startGame={startGame}
               stopGame={stopGame}
+              initialisePlayer={initialisePlayer}
             />
           )} />
           <Route exact path="/score" render={() => (

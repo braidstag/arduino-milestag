@@ -29,7 +29,7 @@ if __name__ == '__main__':
     main = ListeningThread(gameLogic)
     main.start()
 
-    api = RestApiThread(gameState, gameLogic, args.appPath)
+    api = RestApiThread(gameState, gameLogic, main, args.appPath)
     api.start()
 
     def playerAdjusted(teamID, playerID, player, parameters):
