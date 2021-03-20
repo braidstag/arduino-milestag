@@ -1,7 +1,5 @@
 # pylint:disable=redefined-outer-name
 import pytest
-import time
-from copy import deepcopy
 
 from gameLogic import GameLogic
 from gameState import GameState
@@ -9,14 +7,17 @@ from player import Player
 from gameEvents import FireEvent
 from parameters import Parameters
 
+
 @pytest.fixture
 def game_state():
     gameState = GameState()
     return gameState
 
+
 @pytest.fixture
 def game_logic(game_state):
     return GameLogic(game_state)
+
 
 @pytest.fixture
 def client_game_state():
@@ -26,9 +27,11 @@ def client_game_state():
 
     return game_state
 
+
 @pytest.fixture
 def client_game_logic(client_game_state):
     return GameLogic(client_game_state)
+
 
 def test_simple_hit_from_live_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -44,16 +47,15 @@ def test_simple_hit_from_live_player(game_state, game_logic, monkeypatch, mocker
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth > player.health
-    assert player.stats.hitsReceived == 1
+    assert player.stats.hits_received == 1
     assert player.stats.deaths == 0
+
 
 def test_fatal_hit_from_live_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
 
     game_logic.startGame(50)
-    player = game_state.getOrCreatePlayer(1, 1)
-    initialHealth = player.health
 
     damage = 2000
 
@@ -61,7 +63,7 @@ def test_fatal_hit_from_live_player(game_state, game_logic, monkeypatch, mocker)
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert player.health == 0
-    assert player.stats.hitsReceived == 1
+    assert player.stats.hits_received == 1
     assert player.stats.deaths == 1
     assert game_state.currGameState.stats.teamPoints == {2: 1}
 
@@ -81,6 +83,7 @@ def test_simple_hit_from_live_player_client(client_game_state, client_game_logic
     player = client_game_state.getOrCreatePlayer(1, 1)
     assert initialHealth > player.health
 
+
 def test_simple_hit_from_live_player_before_game_starts(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
@@ -94,7 +97,8 @@ def test_simple_hit_from_live_player_before_game_starts(game_state, game_logic, 
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
-    assert player.stats.hitsReceived == 0
+    assert player.stats.hits_received == 0
+
 
 def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -105,7 +109,7 @@ def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker
     initialHealth = player.health
 
     sentPlayer = game_state.getOrCreatePlayer(1, 2)
-    sentPlayer = Player(copyFrom = sentPlayer, health = 0)
+    sentPlayer = Player(copy_from=sentPlayer, health=0)
 
     game_state.currGameState.players[(1, 2)] = sentPlayer
     damage = 2
@@ -114,7 +118,8 @@ def test_simple_hit_from_dead_player(game_state, game_logic, monkeypatch, mocker
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
-    assert player.stats.hitsReceived == 0
+    assert player.stats.hits_received == 0
+
 
 def test_historic_hit_from_live_player(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -130,7 +135,8 @@ def test_historic_hit_from_live_player(game_state, game_logic, monkeypatch, mock
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
-    assert player.stats.hitsReceived == 0
+    assert player.stats.hits_received == 0
+
 
 def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -142,7 +148,7 @@ def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypat
 
     damage = 2
 
-    #fast-forward to after the game ends
+    # fast-forward to after the game ends
     monkeypatch.setattr('time.time', lambda: 200 + game_state.currGameState.gameTime)
     game_state._recheckTimer()
 
@@ -150,7 +156,8 @@ def test_hit_from_live_player_after_game_stops(game_state, game_logic, monkeypat
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
-    assert player.stats.hitsReceived == 0
+    assert player.stats.hits_received == 0
+
 
 def test_simple_hit_from_self(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -166,10 +173,11 @@ def test_simple_hit_from_self(game_state, game_logic, monkeypatch, mocker):
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialHealth == player.health
-    assert player.stats.hitsReceived == 0
+    assert player.stats.hits_received == 0
 
-def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
-    "Test handling of a subsequent, earlier event"
+
+def test_add_hit_event_out_of_order(game_state, game_logic, monkeypatch, mocker):
+    """Test handling of a subsequent, earlier event"""
 
     monkeypatch.setattr('time.time', lambda: 300)
     mocker.patch("gameState.Timer", autospec=True)
@@ -184,38 +192,38 @@ def test_addHitEvent_outOfOrder(game_state, game_logic, monkeypatch, mocker):
     game_logic.hit(200, 2, 1, 1, 1, 999)
 
     assert game_state.currGameState.players[(1, 1)].health > 0
-    assert game_state.currGameState.players[(1, 1)].stats.hitsGiven == 1
-    assert game_state.currGameState.players[(1, 1)].stats.hitsReceived == 0
+    assert game_state.currGameState.players[(1, 1)].stats.hits_given == 1
+    assert game_state.currGameState.players[(1, 1)].stats.hits_received == 0
     assert game_state.currGameState.players[(1, 1)].stats.kills == 1
-    assert game_state.currGameState.players[(1, 1)].stats.deaths ==0
+    assert game_state.currGameState.players[(1, 1)].stats.deaths == 0
 
     assert game_state.currGameState.players[(2, 1)].health == 0
-    assert game_state.currGameState.players[(2, 1)].stats.hitsGiven == 0
-    assert game_state.currGameState.players[(2, 1)].stats.hitsReceived == 1
+    assert game_state.currGameState.players[(2, 1)].stats.hits_given == 0
+    assert game_state.currGameState.players[(2, 1)].stats.hits_received == 1
     assert game_state.currGameState.players[(2, 1)].stats.kills == 0
-    assert game_state.currGameState.players[(2, 1)].stats.deaths ==1
+    assert game_state.currGameState.players[(2, 1)].stats.deaths == 1
 
     assert game_state.currGameState.stats.teamPoints == {1: 1}
-
 
     game_logic.hit(100, 1, 1, 2, 1, 999)
 
     assert game_state.currGameState.players[(1, 1)].health == 0
-    assert game_state.currGameState.players[(1, 1)].stats.hitsGiven == 0
-    assert game_state.currGameState.players[(1, 1)].stats.hitsReceived == 1
+    assert game_state.currGameState.players[(1, 1)].stats.hits_given == 0
+    assert game_state.currGameState.players[(1, 1)].stats.hits_received == 1
     assert game_state.currGameState.players[(1, 1)].stats.kills == 0
     assert game_state.currGameState.players[(1, 1)].stats.deaths == 1
 
     assert game_state.currGameState.players[(2, 1)].health > 0
-    assert game_state.currGameState.players[(2, 1)].stats.hitsGiven == 1
-    assert game_state.currGameState.players[(2, 1)].stats.hitsReceived == 0
+    assert game_state.currGameState.players[(2, 1)].stats.hits_given == 1
+    assert game_state.currGameState.players[(2, 1)].stats.hits_received == 0
     assert game_state.currGameState.players[(2, 1)].stats.kills == 1
     assert game_state.currGameState.players[(2, 1)].stats.deaths == 0
 
     assert game_state.currGameState.stats.teamPoints == {2: 1}
 
-    #at first we though 1,1 killed 2,1 @ 200 but it turns out that 2,1 killed 1,1 @ 100
+    # at first we though 1,1 killed 2,1 @ 200 but it turns out that 2,1 killed 1,1 @ 100
     assert playerAdjustedListener.call_count == 2
+
 
 def test_simple_fire(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -230,7 +238,8 @@ def test_simple_fire(game_state, game_logic, monkeypatch, mocker):
 
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 1 == player.ammo
-    assert player.stats.shotsFired == 1
+    assert player.stats.shots_fired == 1
+
 
 def test_simple_fire_client(client_game_state, client_game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -246,6 +255,7 @@ def test_simple_fire_client(client_game_state, client_game_logic, monkeypatch, m
     player = client_game_state.getMainPlayer()
     assert initialAmmo - 1 == player.ammo
 
+
 def test_repeat_fire(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
     mocker.patch("gameState.Timer", autospec=True)
@@ -260,7 +270,8 @@ def test_repeat_fire(game_state, game_logic, monkeypatch, mocker):
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 3 == player.ammo
     assert isinstance(game_state.futureEvents[1], FireEvent)
-    assert player.stats.shotsFired == 3
+    assert player.stats.shots_fired == 3
+
 
 def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -277,9 +288,9 @@ def test_repeat_fire_stop(game_state, game_logic, monkeypatch, mocker):
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 2 == player.ammo
     assert len(game_state.futureEvents) == 1
-    assert player.stats.shotsFired == 2
+    assert player.stats.shots_fired == 2
 
-#TODO: Should this be a unit test?
+# TODO: Should this be a unit test?
 
 # def test_detectAndHandleClockDrift(msg_handler, server, game_state, mocker):
 #     monkeypatch.setattr('time.time', lambda: 300)
@@ -316,6 +327,7 @@ def test_set_main_player_after_hit(client_game_state, client_game_logic, monkeyp
     player2 = client_game_state.getOrCreatePlayer(1, 2)
     assert initialHealth == player2.health
 
+
 def test_set_main_player_before_hit(client_game_state, client_game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 300)
     mocker.patch("gameState.Timer", autospec=True)
@@ -339,8 +351,9 @@ def test_set_main_player_before_hit(client_game_state, client_game_logic, monkey
     player2 = client_game_state.getOrCreatePlayer(1, 2)
     assert initialHealth > player2.health
 
+
 def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
-    "Test that adding out of order events which doesn't adjust a player doesn't call playerAdjustedListener"
+    """Test that adding out of order events which doesn't adjust a player doesn't call playerAdjustedListener"""
 
     monkeypatch.setattr('time.time', lambda: 300)
     mocker.patch("gameState.Timer", autospec=True)
@@ -362,8 +375,9 @@ def test_dont_detect_unrelated_changes(game_state, game_logic, monkeypatch, mock
 
     assert playerAdjustedListener.call_count == 0
 
+
 def test_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
-    "Test that adding an out of order event which does adjust a player calls playerAdjustedListener"
+    """Test that adding an out of order event which does adjust a player calls playerAdjustedListener"""
 
     monkeypatch.setattr('time.time', lambda: 300)
     mocker.patch("gameState.Timer", autospec=True)
@@ -375,22 +389,23 @@ def test_detect_unrelated_changes(game_state, game_logic, monkeypatch, mocker):
     game_state.getOrCreatePlayer(2, 1)
     game_logic.startGame(50)
 
-    #Player A gets shot by Player B
+    # Player A gets shot by Player B
     game_logic.hit(200, 2, 1, 1, 1, 999)
 
     assert game_state.currGameState.players[(1, 1)].health > 0
     assert game_state.currGameState.players[(2, 1)].health == 0
 
-    #Player B was actually already shot by Player A
+    # Player B was actually already shot by Player A
     game_logic.hit(100, 1, 1, 2, 1, 999)
 
-    #assert that player B's shot on player A was reversed.
+    # assert that player B's shot on player A was reversed.
     assert game_state.currGameState.players[(1, 1)].health == 0
     assert game_state.currGameState.players[(2, 1)].health > 0
 
     assert playerAdjustedListener.call_count == 2
 
-def test_detect_player_adjustment_with_stopGame(game_state, game_logic, monkeypatch, mocker):
+
+def test_detect_player_adjustment_with_stop_game(game_state, game_logic, monkeypatch, mocker):
     """Test that an out-of-order stopGame event which changes a player calls playerAdjustedListener"""
     monkeypatch.setattr('time.time', lambda: 50)
     mocker.patch("gameState.Timer", autospec=True)
@@ -402,19 +417,20 @@ def test_detect_player_adjustment_with_stopGame(game_state, game_logic, monkeypa
     player = game_state.getOrCreatePlayer(1, 1)
     initialAmmo = player.ammo
 
-    #Receive trigger events from player
+    # Receive trigger events from player
     game_logic.trigger(50, 1, 1)
     game_logic.triggerRelease(51, 1, 1)
 
-    #Check we have fired a shot
+    # Check we have fired a shot
     player = game_state.getOrCreatePlayer(1, 1)
     assert initialAmmo - 1 == player.ammo
 
-    #receive an out-of-order event which prevents the trigger above firing a shot
+    # receive an out-of-order event which prevents the trigger above firing a shot
     game_logic.stopGame(49)
 
-    #check we detected adjustment needed
+    # check we detected adjustment needed
     assert playerAdjustedListener.call_count == 1
+
 
 def test_parameters_snapshot(game_state, game_logic, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -427,10 +443,10 @@ def test_parameters_snapshot(game_state, game_logic, monkeypatch, mocker):
     parameters = Parameters()
     parameters.addPlayerEffect("maxHealth", 1, 1, "foo-id", "*2")
 
-    #assert this doesn't take effect immediately
+    # assert this doesn't take effect immediately
     assert game_state.getPlayerParameter(player, "maxHealth") == initialMaxHealth
 
     game_logic.setParametersSnapshot(80, parameters)
 
-    #assert this has applied now.
+    # assert this has applied now.
     assert game_state.getPlayerParameter(player, "maxHealth") == initialMaxHealth * 2

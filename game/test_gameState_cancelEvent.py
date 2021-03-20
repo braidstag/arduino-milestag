@@ -1,17 +1,15 @@
 # pylint:disable=redefined-outer-name,E1101
 import pytest
-import time
-from mock import call, ANY
 
 from gameState import GameState
 from gameEvents import GameEvent
 
-import gameState
 
 @pytest.fixture
 def game_state():
     gameState = GameState()
     return gameState
+
 
 def test_cancel_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)
@@ -40,6 +38,7 @@ def test_cancel_event(game_state, monkeypatch, mocker):
     assert event4.apply.call_count == 0
     assert game_state.uncertainEvents == [event2]
     assert game_state.futureEvents == [event4]
+
 
 def test_cancel_only_future_event(game_state, monkeypatch, mocker):
     monkeypatch.setattr('time.time', lambda: 100)

@@ -4,6 +4,7 @@ import re
 valueRE = re.compile(r'[=*+-]\d+')
 empty_or_all_wildcards = re.compile(r'^\**$')
 
+
 class Parameters(object):
     """Game play parameters.
     These are variables represent the "settings" of a game, not the state
@@ -19,32 +20,32 @@ class Parameters(object):
         self.__addParameter("player.maxHealth", 100)
         self.__addParameter("gun.damage", 2)
 
-    def __addParameter(self, name, baseValue):
-        self.parameters[name] = Parameter(baseValue)
+    def __addParameter(self, name, base_value):
+        self.parameters[name] = Parameter(base_value)
 
-    def _addEffect(self, parameterName, qualifierPattern, id, value):
+    def _addEffect(self, parameter_name, qualifier_pattern, effect_id, value):
         if not valueRE.match(value):
             raise MalformedValueError(value)
 
-        self.parameters[parameterName].addEffect(qualifierPattern, id, value)
+        self.parameters[parameter_name].addEffect(qualifier_pattern, effect_id, value)
 
-        self._notifyListeners(parameterName, qualifierPattern)
+        self._notifyListeners(parameter_name, qualifier_pattern)
 
-    def _removeEffect(self, parameterName, id):
-        e = self.parameters[parameterName].removeEffect(id)
+    def _removeEffect(self, parameter_name, effect_id):
+        e = self.parameters[parameter_name].removeEffect(effect_id)
 
-        self._notifyListeners(parameterName, e.qualifierPattern)
+        self._notifyListeners(parameter_name, e.qualifierPattern)
 
-    def _getValue(self, parameterName, qualifier):
-        return self.parameters[parameterName].value(qualifier)
+    def _getValue(self, parameter_name, qualifier):
+        return self.parameters[parameter_name].value(qualifier)
 
-    def _subscribeToValue(self, parameterNamePattern, qualifierPattern, listener):
-        self.listeners.append((parameterNamePattern, qualifierPattern, listener))
+    def _subscribeToValue(self, parameter_name_pattern, qualifier_pattern, listener):
+        self.listeners.append((parameter_name_pattern, qualifier_pattern, listener))
 
-    def _notifyListeners(self, parameterName, listenerQualifierPattern):
+    def _notifyListeners(self, parameter_name, listener_qualifier_pattern):
         for (parameterNamePattern, qualifierPattern, listener) in self.listeners:
-            if fnmatchcase(parameterName, parameterNamePattern) and self._qualifierMatches(qualifierPattern, listenerQualifierPattern):
-                listener(parameterName)
+            if fnmatchcase(parameter_name, parameterNamePattern) and self._qualifierMatches(qualifierPattern, listener_qualifier_pattern):
+                listener(parameter_name)
 
     # algorithm from https://stackoverflow.com/a/3213301/6950
     def _qualifierMatches(self, g1, g2):
@@ -57,10 +58,10 @@ class Parameters(object):
         t1 = g1[1:]
         c2 = g2[0]
         t2 = g2[1:]
-        if (c1 == '*' or c2 == '*'):
+        if c1 == '*' or c2 == '*':
             return self._qualifierMatches(g1, t2) or self._qualifierMatches(t1, g2)
 
-        return c1 == c2 and  self._qualifierMatches(t1, t2)
+        return c1 == c2 and self._qualifierMatches(t1, t2)
 
     def __str__(self):
         return self.__repr__()
@@ -77,28 +78,28 @@ class Parameters(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def getPlayerValue(self, parameterName, teamID, playerID):
+    def getPlayerValue(self, parameter_name, team_id, player_id):
         """Convenience function for getting a parameter value for a particular player."""
-        return self._getValue("player." + parameterName, str(teamID) + "/" + str(playerID))
+        return self._getValue("player." + parameter_name, str(team_id) + "/" + str(player_id))
 
-    def addPlayerEffect(self, parameterName, teamID, playerID, id, value):
+    def addPlayerEffect(self, parameter_name, team_id, player_id, effect_id, value):
         """Convenience function for adding an effect for a particular player."""
-        self._addEffect("player." + parameterName, str(teamID) + "/" + str(playerID), id, value)
+        self._addEffect("player." + parameter_name, str(team_id) + "/" + str(player_id), effect_id, value)
 
-    def addTeamEffect(self, parameterName, teamID, id, value):
+    def addTeamEffect(self, parameter_name, team_id, effect_id, value):
         """Convenience function for adding an effect for every player on a particular team."""
-        self._addEffect("player." + parameterName, str(teamID) + "/*", id, value)
+        self._addEffect("player." + parameter_name, str(team_id) + "/*", effect_id, value)
 
-    def getPlayerParameters(self, teamID, playerID):
+    def getPlayerParameters(self, team_id, player_id):
         """
         Get all of the parameters and effects for a given player
         This looks like a filtered version of toSimpleTypes
         """
         out = {}
         for pName in self.parameters:
-            out[pName] = self.parameters[pName].getQualifiedParameter(str(teamID) + "/" + str(playerID))
+            out[pName] = self.parameters[pName].getQualifiedParameter(str(team_id) + "/" + str(player_id))
 
-        return { 'parameters': out }
+        return {'parameters': out}
 
     def toSimpleTypes(self):
         """encode as JSON"""
@@ -106,23 +107,23 @@ class Parameters(object):
         for pName in self.parameters:
             out[pName] = self.parameters[pName].toSimpleTypes()
 
-        return { 'parameters': out }
+        return {'parameters': out}
 
     @classmethod
-    def fromSimpleTypes(cls, input):
-        if isinstance(input, dict):
+    def fromSimpleTypes(cls, input_obj):
+        if isinstance(input_obj, dict):
             obj = Parameters()
-            for pName in input['parameters']:
-                obj.parameters[pName] = Parameter.fromSimpleTypes(input['parameters'][pName])
+            for pName in input_obj['parameters']:
+                obj.parameters[pName] = Parameter.fromSimpleTypes(input_obj['parameters'][pName])
 
             return obj
         else:
-            raise ValueError('Parameters should be deserialised from a dict not a ' + type(input))
+            raise ValueError('Parameters should be deserialised from a dict not a ' + type(input_obj))
 
 
 class MalformedValueError(RuntimeError):
     def __init__(self, val):
-      self.val = val
+        self.val = val
 
     def __str__(self):
         return self.__repr__()
@@ -137,13 +138,13 @@ class Parameter(object):
         self.effects = []
 
     @classmethod
-    def fromSimpleTypes(cls, input):
-        if isinstance(input, dict):
-            obj = Parameter(input['baseValue'])
-            obj.effects = [Effect.fromSimpleTypes(e) for e in input['effects']]
+    def fromSimpleTypes(cls, input_obj):
+        if isinstance(input_obj, dict):
+            obj = Parameter(input_obj['baseValue'])
+            obj.effects = [Effect.fromSimpleTypes(e) for e in input_obj['effects']]
             return obj
         else:
-            raise ValueError('Parameter should be deserialised from a dict not a ' + type(input))
+            raise ValueError('Parameter should be deserialised from a dict not a ' + type(input_obj))
 
     def toSimpleTypes(self):
         return {
@@ -164,12 +165,12 @@ class Parameter(object):
             val = effect.apply(val, qualifier)
         return val
 
-    def addEffect(self, qualifierPattern, id, value):
-        self.effects.append(Effect(qualifierPattern, id, value))
+    def addEffect(self, qualifierPattern, effect_id, value):
+        self.effects.append(Effect(qualifierPattern, effect_id, value))
 
-    def removeEffect(self, id):
-        removed = [e for e in self.effects if e.id == id]
-        self.effects = [e for e in self.effects if e.id != id]
+    def removeEffect(self, effect_id):
+        removed = [e for e in self.effects if e.id == effect_id]
+        self.effects = [e for e in self.effects if e.id != effect_id]
         return removed[0]
 
     def __str__(self):
@@ -189,17 +190,17 @@ class Parameter(object):
 
 
 class Effect(object):
-    def __init__(self, qualifierPattern, id, value):
+    def __init__(self, qualifierPattern, effect_id, value):
         self.qualifierPattern = qualifierPattern
-        self.id = id
+        self.id = effect_id
         self.value = value
 
     @classmethod
-    def fromSimpleTypes(cls, input):
-        if isinstance(input, dict):
-            return Effect(input['qualifierPattern'], input['id'], input['value'])
+    def fromSimpleTypes(cls, input_object):
+        if isinstance(input_object, dict):
+            return Effect(input_object['qualifierPattern'], input_object['id'], input_object['value'])
         else:
-            raise ValueError('Effect should be deserialised from a dict not a ' + type(input))
+            raise ValueError('Effect should be deserialised from a dict not a ' + type(input_object))
 
     def toSimpleTypes(self):
         return self.__dict__
@@ -221,7 +222,7 @@ class Effect(object):
             elif op == '-':
                 return val - arg
         else:
-            #This isn't covered by the qualifier so don't change the val.
+            # This isn't covered by the qualifier so don't change the val.
             return val
 
     def __str__(self):

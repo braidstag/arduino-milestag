@@ -1,54 +1,56 @@
 from player import Stats
 import json
 
-def extractPlayerInfo(currentGameState, player, fullInfo = True):
-    playerObj = {
-        'teamId': player.teamID,
-        'playerId': player.playerID,
+
+def extractPlayerInfo(current_game_state, player, full_info=True):
+    player_obj = {
+        'teamId': player.team_id,
+        'playerId': player.player_id,
         'ammo': player.ammo,
         'health': player.health,
     }
 
-    if fullInfo:
-        params = currentGameState.parameters.getPlayerParameters(player.teamID, player.playerID)['parameters']
+    if full_info:
+        params = current_game_state.parameters.getPlayerParameters(player.team_id, player.player_id)['parameters']
 
         for p in params:
-            params[p]['currentValue'] = currentGameState.parameters._getValue(p, str(player.teamID) + "/" + str(player.playerID))
+            params[p]['currentValue'] = current_game_state.parameters._getValue(p, str(player.team_id) + "/" + str(player.player_id))
 
-        playerObj['parameters'] = params
-        playerObj['stats'] = player.stats.toSimpleTypes()
+        player_obj['parameters'] = params
+        player_obj['stats'] = player.stats.toSimpleTypes()
 
-    return playerObj
+    return player_obj
 
 
 class PlayerListResource:
-    def __init__(self, gameState):
-        self.gameState = gameState
+    def __init__(self, game_state):
+        self.gameState = game_state
 
     def on_get(self, req, resp):
-        fullInfo = False
+        full_info = False
         try:
-            fullInfo = req.params['fullInfo'].lower() == 'true'
+            full_info = req.params['fullInfo'].lower() == 'true'
         except:
             pass
 
-        playerList = {
-            'players': self.gameState.withCurrGameState(lambda cgs: [extractPlayerInfo(cgs, player, fullInfo) for player in cgs.players.values()]),
+        player_list = {
+            'players': self.gameState.withCurrGameState(lambda cgs: [extractPlayerInfo(cgs, player, full_info) for player in cgs.players.values()]),
         }
 
-        #resp.media = playerList
-        resp.body = json.dumps(playerList)
+        # resp.media = playerList
+        resp.body = json.dumps(player_list)
+
 
 class PlayerResource:
-    def __init__(self, gameState):
-        self.gameState = gameState
+    def __init__(self, game_state):
+        self.gameState = game_state
 
-    def on_get(self, req, resp, teamId, playerId):
+    def on_get(self, _req, resp, team_id, player_id):
 
-        player = self.gameState.withCurrGameState(lambda cgs: extractPlayerInfo(cgs, cgs.players[(teamId, playerId)]))
-        #resp.media = player
+        player = self.gameState.withCurrGameState(lambda cgs: extractPlayerInfo(cgs, cgs.players[(team_id, player_id)]))
+        # resp.media = player
         resp.body = json.dumps(player)
-        #TODO handle 404
+        # TODO handle 404
 
-    def on_patch(self, req, resp, teamId, playerId):
+    def on_patch(self, req, resp, team_id, player_id):
         pass

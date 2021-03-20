@@ -1,17 +1,16 @@
 # pylint:disable=redefined-outer-name,E1101
 import pytest
-import time
 
 from gameState import GameState
 
-import gameState
 
 @pytest.fixture
 def game_state():
     gameState = GameState()
     return gameState
 
-def test_getPlayerParameter(game_state, monkeypatch, mocker):
+
+def test_get_player_parameter(game_state, mocker):
 
     mocker.patch.object(game_state.currGameState.parameters, "getPlayerValue", autospec=True)
     game_state.currGameState.parameters.getPlayerValue.return_value = 42

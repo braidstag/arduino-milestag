@@ -1,0 +1,7 @@
+pytest
+pytest-mock
+pytest-cov
+falcon
+
+# apt install python-pyside.qtcore python-pyside.qtgui
+# pyside
