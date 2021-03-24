@@ -60,7 +60,7 @@ def static_resource(app_path):
         if name == '':
             name = 'index.html'
 
-        resp.content_type = mimetypes.guess_type(name)[0]
+        resp.content_type = mimetypes.guess_type(name)[0] or 'text/plain'
         image_path = os.path.join(app_path, name)
         resp.stream = open(image_path, 'rb')
         resp.stream_len = os.path.getsize(image_path)
