@@ -87,11 +87,10 @@ class ServerMsgHandler():
         def hello():  # pylint: disable=W0612
             client_id = event.id
             existing_ids = self.listeningThread.isConnected(client_id)
+            self.listeningThread.recievedHello(connection, client_id)
             if existing_ids:
                 player = self.gameLogic.gameState.getOrCreatePlayer(existing_ids[0], existing_ids[1])
                 self.finishInitialisation(player, connection)
-            else:
-                self.listeningThread.recievedHello(connection, client_id)
 
         @h1.handles(proto.PING)
         def ping():  # pylint: disable=W0612
