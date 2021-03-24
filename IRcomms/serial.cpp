@@ -151,7 +151,7 @@ void checkSerial() {
     }
     else if (numBytesRead == 4 && strncmp("Init", serialReadBuffer, 4) == 0) {
       //Start init mode.
-      initModeActive=false;
+      initModeActive=true;
     }
     else if (numBytesRead == 6 && strncmp("NoInit", serialReadBuffer, 6) == 0) {
       //Stop init mode.

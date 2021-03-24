@@ -95,7 +95,7 @@ boolean initModeActive = false;
 void initMode() {
   if (initModeActive) {
     //flash the torch and muzzle alternatively
-    if (micros() * 1000000 % 2 == 1) {
+    if (micros() / 1000000 % 2 == 1) {
       torch_up(preConnectedTeamId);
       muzzleflash_down();
     } else {
