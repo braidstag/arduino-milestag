@@ -25,6 +25,7 @@ def game_logic(mocker):
     return mocker.MagicMock()
 
 
+@pytest.fixture()
 def listening_thread(mocker):
     return mocker.MagicMock()
 
