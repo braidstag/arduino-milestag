@@ -108,10 +108,10 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
                 },
                 u'stats': {
                     u'deaths': 0,
-                    u'hitsGiven': 0,
-                    u'hitsReceived': 0,
+                    u'hits_given': 0,
+                    u'hits_received': 0,
                     u'kills': 0,
-                    u'shotsFired': 0
+                    u'shots_fired': 0
                 }
             },
             {
@@ -133,10 +133,10 @@ def test_getListFull(game_state, game_logic, current_game_state, client, monkeyp
                 },
                 u'stats': {
                     u'deaths': 0,
-                    u'hitsGiven': 0,
-                    u'hitsReceived': 0,
+                    u'hits_given': 0,
+                    u'hits_received': 0,
                     u'kills': 0,
-                    u'shotsFired': 0
+                    u'shots_fired': 0
                 }
             }
         ]
@@ -176,10 +176,10 @@ def test_getDetails(game_state, game_logic, current_game_state, client, monkeypa
         },
         u'stats': {
             u'deaths': 0,
-            u'hitsGiven': 0,
-            u'hitsReceived': 0,
+            u'hits_given': 0,
+            u'hits_received': 0,
             u'kills': 0,
-            u'shotsFired': 0
+            u'shots_fired': 0
         }
     }
 

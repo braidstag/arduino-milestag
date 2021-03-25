@@ -22,7 +22,7 @@ def create_api(game_state, game_logic, listening_thread, app_path):
     api.add_route('/game', GameResource(game_state, game_logic))
 
     api.add_route('/players', PlayerListResource(game_state))
-    api.add_route('/players/{teamId:int}/{playerId:int}', PlayerResource(game_state))
+    api.add_route('/players/{team_id:int}/{player_id:int}', PlayerResource(game_state))
     api.add_route('/players:startInitialising', PlayerInitialisationResource(listening_thread))
 
     return api
